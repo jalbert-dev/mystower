@@ -1,15 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
-
   <ItemGroup>
+    <Compile Include="ServerErrors.fs" />
+    <Compile Include="GameState.fs" />
+    <Compile Include="IGameClient.fs" />
+    <Compile Include="GameServer.fs" />
     <Compile Include="Library.fs" />
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="RogueSharp" Version="4.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
-
 </Project>
