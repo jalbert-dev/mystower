@@ -351,3 +351,6 @@ MigrationBackup/
 
 # Get outta here, Visual Studio Code!
 .vscode/
+
+# Not sure why this isn't ignore by default but here ya go
+obj
