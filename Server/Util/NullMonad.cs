@@ -3,12 +3,12 @@ using System;
 namespace Server.Util
 {
     [System.Serializable]
-    public class OptionNotNoneException : System.Exception
+    public class OptionIsNoneException : System.Exception
     {
-        public OptionNotNoneException() { }
-        public OptionNotNoneException(string message) : base(message) { }
-        public OptionNotNoneException(string message, System.Exception inner) : base(message, inner) { }
-        protected OptionNotNoneException(
+        public OptionIsNoneException() { }
+        public OptionIsNoneException(string message) : base(message) { }
+        public OptionIsNoneException(string message, System.Exception inner) : base(message, inner) { }
+        protected OptionIsNoneException(
             System.Runtime.Serialization.SerializationInfo info,
             System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
@@ -43,7 +43,7 @@ namespace Server.Util
         T value { get; }
 
         public bool IsNone => !hasValue;
-        public T Value => hasValue ? value : throw new OptionNotNoneException();
+        public T Value => hasValue ? value : throw new OptionIsNoneException();
 
         private Option(bool hasValue, T value)
         {
@@ -61,11 +61,6 @@ namespace Server.Util
             => hasValue ? f(value) : Option.None;
         public Option<U> Map<U>(Func<T, U> f)
             => Bind(x => Option.Some(f(x)));
-
-        public Result<T> ErrorIfNone(Func<IError> thunk)
-            => hasValue ?
-                Result.Ok(value) :
-                Result.Error(thunk());
     }
     public struct Result<TValue>
     {
