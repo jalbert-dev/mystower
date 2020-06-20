@@ -13,6 +13,8 @@ namespace Server.Data
         public bool Equals(Vec2i other) => x == other.x && y == other.y;
 
         public static Vec2i Zero = new Vec2i { x = 0, y = 0 };
+
+        public override string ToString() => this.ToJsonString();
     }
 
     /// A serializable structure representing a living actor in the game world.
@@ -21,11 +23,15 @@ namespace Server.Data
         public Vec2i position;
         public string aiType = "";
         public int timeUntilAct;
+
+        public override string ToString() => this.ToJsonString();
     }
     
     public class MapData
     {
         public byte[] tiles = new byte[0];
+
+        public override string ToString() => this.ToJsonString();
     }
 
     /// AI consists of a stateless function that takes a game state and actor,
@@ -36,5 +42,7 @@ namespace Server.Data
     {
         public List<Actor> actors = new List<Actor>();
         public MapData map = new MapData();
+
+        public override string ToString() => this.ToJsonString();
     }
 }
