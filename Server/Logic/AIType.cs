@@ -1,7 +1,7 @@
 using System.Linq;
 using Server.Data;
 using Server.Logic;
-using Server.Util;
+using Server.Util.Functional;
 
 namespace Server.Logic
 {

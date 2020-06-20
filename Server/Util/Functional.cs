@@ -1,6 +1,6 @@
 using System;
 
-namespace Server.Util
+namespace Server.Util.Functional
 {
     [System.Serializable]
     public class OptionIsNoneException : System.Exception
@@ -132,9 +132,6 @@ namespace Server.Util
         public static Option<T> Some<T>(T value) 
             => Option<T>.Some(value);
         public static GenericNone None => GenericNone.Instance;
-        
-        public static Option<T> ToOption<T>(this T? value) where T : class
-            => value != null ? Some(value) : None;
     }
 
     public static class Result

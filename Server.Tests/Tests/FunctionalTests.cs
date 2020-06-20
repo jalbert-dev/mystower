@@ -1,16 +1,16 @@
 using System;
-using Server.Util;
+using Server.Util.Functional;
 using Xunit;
 using FluentAssertions;
 using FsCheck;
 using FsCheck.Xunit;
 
-using static Server.Tests.Helpers;
+using static Server.Tests.FunctionalTests.Helpers;
 
 // Unfortunately Result conflicts with FsCheck.Result!
-using Res = Server.Util.Result;
+using Res = Server.Util.Functional.Result;
 
-namespace Server.Tests
+namespace Server.Tests.FunctionalTests
 {
     class TestErr : IError
     {
@@ -20,34 +20,34 @@ namespace Server.Tests
     static class Helpers
     {
         public static Res.GenericError err(string msg) => Res.Error(new TestErr { value = msg });
-        public static Util.Result<T> err<T>(string msg) => err(msg);
+        public static Util.Functional.Result<T> err<T>(string msg) => err(msg);
     }
 
     public class OptionTests
     {
-        [Fact] public void OptionIsNoneReflectsContents()
+        [Fact] public void IsNoneReflectsContents()
         {
             Option.Some(5).IsNone.Should().BeFalse();
             ((Option<int>)Option.None).IsNone.Should().BeTrue();
         }
 
-        [Fact] public void OptionWithNullValueIsNotNone()
+        [Fact] public void NullValueIsNotNone()
         {
             Option<object> opt = Option.Some<object>(null);
             opt.IsNone.Should().Be(false);
             opt.Value.Should().BeNull();
         }
 
-        [Property] public bool OptionContainsGivenValue(int x)
+        [Property] public bool ContainsGivenValue(int x)
             => Option.Some(x).Value == x;
 
-        [Fact] public void OptionAccessingNoneValueThrows()
+        [Fact] public void AccessingValueOfNoneThrows()
         {
             Func<int> f = () => ((Option<int>)Option.None).Value;
             f.Should().Throw<OptionIsNoneException>("because Option.None may not have a value");
         }
 
-        [Property] public bool OptionMapCallsMapperWithValue(int x, int y)
+        [Property] public bool MapCallsMapperWithValue(int x, int y)
         {
             bool mapFunctionWasCalled = false;
             Option<int> mapped = Option.Some(x).Map(value => {
@@ -60,7 +60,7 @@ namespace Server.Tests
             return mapped.Value == x + y;
         }
 
-        [Fact] public void OptionNoneMapsToNoneAndDoesntCallMapper()
+        [Fact] public void NoneMapsToNoneAndDoesntCallMapper()
         {
             Option<int> opt = Option.None;
             var mapperCalled = false;
@@ -68,7 +68,7 @@ namespace Server.Tests
             mapperCalled.Should().BeFalse();
         }
         
-        [Property] public bool OptionMapToDifferentType(int x)
+        [Property] public bool MapToDifferentType(int x)
         {
             Option<int> opt = Option.Some(x);
             Option<string> mapped = opt.Map(x => x.ToString());
@@ -76,7 +76,7 @@ namespace Server.Tests
             return mapped.Value == x.ToString();
         }
 
-        [Property] public bool OptionBindCallsBinderWithValue(int x, int y)
+        [Property] public bool BindCallsBinderWithValue(int x, int y)
         {
             bool bindFunctionWasCalled = false;
             Option<int> mapped = Option.Some(x).Bind(value => {
@@ -89,7 +89,7 @@ namespace Server.Tests
             return mapped.Value == x + y;
         }
 
-        [Fact] public void OptionNoneBindsToNoneAndDoesntCallMapper()
+        [Fact] public void NoneBindsToNoneAndDoesntCallMapper()
         {
             Option<int> opt = Option.None;
             var binderCalled = false;
@@ -97,10 +97,10 @@ namespace Server.Tests
             binderCalled.Should().BeFalse();
         }
 
-        [Property] public bool OptionBindToNone(int x)
+        [Property] public bool BindToNoneExample(int x)
             => Option.Some(x).Bind<int>(_ => Option.None).IsNone == true;
 
-        [Property] public bool OptionMapBindChainingGivesCorrectValues(int x, int y, int z, int a, int b, int c)
+        [Property] public bool MapBindChainingExample(int x, int y, int z, int a, int b, int c)
             => Option.Some(x)
                 .Map(i => i + y)
                 .Map(i => i - z)
@@ -110,7 +110,7 @@ namespace Server.Tests
                 .Map(i => i.ToString())
                 .Value == ((x + y - z + a - b) * c).ToString();
 
-        [Fact] public void OptionNonePropagates()
+        [Fact] public void NonePropagates()
         {
             Option.Some(5)
                 .Map(x => x + 5)
@@ -127,35 +127,35 @@ namespace Server.Tests
         // Testing Res.Error is fairly contrived compared to an actual use
         // case since the compiler can't infer a type for TValue in a lot of cases,
         // so we get a GenericError instead of the intended Result<_>
-        [Fact] public void ResultIsSuccessReflectsContents()
+        [Fact] public void IsSuccessReflectsContents()
         {
             Res.Ok(5).IsSuccess.Should().BeTrue();
             ((Result<int>)err("")).IsSuccess.Should().BeFalse();
         }
 
-        [Property] public bool ResultOkContainsGivenValue(string str)
+        [Property] public bool OkContainsGivenValue(string str)
             => Res.Ok(str).Value == str;
 
-        [Property] public bool ResultErrContainsGivenError(string str)
+        [Property] public bool ErrContainsGivenError(string str)
         {
             Result<int> result = Res.Error(new TestErr { value=str });
             result.Err.Should().BeOfType<TestErr>();
             return result.Err.Message == str;
         }
 
-        [Fact] public void ResultAccessingErrorOfSuccessResultThrows()
+        [Fact] public void AccessingErrorOfSuccessResultThrows()
         {
             Func<IError> f = () => Res.Ok(5).Err;
             f.Should().Throw<ResultNotErrorException>("because non-Error Results may not have an error");
         }
 
-        [Fact] public void ResultAccessingValueOfErrorResultThrows()
+        [Fact] public void AccessingValueOfErrorResultThrows()
         {
             Func<int> f = () => ((Result<int>)err("honk")).Value;
             f.Should().Throw<ResultNotSuccessException>("because non-Success Results may not have a value");
         }
 
-        [Property] public bool ResultMapCallsMapperWithValue(int x, int y)
+        [Property] public bool MapCallsMapperWithValue(int x, int y)
         {
             bool mapperCalled = false;
             var result = Res.Ok(x).Map(value => {
@@ -168,7 +168,7 @@ namespace Server.Tests
             return result.Value == x + y;
         }
 
-        [Property] public bool ResultBindsCallsBinderWithValue(int x, int y)
+        [Property] public bool BindsCallsBinderWithValue(int x, int y)
         {
             bool mapperCalled = false;
             var result = Res.Ok(x).Bind(value => {
@@ -181,10 +181,10 @@ namespace Server.Tests
             return result.Value == x + y;
         }
 
-        [Property] public bool ResultMapToDifferentType(int x)
+        [Property] public bool MapToDifferentTypeExample(int x)
             => Res.Ok(x).Map(x => x.ToString()).Value == x.ToString();
 
-        [Fact] public void ResultMapErrorIsSameErrorAndDoesntCallMapper()
+        [Fact] public void ErrorMapsToSameErrorAndDoesntCallMapper()
         {
             var result = err<int>("An error!");
             bool mapperCalled = false;
@@ -198,7 +198,7 @@ namespace Server.Tests
                 "because Results containing Error must propagate the same error through map/bind");
         }
 
-        [Fact] public void ResultBindErrorIsSameErrorAndDoesntCallBinder()
+        [Fact] public void ErrorBindsToSameErrorAndDoesntCallBinder()
         {
             var result = err<int>("An error!");
             bool mapperCalled = false;
@@ -218,7 +218,7 @@ namespace Server.Tests
             result.IsSuccess.Should().BeTrue();
         }
 
-        [Fact] public void ResultErrorPropagates()
+        [Fact] public void ErrorPropagates()
         {
             Res.Ok(5)
                 .Map(x => x + 5)
@@ -230,7 +230,7 @@ namespace Server.Tests
                     "because the first error in a chain of maps/binds should be the end result");
         }
 
-        [Property] public bool ResultMapBindChainingGivesCorrectValues(int x, int y, int z, int a, int b, int c)
+        [Property] public bool MapBindChainingExample(int x, int y, int z, int a, int b, int c)
             => Res.Ok(x)
                 .Map(i => i + y)
                 .Map(i => i - z)
@@ -240,7 +240,7 @@ namespace Server.Tests
                 .Map(i => i.ToString())
                 .Value == ((x + y - z + a - b) * c).ToString();
 
-        [Fact] public void ResultOkFinallyInvokesActionAndGivesUnitResult()
+        [Fact] public void FinallyWithOkInvokesActionAndGivesUnitResult()
         {
             bool invoked = false;
             Res.Ok(5)
@@ -251,7 +251,7 @@ namespace Server.Tests
             invoked.Should().BeTrue();
         }
 
-        [Fact] public void ResultErrorFinallyDoesntInvokeActionAndGivesSameErrorResult()
+        [Fact] public void FinallyWithErrorDoesntInvokeActionAndGivesSameErrorResult()
         {
             bool invoked = false;
             var result = err<int>("This is an error!");
@@ -261,14 +261,14 @@ namespace Server.Tests
         }
     }
 
-    public class MonadicExtensionsTests
+    public class FunctionalExtensionsTests
     {
-        [Property] public bool ErrorIfNoneMapsOptionWithValueToOkResultWithSameValue(string str)
+        [Property] public bool MapsOptionWithValueToOkResultWithSameValue(string str)
         {
             return Option.Some(str).ErrorIfNone(() => new TestErr{ value="Oh no"}).Value == str;
         }
 
-        [Fact] public void ErrorIfNoneMapsOptionWithNoneToResultOfThunk()
+        [Fact] public void MapsOptionWithNoneToResultOfThunk()
         {
             bool thunkExecuted = false;
             Option<int> opt = Option.None;

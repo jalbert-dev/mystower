@@ -11,6 +11,8 @@ namespace Server.Data
         public int y;
 
         public bool Equals(Vec2i other) => x == other.x && y == other.y;
+
+        public static Vec2i Zero = new Vec2i { x = 0, y = 0 };
     }
 
     /// A serializable structure representing a living actor in the game world.
@@ -34,31 +36,5 @@ namespace Server.Data
     {
         public List<Actor> actors = new List<Actor>();
         public MapData map = new MapData();
-
-        public Option<Actor> NextToAct
-        {
-            get
-            {
-                // the lack of MinBy in LINQ is... surprising! and verbose
-                Actor? rv = null;
-                int min = int.MaxValue;
-                foreach (var actor in actors)
-                {
-                    if (actor.timeUntilAct < min)
-                    {
-                        rv = actor;
-                        min = actor.timeUntilAct;
-                    }
-                }
-                return rv.ToOption();
-            }
-        }
-
-        public GameState AdvanceTime(int dt)
-        {
-            foreach (var actor in actors)
-                actor.timeUntilAct = Math.Max(0, actor.timeUntilAct - dt);
-            return this;
-        }
     }
 }

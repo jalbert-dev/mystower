@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Server.Data;
 using Server.Logic;
-using Server.Util;
+using Server.Util.Functional;
 
 namespace Server
 {
@@ -48,12 +48,12 @@ namespace Server
         Result<Option<Actor>> Step()
         {
             // for now, a step is however long it takes for the next unit to move
-            var maybeActor = gameState.NextToAct;
+            var maybeActor = TurnController.GetNextToAct(gameState.actors);
             if (maybeActor.IsNone)
-                return Result.Ok((Option<Actor>)Option.None);
+                return Result.Ok<Option<Actor>>(Option.None);
             
             var actor = maybeActor.Value;
-            gameState.AdvanceTime(actor.timeUntilAct);
+            TurnController.AdvanceTime(gameState, actor.timeUntilAct);
 
             // try to lookup AI type and execute
             return Logic.AIType.Lookup(actor.aiType)
@@ -62,8 +62,13 @@ namespace Server
                 .Map(ActionExecutor(actor));
         }
 
+        public void RegisterClient(IGameClient client) => clients.Add(client);
+        public void UnregisterClient(IGameClient client) => clients.Remove(client);
+
         /// Runs game world and fires IGameClient callbacks to all attached clients
         /// until user input is required.
+        /// 
+        /// Returns an IError instance if an error was encountered, else null.
         public IError? Run()
         {
             while (waitingOn == null)
