@@ -7,7 +7,7 @@ namespace Server.Logic
 {
     public static class TurnController
     {
-        public static Option<Actor> GetNextToAct(List<Actor> actors)
+        public static Option<Actor> GetNextToAct(IEnumerable<Actor> actors)
         {
             // the lack of MinBy in LINQ is... surprising! and verbose
             Actor? rv = null;

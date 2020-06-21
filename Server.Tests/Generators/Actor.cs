@@ -1,3 +1,4 @@
+using System.Linq;
 using FsCheck;
 using Server.Data;
 
@@ -17,5 +18,11 @@ namespace Server.Tests.Generators
                 }
             );
         }
+
+        public static Arbitrary<Actor> WithTimeUntilAct(int ct)
+            => Default().Generator.Select(x => {
+                x.timeUntilAct = ct;
+                return x;
+            }).ToArbitrary();
     }
 }
