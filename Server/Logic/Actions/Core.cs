@@ -22,7 +22,7 @@ namespace Server.Logic.Actions
         public void Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor)
         {
             actor.position.x += dx;
-            actor.position.x += dy;
+            actor.position.y += dy;
 
             foreach (var c in clients)
                 c.OnEntityMove(actor, dx, dy);

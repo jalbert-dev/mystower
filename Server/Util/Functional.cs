@@ -112,11 +112,6 @@ namespace Server.Util.Functional
     }
     #nullable enable
 
-    public interface IError
-    {
-        string Message { get; }
-    }
-
     public class Unit
     {
         public static Unit Instance = new Unit();
