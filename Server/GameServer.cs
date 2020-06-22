@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Server.Data;
 using Server.Logic;
 using Server.Util.Functional;
@@ -30,23 +31,41 @@ namespace Server
     {
         List<IGameClient> clients = new List<IGameClient>();
         Data.GameState gameState { get; }
-        public Data.Actor? WaitingOn { get; private set; }
+        public Data.Actor? WaitingOn { get; private set; } = null;
 
-        public GameServer()
+        internal GameServer(GameState state)
         {
-            gameState = new GameState
-            {
-                actors = new List<Actor>
+            gameState = state;
+        }
+
+        public static GameServer NewGame()
+            => new GameServer(
+                new GameState
                 {
-                    new Actor
+                    actors = new List<Actor>
                     {
-                        aiType = nameof(AIType.PlayerControlled),
-                        position = new Vec2i { x=5, y=5 },
-                        timeUntilAct = 20
-                    }
-                },
-                map = new MapData { tiles = new byte[10,10] },
-            };
+                        new Actor
+                        {
+                            aiType = nameof(AIType.PlayerControlled),
+                            position = new Vec2i { x=5, y=5 },
+                            timeUntilAct = 20
+                        }
+                    },
+                    map = new MapData { tiles = new byte[10,10] },
+                });
+        
+        public static GameServer FromSaveGame(string str)
+            => new GameServer(GameStateIO.LoadFromString(str));
+        public static GameServer FromSaveGame(TextReader reader)
+            => FromSaveGame(reader.ReadToEnd());
+
+        public void ToSaveGame(TextWriter outStream)
+            => GameStateIO.SaveToStream(gameState, outStream);
+        public string ToSaveGame()
+        {
+            StringWriter sw = new StringWriter();
+            GameStateIO.SaveToStream(gameState, sw);
+            return sw.ToString();
         }
 
         public IEnumerable<IGameClient> Clients => clients;
