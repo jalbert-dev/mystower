@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Server;
 using Server.Data;
+using static SadConsole.RectangleExtensions;
 
 namespace Client
 {
@@ -24,12 +25,8 @@ namespace Client
     {
         private GameServer server;
 
-        private SadConsole.Console mapLayer;
-        private SadConsole.Console entityLayer;
-
-        // SadConsole's default Viewport implementation is... not great,
-        // so I'm having to roll my own here
-        private Rectangle viewportRect;
+        private SadConsole.ScrollingConsole mapLayer;
+        private SadConsole.ScrollingConsole entityLayer;
 
         private Dictionary<Actor, MapActor> mapActors = new Dictionary<Actor, MapActor>();
 
@@ -80,23 +77,9 @@ namespace Client
 
             mapLayer.Resize(w, h, false);
 
-            //mapLayer.ViewPort = new Rectangle(-2, 0, 2, 2);
-
-            // mapLayer.SetGlyph(0, 0, 'a');
-            // mapLayer.SetGlyph(1, 0, 'b');
-            // mapLayer.SetGlyph(2, 0, 'c');
-            // mapLayer.SetGlyph(0, 0, 'a');
-            // mapLayer.SetGlyph(0, 1, 'b');
-            // mapLayer.SetGlyph(0, 2, 'c');
-            mapLayer.SetSurface(
-                map.tiles
-                    .Cast<byte>()
-                    .Select(tileId => new SadConsole.Cell {
-                        Glyph = tileId == 0 ? 46 : '#'
-                    })
-                    .ToArray(),
-                w,
-                h);
+            for (int i = 0; i < w; i++)
+                for (int j = 0; j < h; j++)
+                    mapLayer.SetGlyph(i, j, map.tiles[i,j] == 0 ? 46 : '#');
 
             entityLayer.Resize(w, h, false);
         }
@@ -135,14 +118,8 @@ namespace Client
         {
             if (server.WaitingOn != null)
             {
-                // move viewport to center the player character
-                mapLayer.ViewPort = new Rectangle
-                {
-                    Width = 6,
-                    Height = 6,
-                    X = 20
-                };
-                
+                var pos = server.WaitingOn.position;
+                mapLayer.CenterViewPortOnPoint(new Point(pos.x, pos.y));
             }
 
             entityLayer.Clear();
@@ -152,9 +129,8 @@ namespace Client
                                      visibleActor.actor.position.y,
                                      visibleActor.glyph);
             }
-
-            entityLayer.ViewPort = mapLayer.ViewPort;
             
+            entityLayer.ViewPort = mapLayer.ViewPort;
             base.Draw(timeElapsed);
         }
     }

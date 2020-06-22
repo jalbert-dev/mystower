@@ -5,7 +5,9 @@ namespace Server.Logic.Actions
 {
     public class Idle : IAction
     {
-        public void Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor) { }
+        public void Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor) {
+            actor.timeUntilAct = 10;
+        }
     }
 
     public class Move : IAction
@@ -26,6 +28,9 @@ namespace Server.Logic.Actions
 
             foreach (var c in clients)
                 c.OnEntityMove(actor, dx, dy);
+
+            // if action was successful, set time till next action accordingly
+            actor.timeUntilAct = 20;
         }
     }
 }

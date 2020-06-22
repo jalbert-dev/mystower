@@ -10,5 +10,9 @@ namespace Server.Logic
 
         public static ActionSelector Idle
             => (_, __) => new Actions.Idle();
+
+        public static ActionSelector MoveRandomly => (gs, actor) => {
+            return new Actions.Move(1, 1);
+        };
     }
 }

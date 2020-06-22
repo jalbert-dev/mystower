@@ -38,6 +38,23 @@ namespace Server
             gameState = state;
         }
 
+        private static MapData TestMap(int w, int h)
+        {
+            var map = new MapData { tiles = new byte[w,h] };
+
+            for (int x = 0; x < w; x++)
+            {
+                map.tiles[x,0] = 1;
+                map.tiles[x,h-1] = 1;
+            }
+            for (int y = 0; y < h; y++)
+            {
+                map.tiles[0,y] = 1;
+            }
+
+            return map;
+        }
+
         public static GameServer NewGame()
             => new GameServer(
                 new GameState
@@ -49,9 +66,27 @@ namespace Server
                             aiType = nameof(AIType.PlayerControlled),
                             position = new Vec2i { x=5, y=5 },
                             timeUntilAct = 20
+                        },
+                        new Actor
+                        {
+                            aiType = nameof(AIType.MoveRandomly),
+                            position = new Vec2i { x=2, y=1 },
+                            timeUntilAct = 21
+                        },
+                        new Actor
+                        {
+                            aiType = nameof(AIType.MoveRandomly),
+                            position = new Vec2i { x=1, y=3 },
+                            timeUntilAct = 20
+                        },
+                        new Actor
+                        {
+                            aiType = nameof(AIType.Idle),
+                            position = new Vec2i { x=4, y=8 },
+                            timeUntilAct = 10
                         }
                     },
-                    map = new MapData { tiles = new byte[10,10] },
+                    map = TestMap(100, 50),
                 });
         
         public static GameServer FromSaveGame(string str)
@@ -103,7 +138,7 @@ namespace Server
             
             var actor = maybeActor.Value;
             TurnController.AdvanceTime(gameState, actor.timeUntilAct);
-
+            
             // try to lookup AI type and execute
             return Logic.AIType.Lookup(actor.aiType)
                 .ErrorIfNone(() => new Errors.InvalidAI(actor.aiType))
@@ -160,6 +195,7 @@ namespace Server
             if (action == null)
                 return new Errors.CantAssignNullAction();;
             ActionExecutor(WaitingOn)(action);
+            WaitingOn = null;
             return null;
         }
     }
