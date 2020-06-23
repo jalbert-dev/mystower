@@ -1,17 +1,12 @@
 using System;
+using System.Collections;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace Server.Tests
 {
     public static class Utility
     {
-        // TODO: this is a weak serialization-based structural equality tester. 
-        //       need to actually write or find a reflection-based solution...
-        public static bool DeepEquals<T>(this T a, T b)
-        {
-            return JsonConvert.SerializeObject(a) == JsonConvert.SerializeObject(b);
-        }
-
         /// <summary>
         /// Returns whether the caller object is different after some action is
         /// performed on it.

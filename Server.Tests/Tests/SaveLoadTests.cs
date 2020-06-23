@@ -24,7 +24,7 @@ namespace Server.Tests
             var srcSerialized = sw.ToString();
             var loadedState = GameStateIO.LoadFromString(srcSerialized);
 
-            loadedState.DeepEquals(state).Should().BeTrue(
+            loadedState.Should().BeEquivalentTo(state,
                 "because game state after loading should be identical to original state");
         }
     }
