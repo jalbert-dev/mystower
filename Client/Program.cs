@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Server;
 using Server.Data;
+using Server.Logic;
 using static SadConsole.RectangleExtensions;
 
 namespace Client
@@ -94,6 +95,8 @@ namespace Client
             // need to handle input for any actor the server needs an action for
             if (server.WaitingOn != null)
             {
+                IAction? selectedAction = null;
+
                 int dx = 0, dy = 0;
                 if (info.IsKeyPressed(Keys.Left)) dx -= 1;
                 if (info.IsKeyPressed(Keys.Right)) dx += 1;
@@ -103,7 +106,17 @@ namespace Client
                 if (dx != 0 || dy != 0)
                 {
                     // try movement
-                    var err = server.AssignActionForWaitingActor(new Server.Logic.Actions.Move(dx, dy));
+                    selectedAction = new Actions.Move(dx, dy);
+                }
+
+                if (info.IsKeyPressed(Keys.Space))
+                {
+                    selectedAction = new Actions.Idle();
+                }
+
+                if (selectedAction != null)
+                {
+                    var err = server.AssignActionForWaitingActor(selectedAction);
                     if (err != null)
                         Console.WriteLine(err.Message);
                     // TODO: think this's technically wrong but I'm still trying to figure

@@ -1,36 +1,43 @@
 using System.Collections.Generic;
 using Server.Data;
 
-namespace Server.Logic.Actions
+namespace Server.Logic
 {
-    public class Idle : IAction
+    public static partial class Actions
     {
-        public void Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor) {
-            actor.timeUntilAct = 10;
-        }
-    }
-
-    public class Move : IAction
-    {
-        public Move(int dx, int dy)
+        public class Idle : IAction
         {
-            this.dx = dx;
-            this.dy = dy;
+            public void Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor) {
+                actor.timeUntilAct = 10;
+            }
         }
 
-        public int dx { get; }
-        public int dy { get; }
-
-        public void Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor)
+        public class Move : IAction
         {
-            actor.position.x += dx;
-            actor.position.y += dy;
+            public Move(int dx, int dy)
+            {
+                this.dx = dx;
+                this.dy = dy;
+            }
 
-            foreach (var c in clients)
-                c.OnEntityMove(actor, dx, dy);
+            public int dx { get; }
+            public int dy { get; }
 
-            // if action was successful, set time till next action accordingly
-            actor.timeUntilAct = 20;
+            public void Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor)
+            {
+                var dstX = actor.position.x + dx;
+                var dstY = actor.position.y + dy;
+                if (Map.CanMoveInto(gs.map, gs.actors, dstX, dstY))
+                {
+                    (actor.position.x, actor.position.y) = (dstX, dstY);
+
+                    foreach (var c in clients)
+                        c.OnEntityMove(actor, dx, dy);
+
+                    // if action was successful, set time till next action accordingly
+                    actor.timeUntilAct = 20;
+                }
+            }
         }
     }
 }
