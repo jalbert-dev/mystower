@@ -92,6 +92,7 @@ namespace Client
 
         public void OnEntityMove(Actor actor, int dx, int dy)
         {
+            Choreographer.AddEffect(new Effects.LerpMove(dx, dy, 4, LookupMapActor(actor)));
         }
 
         public void OnEntityVanish(Actor actor)

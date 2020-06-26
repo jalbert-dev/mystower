@@ -33,11 +33,11 @@ namespace Server.Logic
                 {
                     (actor.position.x, actor.position.y) = (dstX, dstY);
 
-                    foreach (var c in clients)
-                        c.OnEntityMove(actor, dx, dy);
-
                     // if action was successful, set time till next action accordingly
                     actor.timeUntilAct = 20;
+
+                    foreach (var c in clients)
+                        c.OnEntityMove(actor, dx, dy);
                 }
             }
         }
