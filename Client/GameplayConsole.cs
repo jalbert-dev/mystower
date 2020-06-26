@@ -5,21 +5,37 @@ using Microsoft.Xna.Framework.Input;
 using Server;
 using Server.Data;
 using Server.Logic;
+using SadConsole.Entities;
 
 using static SadConsole.RectangleExtensions;
+using SadConsole.Components;
 
 namespace Client
 {
-    public class MapActor
+    public class MapActor : Entity
     {
         public Actor actor;
 
-        public MapActor(Actor actor)
+        public void SnapVisualToActualPosition(SadConsole.ScrollingConsole parent)
         {
-            this.actor = actor;
+            UsePixelPositioning = true;
+
+            Position = new Point(
+                actor.position.x * parent.Font.Size.X, 
+                actor.position.y * parent.Font.Size.Y);
+            Position -= parent.ViewPort.Location.ConsoleLocationToPixel(parent.Font);
         }
 
-        public int glyph;
+        public MapActor(SadConsole.ScrollingConsole parent, Actor actor) :
+            base(Color.White, Color.Black, actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 1 : 'e')
+        {
+            this.actor = actor;
+            Font = parent.Font;
+            SnapVisualToActualPosition(parent);
+
+            parent.Children.Add(this);
+        }
+
     }
 
     public class GameplayConsole : SadConsole.ContainerConsole, IGameClient
@@ -68,14 +84,12 @@ namespace Client
             Server.IError? err = server.Run();
             if (err != null)
                 Console.WriteLine(err.Message);
+            base.Update(timeElapsed);
         }
 
         public void OnEntityAppear(Actor actor)
         {
-            mapActors[actor] = new MapActor(actor) 
-            {
-                glyph = actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 1 : 'e'
-            };
+            mapActors[actor] = new MapActor(entityLayer, actor);
         }
 
         public void OnEntityMove(Actor actor, int dx, int dy)
@@ -157,18 +171,11 @@ namespace Client
                 var pos = server.WaitingOn.position;
                 mapLayer.CenterViewPortOnPoint(new Point(pos.x, pos.y));
             }
-
-            entityLayer.Clear();
-            foreach (var visibleActor in mapActors.Values)
-            {
-                entityLayer.SetGlyph(visibleActor.actor.position.x, 
-                                     visibleActor.actor.position.y,
-                                     visibleActor.glyph,
-                                     Color.White,
-                                     mapLayer.DefaultBackground);
-            }
-            
             entityLayer.ViewPort = mapLayer.ViewPort;
+
+            foreach (var v in mapActors.Values)
+                v.SnapVisualToActualPosition(entityLayer);
+            
             base.Draw(timeElapsed);
         }
     }
