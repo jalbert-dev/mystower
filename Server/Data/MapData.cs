@@ -10,6 +10,9 @@ namespace Server.Data
         /// </summary>
         public byte[,] tiles = new byte[0,0];
 
+        public int Width => tiles.GetLength(0);
+        public int Height => tiles.GetLength(1);
+
         public override string ToString() => this.ToJsonString();
     }
 }

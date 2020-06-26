@@ -73,8 +73,8 @@ namespace Client
 
         private void RebuildLayerData(MapData map)
         {
-            int w = map.tiles.GetLength(0);
-            int h = map.tiles.GetLength(1);
+            int w = map.Width;
+            int h = map.Height;
 
             mapLayer.Resize(w, h, false);
 
