@@ -9,6 +9,7 @@ using SadConsole.Entities;
 
 using static SadConsole.RectangleExtensions;
 using SadConsole.Components;
+using System.Linq;
 
 namespace Client
 {
@@ -17,7 +18,7 @@ namespace Client
         public Actor Actor { get; }
         private SadConsole.ScrollingConsole ScrollingParent { get; }
 
-        public void SnapVisualToActualPosition()
+        public void SnapToActualPosition()
         {
             UsePixelPositioning = true;
 
@@ -34,8 +35,6 @@ namespace Client
             parent.Children.Add(this);
             this.Parent = parent;
             ScrollingParent = parent;
-
-            SnapVisualToActualPosition();
         }
 
     }
@@ -48,7 +47,11 @@ namespace Client
 
         private MessageLogConsole msgLogLayer;
 
-        private Dictionary<Actor, MapActor> mapActors = new Dictionary<Actor, MapActor>();
+        private List<MapActor> mapActors = new List<MapActor>(64);
+        private MapActor LookupMapActor(Actor actor)
+            => mapActors.FirstOrDefault(x => x.Actor == actor);
+
+        private Choreographer Choreographer { get; } = new Choreographer();
 
         public GameplayConsole(int w, int h, GameServer s) : base()
         {
@@ -84,7 +87,7 @@ namespace Client
 
         public void OnEntityAppear(Actor actor)
         {
-            mapActors[actor] = new MapActor(mapLayer, actor);
+            mapActors.Add(new MapActor(mapLayer, actor));
         }
 
         public void OnEntityMove(Actor actor, int dx, int dy)
@@ -93,7 +96,7 @@ namespace Client
 
         public void OnEntityVanish(Actor actor)
         {
-            mapActors.Remove(actor);
+            mapActors.RemoveAll(x => x.Actor == actor);
         }
 
         public void OnAddLogMessage(string messageId)
@@ -123,7 +126,7 @@ namespace Client
         public override bool ProcessKeyboard(SadConsole.Input.Keyboard info)
         {
             // need to handle input for any actor the server needs an action for
-            if (server.WaitingOn != null)
+            if (!Choreographer.Busy && server.WaitingOn != null)
             {
                 IAction? selectedAction = null;
 
@@ -142,6 +145,12 @@ namespace Client
                 if (info.IsKeyPressed(Keys.Space))
                 {
                     selectedAction = new Actions.Idle();
+                }
+
+                if (info.IsKeyPressed(Keys.P))
+                {
+                    foreach (var x in mapActors.Select((x, i) => (x, i)))
+                        Choreographer.AddEffect(new Effects.Wiggle(x.x, x.i % 3 == 0));
                 }
 
                 if (selectedAction != null)
@@ -165,8 +174,7 @@ namespace Client
                 mapLayer.CenterViewPortOnPoint(new Point(pos.x, pos.y));
             }
 
-            foreach (var v in mapActors.Values)
-                v.SnapVisualToActualPosition();
+            Choreographer.PrepareDraw(mapActors, timeElapsed);
             
             base.Draw(timeElapsed);
         }
