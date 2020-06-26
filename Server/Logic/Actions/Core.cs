@@ -8,6 +8,8 @@ namespace Server.Logic
         public class Idle : IAction
         {
             public void Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor) {
+                foreach (var c in clients)
+                    c.OnAddLogMessage("[c:r f:blue]Actor[c:u] just chills out for a bit...");
                 actor.timeUntilAct = 10;
             }
         }
