@@ -14,26 +14,28 @@ namespace Client
 {
     public class MapActor : Entity
     {
-        public Actor actor;
+        public Actor Actor { get; }
+        private SadConsole.ScrollingConsole ScrollingParent { get; }
 
-        public void SnapVisualToActualPosition(SadConsole.ScrollingConsole parent)
+        public void SnapVisualToActualPosition()
         {
             UsePixelPositioning = true;
 
-            Position = new Point(
-                actor.position.x * parent.Font.Size.X, 
-                actor.position.y * parent.Font.Size.Y);
-            Position -= parent.ViewPort.Location.ConsoleLocationToPixel(parent.Font);
+            Position = new Point(Actor.position.x, Actor.position.y).ConsoleLocationToPixel(Parent.Font);
+            Position -= ScrollingParent.ViewPort.Location.ConsoleLocationToPixel(Parent.Font);
         }
 
         public MapActor(SadConsole.ScrollingConsole parent, Actor actor) :
             base(Color.White, Color.Black, actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 1 : 'e')
         {
-            this.actor = actor;
+            this.Actor = actor;
             Font = parent.Font;
-            SnapVisualToActualPosition(parent);
 
             parent.Children.Add(this);
+            this.Parent = parent;
+            ScrollingParent = parent;
+
+            SnapVisualToActualPosition();
         }
 
     }
@@ -43,7 +45,6 @@ namespace Client
         private GameServer server;
 
         private SadConsole.ScrollingConsole mapLayer;
-        private SadConsole.ScrollingConsole entityLayer;
 
         private MessageLogConsole msgLogLayer;
 
@@ -57,12 +58,6 @@ namespace Client
             mapLayer.DefaultBackground = Color.Black;
             mapLayer.Font = mapLayer.Font.Master.GetFont(SadConsole.Font.FontSizes.Three);
             Children.Add(mapLayer);
-
-            entityLayer = new SadConsole.ScrollingConsole(w / 3, h / 3);
-            entityLayer.Font = mapLayer.Font;
-            entityLayer.DefaultBackground = Color.Transparent;
-            entityLayer.Clear();
-            Children.Add(entityLayer);
 
             msgLogLayer = new MessageLogConsole(
                 Program.GameSizeW * 3 / 4, 
@@ -89,7 +84,7 @@ namespace Client
 
         public void OnEntityAppear(Actor actor)
         {
-            mapActors[actor] = new MapActor(entityLayer, actor);
+            mapActors[actor] = new MapActor(mapLayer, actor);
         }
 
         public void OnEntityMove(Actor actor, int dx, int dy)
@@ -118,8 +113,6 @@ namespace Client
             for (int i = 0; i < w; i++)
                 for (int j = 0; j < h; j++)
                     mapLayer.SetGlyph(i, j, map.tiles[i,j] == 0 ? 46 : '#');
-
-            entityLayer.Resize(w, h, false);
         }
 
         public void OnMapChange(MapData newMapData)
@@ -171,10 +164,9 @@ namespace Client
                 var pos = server.WaitingOn.position;
                 mapLayer.CenterViewPortOnPoint(new Point(pos.x, pos.y));
             }
-            entityLayer.ViewPort = mapLayer.ViewPort;
 
             foreach (var v in mapActors.Values)
-                v.SnapVisualToActualPosition(entityLayer);
+                v.SnapVisualToActualPosition();
             
             base.Draw(timeElapsed);
         }
