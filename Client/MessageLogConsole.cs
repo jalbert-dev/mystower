@@ -28,6 +28,11 @@ namespace Client
             Children.Add(msgDisplay);
         }
 
+        public override void Update(TimeSpan timeElapsed)
+        {
+            base.Update(timeElapsed);
+        }
+
         public override void Draw(TimeSpan timeElapsed)
         {
             if (dirty)
@@ -58,6 +63,12 @@ namespace Client
         {
             dirty = true;
             messages.Add(msg);
+            this.IsVisible = true;
+        }
+
+        public void ToggleVisible()
+        {
+            this.IsVisible = !this.IsVisible;
         }
 
         public void ClearMessages()

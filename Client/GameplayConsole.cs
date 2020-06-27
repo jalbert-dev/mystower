@@ -154,6 +154,9 @@ namespace Client
                         Choreographer.AddEffect(new Effects.Wiggle(x.x, x.i % 3 == 0));
                 }
 
+                if (info.IsKeyPressed(Keys.L))
+                    msgLogLayer.ToggleVisible();
+
                 if (selectedAction != null)
                 {
                     var err = server.AssignActionForWaitingActor(selectedAction);
