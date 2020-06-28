@@ -29,7 +29,7 @@ namespace Client
             int w = map.Width;
             int h = map.Height;
 
-            this.Resize(Width, Height, w, h, false);
+            this.Resize(ViewWidth, ViewHeight, w, h, false);
 
             this.Clear();
 
@@ -58,11 +58,11 @@ namespace Client
             int nx = centered.X;
             int ny = centered.Y;
             if (centered.MaxExtentX > BufferWidth * FontSize.X)
-                nx -= centered.MaxExtentX - BufferWidth * FontSize.X;
+                nx -= centered.MaxExtentX + 1 - BufferWidth * FontSize.X;
             else if (nx < 0)
                 nx = 0;
             if (centered.MaxExtentY > BufferHeight * FontSize.Y)
-                ny -= centered.MaxExtentY - BufferHeight * FontSize.Y;
+                ny -= centered.MaxExtentY + 1 - BufferHeight * FontSize.Y;
             else if (ny < 0)
                 ny = 0;
             
@@ -73,6 +73,8 @@ namespace Client
                 .WithY(centered.Y / FontSize.Y);
 
             _tilemapRenderer.ViewportPixelOffset = new Point(centered.X % FontSize.X, centered.Y % FontSize.Y);
+            _tilemapRenderer.NearEdgeX = Surface.View.MaxExtentX >= BufferWidth - 1;
+            _tilemapRenderer.NearEdgeY = Surface.View.MaxExtentY >= BufferHeight - 1;
         }
 
         public override void Draw(System.TimeSpan timeElapsed)
