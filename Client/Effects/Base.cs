@@ -1,5 +1,5 @@
 using System;
-using Microsoft.Xna.Framework;
+using SadRogue.Primitives;
 
 namespace Client.Effects
 {
@@ -28,13 +28,13 @@ namespace Client.Effects
 
         public override void Apply(TimeSpan timeElapsed)
         {
-            offset.X += dir ? 1 : -1;
+            offset = offset.WithX(offset.X + (dir ? 1 : -1));
             if (offset.X <= -8)
                 dir = true;
             else if (offset.X >= 8)
                 dir = false;
 
-            MapActor.Position += offset;
+            MapActor.VisualOffset += offset;
 
             t++;
         }

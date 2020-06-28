@@ -13,8 +13,8 @@ namespace Client.Effects
         public LerpMove(int dx, int dy, int t, MapActor actor) : base(actor) 
         {
             Source = new Vector2(
-                -dx * actor.Parent.Font.Size.X,
-                -dy * actor.Parent.Font.Size.Y);
+                -dx * actor.ScrollingParent.FontSize.X,
+                -dy * actor.ScrollingParent.FontSize.Y);
             Interval = t;
         }
 
@@ -24,7 +24,7 @@ namespace Client.Effects
         {
             frameTime++;
             var floatOffset = Vector2.LerpPrecise(Source, Vector2.Zero, (float)frameTime / (float)Interval);
-            MapActor.Position += floatOffset.ToPoint();
+            MapActor.Position += floatOffset.ToPoint().ToPoint();
         }
     }
 }

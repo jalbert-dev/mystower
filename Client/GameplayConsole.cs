@@ -1,44 +1,55 @@
 using System;
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 using Server;
 using Server.Data;
 using Server.Logic;
 using SadConsole.Entities;
 
-using static SadConsole.RectangleExtensions;
+using Point = SadRogue.Primitives.Point;
+using Color = SadRogue.Primitives.Color;
+
+using static SadConsole.PointExtensions;
 using SadConsole.Components;
 using System.Linq;
+using SadConsole.Input;
 
 namespace Client
 {
     public class MapActor : Entity
     {
         public Actor Actor { get; }
-        private SadConsole.ScrollingConsole ScrollingParent { get; }
+        public SadConsole.Console ScrollingParent { get; }
+        public Point VisualOffset { get; set; }
 
         public void SnapToActualPosition()
         {
-            Position = new Point(Actor.position.x, Actor.position.y).ConsoleLocationToPixel(Parent.Font);
+            Position = new Point(Actor.position.x, Actor.position.y)
+                .SurfaceLocationToPixel(ScrollingParent.FontSize.X, ScrollingParent.FontSize.Y);
+            VisualOffset = default(Point);
         }
 
-        public MapActor(SadConsole.ScrollingConsole parent, Actor actor) :
+        public MapActor(SadConsole.Console parent, Actor actor) :
             base(Color.White, Color.Transparent, actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125)
         {
             this.Actor = actor;
-            Font = parent.Font;
-
-            UsePixelPositioning = true;
+            Animation.Font = parent.Font;
+            Animation.FontSize = parent.FontSize;
+            
+            Animation.UsePixelPositioning = true;
 
             parent.Children.Add(this);
             this.Parent = parent;
             ScrollingParent = parent;
         }
 
+        public override void Draw(TimeSpan delta)
+        {
+            PositionOffset += VisualOffset;
+            base.Draw(delta);
+        }
     }
 
-    public class GameplayConsole : SadConsole.ContainerConsole, IGameClient
+    public class GameplayConsole : SadConsole.Console, IGameClient
     {
         private GameServer server;
 
@@ -52,7 +63,7 @@ namespace Client
 
         private Choreographer Choreographer { get; } = new Choreographer();
 
-        public GameplayConsole(int w, int h, GameServer s) : base()
+        public GameplayConsole(int w, int h, GameServer s) : base(w, h)
         {
             server = s;
 

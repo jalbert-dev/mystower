@@ -15,7 +15,7 @@ namespace Client
         {
 
             SadConsole.Game.Create(GameSizeW, GameSizeH);
-            SadConsole.Game.OnInitialize = GameInit;
+            SadConsole.Game.Instance.OnStart = GameInit;
             SadConsole.Game.Instance.Run();
             SadConsole.Game.Instance.Dispose();
         }
@@ -24,13 +24,13 @@ namespace Client
         {
             Console.WriteLine("Initializing game");
             
-            SadConsole.Global.LoadFont("Resources/tiles.font");
+            SadConsole.GameHost.Instance.LoadFont("Resources/tiles.font");
             
             client = new GameplayConsole(GameSizeW, GameSizeH, GameServer.NewGame());
             client.Init();
 
-            SadConsole.Global.CurrentScreen = client;
-            SadConsole.Global.CurrentScreen.IsFocused = true;
+            SadConsole.GameHost.Instance.Screen.Children.Add(client);
+            client.IsFocused = true;
         }
     }
 }
