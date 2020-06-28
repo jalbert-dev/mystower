@@ -34,7 +34,7 @@ namespace Client.Effects
             else if (offset.X >= 8)
                 dir = false;
 
-            MapActor.VisualOffset += offset;
+            MapActor.PositionOffset += offset;
 
             t++;
         }

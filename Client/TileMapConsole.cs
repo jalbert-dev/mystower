@@ -68,20 +68,11 @@ namespace Client
             
             centered = centered.WithX(nx).WithY(ny);
             
-            vp = vp
+            Surface.View = vp
                 .WithX(centered.X / FontSize.X)
                 .WithY(centered.Y / FontSize.Y);
 
             _tilemapRenderer.ViewportPixelOffset = new Point(centered.X % FontSize.X, centered.Y % FontSize.Y);
-            Surface.IsDirty = true;
-
-            // This line looks innocent, but assigning to ViewPort actually
-            // calls SetRenderCells() under the hood... so despite looking
-            // like a normal assignment, this line MUST come after changing
-            // ViewportPixelOffset! I have no idea why this doesn't just set
-            // a dirty flag internally... This is why functional programmers
-            // complain about side effects :)
-            Surface.View = vp;
         }
 
         public override void Draw(System.TimeSpan timeElapsed)
@@ -95,7 +86,7 @@ namespace Client
             // Adjust position of child elements to account for viewport location
             foreach (var c in Children)
                 if (c is SadConsole.Entities.Entity e)
-                    e.PositionOffset = (ViewPosition.SurfaceLocationToPixel(FontSize) + _tilemapRenderer.ViewportPixelOffset) * -1;
+                    e.PositionOffset -= (ViewPosition.SurfaceLocationToPixel(FontSize) + _tilemapRenderer.ViewportPixelOffset);
             base.Draw(timeElapsed);
         }
     }

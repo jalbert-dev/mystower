@@ -19,13 +19,12 @@ namespace Client
     {
         public Actor Actor { get; }
         public SadConsole.Console ScrollingParent { get; }
-        public Point VisualOffset { get; set; }
 
         public void SnapToActualPosition()
         {
             Position = new Point(Actor.position.x, Actor.position.y)
                 .SurfaceLocationToPixel(ScrollingParent.FontSize.X, ScrollingParent.FontSize.Y);
-            VisualOffset = default(Point);
+            PositionOffset = default(Point);
         }
 
         public MapActor(SadConsole.Console parent, Actor actor) :
@@ -40,12 +39,6 @@ namespace Client
             parent.Children.Add(this);
             this.Parent = parent;
             ScrollingParent = parent;
-        }
-
-        public override void Draw(TimeSpan delta)
-        {
-            PositionOffset += VisualOffset;
-            base.Draw(delta);
         }
     }
 
