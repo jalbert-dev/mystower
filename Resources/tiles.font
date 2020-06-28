@@ -1,0 +1,9 @@
+{
+  "Name": "Tileset",
+  "FilePath": "tiles.png",
+  "GlyphHeight": 16,
+  "GlyphPadding": 0,
+  "GlyphWidth": 16,
+  "SolidGlyphIndex": 248,
+  "Columns": 48
+}

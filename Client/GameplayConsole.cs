@@ -24,7 +24,7 @@ namespace Client
         }
 
         public MapActor(SadConsole.ScrollingConsole parent, Actor actor) :
-            base(Color.White, Color.Black, actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 1 : 'e')
+            base(Color.White, Color.Transparent, actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125)
         {
             this.Actor = actor;
             Font = parent.Font;
@@ -56,7 +56,7 @@ namespace Client
         {
             server = s;
 
-            mapLayer = new TileMapConsole(w / 3, h / 3);
+            mapLayer = new TileMapConsole(w / 4, h / 4);
             Children.Add(mapLayer);
 
             msgLogLayer = new MessageLogConsole(

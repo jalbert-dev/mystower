@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -12,10 +13,10 @@ namespace Client
     {
         private Point ViewportPixelOffset;
 
-        public TileMapConsole(int w, int h) : base(w, h)
+        public TileMapConsole(int w, int h) : base(w / 2, h, SadConsole.Global.Fonts["Tileset"].GetFont(FontSizes.Four))
         {
             DefaultBackground = Color.Black;
-            Font = Font.Master.GetFont(FontSizes.Three);
+            //Font = Font.Master.GetFont(FontSizes.Four);
         }
 
         public void RebuildTileMap(MapData map)
@@ -27,9 +28,17 @@ namespace Client
 
             Clear();
 
+            // VERY temporary...
+            var r = new Random();
+            var Grass = new List<int> { 5, 6, 7, 1 };
+            var Tree = new List<int> { 48, 49, 50, 51 };
+
             for (int i = 0; i < w; i++)
                 for (int j = 0; j < h; j++)
-                    SetGlyph(i, j, map.tiles[i,j] == 0 ? 46 : '#');
+                    SetGlyph(i, j,
+                        map.tiles[i,j] == 0 ? Grass[r.Next(4)] : Tree[r.Next(4)],
+                        Color.DarkGreen,
+                        Color.Black);
         }
 
         public void CenterViewOn(MapActor actor)
