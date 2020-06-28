@@ -20,10 +20,7 @@ namespace Client
 
         public void SnapToActualPosition()
         {
-            UsePixelPositioning = true;
-
             Position = new Point(Actor.position.x, Actor.position.y).ConsoleLocationToPixel(Parent.Font);
-            Position -= ScrollingParent.ViewPort.Location.ConsoleLocationToPixel(Parent.Font);
         }
 
         public MapActor(SadConsole.ScrollingConsole parent, Actor actor) :
@@ -31,6 +28,8 @@ namespace Client
         {
             this.Actor = actor;
             Font = parent.Font;
+
+            UsePixelPositioning = true;
 
             parent.Children.Add(this);
             this.Parent = parent;
@@ -43,12 +42,12 @@ namespace Client
     {
         private GameServer server;
 
-        private SadConsole.ScrollingConsole mapLayer;
+        private TileMapConsole mapLayer;
 
         private MessageLogConsole msgLogLayer;
 
         private List<MapActor> mapActors = new List<MapActor>(64);
-        private MapActor LookupMapActor(Actor actor)
+        private MapActor? LookupMapActor(Actor actor)
             => mapActors.FirstOrDefault(x => x.Actor == actor);
 
         private Choreographer Choreographer { get; } = new Choreographer();
@@ -57,9 +56,7 @@ namespace Client
         {
             server = s;
 
-            mapLayer = new SadConsole.ScrollingConsole(w / 3, h / 3);
-            mapLayer.DefaultBackground = Color.Black;
-            mapLayer.Font = mapLayer.Font.Master.GetFont(SadConsole.Font.FontSizes.Three);
+            mapLayer = new TileMapConsole(w / 3, h / 3);
             Children.Add(mapLayer);
 
             msgLogLayer = new MessageLogConsole(
@@ -92,7 +89,9 @@ namespace Client
 
         public void OnEntityMove(Actor actor, int dx, int dy)
         {
-            Choreographer.AddEffect(new Effects.LerpMove(dx, dy, 4, LookupMapActor(actor)));
+            var vis = LookupMapActor(actor);
+            if (vis != null)
+                Choreographer.AddEffect(new Effects.LerpMove(dx, dy, 4, vis));
         }
 
         public void OnEntityVanish(Actor actor)
@@ -105,23 +104,9 @@ namespace Client
             msgLogLayer.AddMessage(messageId);
         }
 
-        private void RebuildLayerData(MapData map)
-        {
-            int w = map.Width;
-            int h = map.Height;
-
-            mapLayer.Resize(w, h, false);
-
-            mapLayer.Clear();
-
-            for (int i = 0; i < w; i++)
-                for (int j = 0; j < h; j++)
-                    mapLayer.SetGlyph(i, j, map.tiles[i,j] == 0 ? 46 : '#');
-        }
-
         public void OnMapChange(MapData newMapData)
         {
-            RebuildLayerData(newMapData);
+            mapLayer.RebuildTileMap(newMapData);
         }
 
         public override bool ProcessKeyboard(SadConsole.Input.Keyboard info)
@@ -172,13 +157,17 @@ namespace Client
 
         public override void Draw(TimeSpan timeElapsed)
         {
-            if (server.WaitingOn != null)
-            {
-                var pos = server.WaitingOn.position;
-                mapLayer.CenterViewPortOnPoint(new Point(pos.x, pos.y));
-            }
+            foreach (var v in mapActors)
+                v.SnapToActualPosition();
 
             Choreographer.PrepareDraw(mapActors, timeElapsed);
+            
+            if (server.WaitingOn != null)
+            {
+                var entity = LookupMapActor(server.WaitingOn);
+                if (entity != null)
+                    mapLayer.CenterViewOn(entity);
+            }
             
             base.Draw(timeElapsed);
         }

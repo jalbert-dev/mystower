@@ -34,7 +34,6 @@ namespace Client
             var activeEffects = ActiveEffectsThisStep;
             foreach (var actor in actors)
             {
-                actor.SnapToActualPosition();
                 foreach (var eff in activeEffects.Where(x => x.MapActor == actor))
                 {
                     eff.Apply(timeElapsed);
