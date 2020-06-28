@@ -37,8 +37,8 @@ namespace Client
                 for (int j = 0; j < h; j++)
                     SetGlyph(i, j,
                         map.tiles[i,j] == 0 ? Grass[r.Next(4)] : Tree[r.Next(4)],
-                        Color.DarkGreen,
-                        Color.Black);
+                        map.tiles[i,j] == 0 ? Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()) : Color.DarkGreen,
+                        Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
         }
 
         public void CenterViewOn(MapActor actor)
@@ -59,10 +59,17 @@ namespace Client
 
             vp.X = centered.X / Font.Size.X;
             vp.Y = centered.Y / Font.Size.Y;
-            ViewPort = vp;
 
             ViewportPixelOffset.X = centered.X % Font.Size.X;
             ViewportPixelOffset.Y = centered.Y % Font.Size.Y;
+
+            // This line looks innocent, but assigning to ViewPort actually
+            // calls SetRenderCells() under the hood... so despite looking
+            // like a normal assignment, this line MUST come after changing
+            // ViewportPixelOffset! I have no idea why this doesn't just set
+            // a dirty flag internally... This is why functional programmers
+            // complain about side effects :)
+            ViewPort = vp;
         }
 
         public override void SetRenderCells()
@@ -71,13 +78,10 @@ namespace Client
             //       the tile bounds of the screen so we can scroll smoothly
             // TODO: Implement a cell wrap-around option that will take
             //       cells outside of world bounds from the other side of the world
-
             base.SetRenderCells();
 
-            RenderRects = RenderRects.Select(x => {
-                x.Location -= ViewportPixelOffset;
-                return x;
-            }).ToArray();
+            for (int i = 0; i < RenderRects.Count(); i++)
+                RenderRects[i].Location -= ViewportPixelOffset;
         }
 
         public override void Draw(System.TimeSpan timeElapsed)

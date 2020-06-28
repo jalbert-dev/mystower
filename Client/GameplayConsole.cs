@@ -91,7 +91,7 @@ namespace Client
         {
             var vis = LookupMapActor(actor);
             if (vis != null)
-                Choreographer.AddEffect(new Effects.LerpMove(dx, dy, 4, vis));
+                Choreographer.AddEffect(new Effects.LerpMove(dx, dy, 10, vis));
         }
 
         public void OnEntityVanish(Actor actor)
@@ -117,10 +117,10 @@ namespace Client
                 IAction? selectedAction = null;
 
                 int dx = 0, dy = 0;
-                if (info.IsKeyPressed(Keys.Left)) dx -= 1;
-                if (info.IsKeyPressed(Keys.Right)) dx += 1;
-                if (info.IsKeyPressed(Keys.Up)) dy -= 1;
-                if (info.IsKeyPressed(Keys.Down)) dy += 1;
+                if (info.IsKeyDown(Keys.Left)) dx -= 1;
+                if (info.IsKeyDown(Keys.Right)) dx += 1;
+                if (info.IsKeyDown(Keys.Up)) dy -= 1;
+                if (info.IsKeyDown(Keys.Down)) dy += 1;
 
                 if (dx != 0 || dy != 0)
                 {
