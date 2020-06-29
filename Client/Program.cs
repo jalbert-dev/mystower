@@ -24,7 +24,7 @@ namespace Client
 
             SadConsole.GameHost.Instance.LoadFont("Resources/tiles.font");
 
-            var fsm = new StateManager(new State.Gameplay(GameSizeW, GameSizeH, GameServer.NewGame()));
+            var fsm = new StateManager(new State.TitleScreen(GameSizeW, GameSizeH));
             SadConsole.GameHost.Instance.Screen.Children.Add(fsm);
         }
     }

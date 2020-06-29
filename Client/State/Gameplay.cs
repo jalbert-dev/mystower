@@ -23,6 +23,8 @@ namespace Client.State
 
         private Choreographer Choreographer { get; } = new Choreographer();
 
+        private bool returnToTitle = false;
+
         public Gameplay(int w, int h, GameServer s) : base(w, h)
         {
             server = s;
@@ -117,6 +119,12 @@ namespace Client.State
                     System.IO.File.WriteAllText("Saves/save.sav", save);
                 }
 
+                if (info.IsKeyPressed(Keys.Escape))
+                {
+                    returnToTitle = true;
+                    return true;
+                }
+
                 if (info.IsKeyPressed(Keys.L))
                     msgLogLayer.ToggleVisible();
 
@@ -162,6 +170,8 @@ namespace Client.State
 
         public IState<StateManager>? Exec(StateManager obj)
         {
+            if (returnToTitle)
+                return new State.TitleScreen(Width, Height);
             return null;
         }
 
