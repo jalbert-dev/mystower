@@ -1,48 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using SadConsole.Input;
+using SadRogue.Primitives;
 using Server;
 using Server.Data;
 using Server.Logic;
-using SadConsole.Entities;
 
-using Point = SadRogue.Primitives.Point;
-using Color = SadRogue.Primitives.Color;
-
-using static SadConsole.PointExtensions;
-using SadConsole.Components;
-using System.Linq;
-using SadConsole.Input;
-
-namespace Client
+namespace Client.State
 {
-    public class MapActor : Entity
-    {
-        public Actor Actor { get; }
-        public SadConsole.Console ScrollingParent { get; }
-
-        public void SnapToActualPosition()
-        {
-            Position = new Point(Actor.position.x, Actor.position.y)
-                .SurfaceLocationToPixel(ScrollingParent.FontSize.X, ScrollingParent.FontSize.Y);
-            PositionOffset = default(Point);
-        }
-
-        public MapActor(SadConsole.Console parent, Actor actor) :
-            base(Color.White, Color.Transparent, actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125)
-        {
-            this.Actor = actor;
-            Animation.Font = parent.Font;
-            Animation.FontSize = parent.FontSize;
-            
-            Animation.UsePixelPositioning = true;
-
-            parent.Children.Add(this);
-            this.Parent = parent;
-            ScrollingParent = parent;
-        }
-    }
-
-    public class GameplayConsole : SadConsole.Console, IGameClient
+    public class Gameplay : SadConsole.Console, IGameClient, IState<StateManager>
     {
         private GameServer server;
 
@@ -56,7 +23,7 @@ namespace Client
 
         private Choreographer Choreographer { get; } = new Choreographer();
 
-        public GameplayConsole(int w, int h, GameServer s) : base(w, h)
+        public Gameplay(int w, int h, GameServer s) : base(w, h)
         {
             server = s;
 
@@ -181,6 +148,28 @@ namespace Client
             }
             
             base.Draw(timeElapsed);
+        }
+
+        public IState<StateManager>? OnEnter(StateManager obj)
+        {
+            Init();
+
+            obj.Children.Add(this);
+            IsFocused = true;
+
+            return null;
+        }
+
+        public IState<StateManager>? Exec(StateManager obj)
+        {
+            return null;
+        }
+
+        public IState<StateManager>? OnExit(StateManager obj)
+        {
+            obj.Children.Remove(this);
+
+            return null;
         }
     }
 }
