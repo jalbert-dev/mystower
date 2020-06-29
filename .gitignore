@@ -354,3 +354,5 @@ MigrationBackup/
 
 # Not sure why this isn't ignore by default but here ya go
 obj
+
+WorkingDir/Saves

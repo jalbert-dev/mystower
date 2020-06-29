@@ -143,6 +143,13 @@ namespace Client
                         Choreographer.AddEffect(new Effects.Wiggle(x.x, x.i % 3 == 0));
                 }
 
+                if (info.IsKeyPressed(Keys.F5))
+                {
+                    string save = server.ToSaveGame();
+                    System.IO.Directory.CreateDirectory("Saves");
+                    System.IO.File.WriteAllText("Saves/save.sav", save);
+                }
+
                 if (info.IsKeyPressed(Keys.L))
                     msgLogLayer.ToggleVisible();
 
