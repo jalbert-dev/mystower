@@ -57,11 +57,11 @@ namespace Client
             // bounds check the centered viewport
             int nx = centered.X;
             int ny = centered.Y;
-            if (centered.MaxExtentX > BufferWidth * FontSize.X)
+            if (centered.MaxExtentX + 1 > BufferWidth * FontSize.X)
                 nx -= centered.MaxExtentX + 1 - BufferWidth * FontSize.X;
             else if (nx < 0)
                 nx = 0;
-            if (centered.MaxExtentY > BufferHeight * FontSize.Y)
+            if (centered.MaxExtentY + 1 > BufferHeight * FontSize.Y)
                 ny -= centered.MaxExtentY + 1 - BufferHeight * FontSize.Y;
             else if (ny < 0)
                 ny = 0;
