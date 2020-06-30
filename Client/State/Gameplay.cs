@@ -60,11 +60,11 @@ namespace Client.State
             mapActors.Add(new MapActor(mapLayer, actor));
         }
 
-        public void OnEntityMove(Actor actor, int dx, int dy)
+        public void OnEntityMove(Actor actor, int sx, int sy, int dx, int dy)
         {
             var vis = LookupMapActor(actor);
             if (vis != null)
-                Choreographer.AddEffect(new Effects.LerpMove(dx, dy, 10, vis));
+                Choreographer.AddEffect(new Effects.LerpMove(sx, sy, dx, dy, 10, vis));
         }
 
         public void OnEntityVanish(Actor actor)
@@ -119,6 +119,11 @@ namespace Client.State
                     System.IO.File.WriteAllText("Saves/save.sav", save);
                 }
 
+                if (info.IsKeyPressed(Keys.Z))
+                {
+                    selectedAction = new Actions.TryAttack();
+                }
+
                 if (info.IsKeyPressed(Keys.Escape))
                 {
                     returnToTitle = true;
@@ -143,8 +148,9 @@ namespace Client.State
 
         public override void Draw(TimeSpan timeElapsed)
         {
-            foreach (var v in mapActors)
-                v.SnapToActualPosition();
+            if (!Choreographer.Busy)
+                foreach (var v in mapActors)
+                    v.SnapToActualPosition();
 
             Choreographer.PrepareDraw(mapActors, timeElapsed);
             
@@ -180,6 +186,21 @@ namespace Client.State
             obj.Children.Remove(this);
 
             return null;
+        }
+
+        public void OnEntityAttack(Actor actor, AttackResults result)
+        {
+            var attacker = LookupMapActor(actor);
+            if (attacker != null)
+                Choreographer.AddEffect(new Effects.Wiggle(attacker, true, 30));
+            foreach (var a in result.results)
+            {
+                var target = LookupMapActor(a.Target);
+                if (target != null)
+                    Choreographer.AddEffect(new Effects.Wiggle(target, false, 30));
+                OnAddLogMessage($"Actor attacks Actor!");
+                OnAddLogMessage($"{a.DamageDealt} damage!");
+            }
         }
     }
 }

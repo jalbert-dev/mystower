@@ -11,8 +11,15 @@ namespace Client
 
         /// <summary>
         /// Specifies whether this effect allows other effects to play simultaneously.
+        /// This affects all effects, regardless of what actor they are attached to.
         /// </summary>
-        bool IsSolo { get; }
+        bool IsGlobalSolo { get; }
+
+        /// <summary>
+        /// Specifies whether this effect allows other effects to play simultaneously.
+        /// This affects only other effects attached to this actor.
+        /// </summary>
+        bool IsLocalSolo { get; }
 
         /// <summary>
         /// Specifies whether this effect is finished and can be destroyed.

@@ -116,7 +116,7 @@ namespace Server
                 }
                 else
                 {
-                    action.Execute(Clients, gameState, actor);
+                    actor.timeUntilAct = action.Execute(Clients, gameState, actor);
                     return Option.None;
                 }
             };

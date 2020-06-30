@@ -9,6 +9,24 @@ namespace Server.Data
         public string aiType = "";
         public int timeUntilAct;
 
+        public int level = 1;
+        public ActorStatus status;
+
+        // TODO!: Move into Archetype data structure!
+        public StatBlock baseStatus;
+
         public override string ToString() => this.ToJsonString();
+    }
+
+    public struct StatBlock
+    {
+        public int hp;
+        public int atk;
+        public int def;
+    }
+
+    public struct ActorStatus
+    {
+        public int hp;
     }
 }

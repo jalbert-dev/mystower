@@ -17,7 +17,6 @@ namespace Client
         {
             Position = new Point(Actor.position.x, Actor.position.y)
                 .SurfaceLocationToPixel(ScrollingParent.FontSize.X, ScrollingParent.FontSize.Y);
-            PositionOffset = default(Point);
         }
 
         public MapActor(SadConsole.Console parent, Actor actor) :
