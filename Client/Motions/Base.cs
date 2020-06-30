@@ -1,14 +1,14 @@
 using System;
 using SadRogue.Primitives;
 
-namespace Client.Effects
+namespace Client.Motions
 {
-    public abstract class Base : IChoreography
+    public abstract class Base : IActorMotion
     {
         public MapActor MapActor { get; private set; }
-        public virtual bool IsDone { get; private set; } = false;
-        public abstract bool IsGlobalSolo { get; }
-        public abstract bool IsLocalSolo { get; }
+        public virtual bool IsFinished { get; private set; } = false;
+        public abstract bool IsGlobalSequential { get; }
+        public abstract bool IsActorSequential { get; }
         public abstract void Apply(TimeSpan timeElapsed);
 
         public Base(MapActor actor) => MapActor = actor;
@@ -29,9 +29,9 @@ namespace Client.Effects
         }
 
         bool blocks;
-        public override bool IsGlobalSolo => blocks;
-        public override bool IsLocalSolo => blocks;
-        public override bool IsDone => t > duration;
+        public override bool IsGlobalSequential => blocks;
+        public override bool IsActorSequential => blocks;
+        public override bool IsFinished => t > duration;
 
         public override void Apply(TimeSpan timeElapsed)
         {

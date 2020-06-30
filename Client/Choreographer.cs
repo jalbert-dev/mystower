@@ -5,68 +5,85 @@ using SadRogue.Primitives;
 
 namespace Client
 {
+    /// <summary>
+    /// A Choreographer coordinates the motion of multiple MapActors.
+    /// Individual motions are expressed by IActorMotion instances.
+    /// </summary>
     public class Choreographer
     {
-        List<IChoreography> effects = new List<IChoreography>(32);
-        IEnumerable<IChoreography> ActiveEffects => effects.Where(x => !x.IsDone);
+        List<IActorMotion> motions = new List<IActorMotion>(32);
+        IEnumerable<IActorMotion> ActiveMotions => motions.Where(x => !x.IsFinished);
         /// <summary>
-        /// A list of all effects up to the first globally blocking effect.
+        /// A list of all motions up to the first global-sequential motion.
         /// </summary>
-        IEnumerable<IChoreography> ActiveEffectsThisStep
+        IEnumerable<IActorMotion> ActiveMotionsThisStep
         {
             get
             {
-                if (ActiveEffects.Count() == 0)
+                if (ActiveMotions.Count() == 0)
                     yield break;
 
-                var firstEffect = ActiveEffects.First();
-                yield return firstEffect;
+                var firstMotion = ActiveMotions.First();
+                yield return firstMotion;
                 
-                if (!firstEffect.IsGlobalSolo)
-                    foreach (var eff in ActiveEffects.Skip(1).TakeWhile(x => !x.IsGlobalSolo))
+                if (!firstMotion.IsGlobalSequential)
+                    foreach (var eff in ActiveMotions.Skip(1).TakeWhile(x => !x.IsGlobalSequential))
                         yield return eff;
                 yield break;
             }
         }
 
         /// <summary>
-        /// Given an enumerable of active effects, filters it by actor and returns
-        /// an enumerable of all effects up to the first local blocking effect.
+        /// Given an enumerable of active motions, filters it by actor and returns
+        /// an enumerable of all motions up to the first actor-sequential motion.
         /// </summary>
-        static IEnumerable<IChoreography> ActiveLocalEffects(MapActor actor, IEnumerable<IChoreography> activeGlobalEffects)
+        static IEnumerable<IActorMotion> ActiveLocalMotions(MapActor actor, IEnumerable<IActorMotion> activeGlobalMotions)
         {
-            var actorEffects = activeGlobalEffects.Where(x => x.MapActor == actor);
+            var actorMotions = activeGlobalMotions.Where(x => x.MapActor == actor);
 
-            if (actorEffects.Count() == 0)
+            if (actorMotions.Count() == 0)
                 yield break;
 
-            var first = actorEffects.First();
+            var first = actorMotions.First();
             yield return first;
 
-            if (!first.IsLocalSolo)
-                foreach (var eff in actorEffects.Skip(1).TakeWhile(x => !x.IsLocalSolo))
-                    yield return eff;
+            if (!first.IsActorSequential)
+                foreach (var mot in actorMotions.Skip(1).TakeWhile(x => !x.IsActorSequential))
+                    yield return mot;
             yield break;
         }
 
-        public bool Busy => effects.Count != 0;
+        /// <summary>
+        /// Returns whether the choreographer has motions to execute.
+        /// </summary>
+        public bool Busy => motions.Count != 0;
 
         public void PrepareDraw(IEnumerable<MapActor> actors, TimeSpan timeElapsed)
         {
-            var activeEffects = ActiveEffectsThisStep;
+            // Globally-sequential motions can't be played until all motions
+            // before it have finished, so if a global-sequential motion exists
+            // and isn't at the front of the queue, process all motions up to it
+            var activeMotions = ActiveMotionsThisStep;
+            
             foreach (var actor in actors)
             {
+                // Actors have their position offsets reset each frame to allow
+                // multiple motions to sum their individual offsets.
                 actor.PositionOffset = default(Point);
-                foreach (var eff in ActiveLocalEffects(actor, activeEffects))
+
+                // Actor-sequential motions must be played in order per-actor,
+                // so we'll apply motions up to the first actor-sequential
+                // motion, or the first motion if it is actor-sequential.
+                foreach (var mot in ActiveLocalMotions(actor, activeMotions))
                 {
-                    eff.Apply(timeElapsed);
+                    mot.Apply(timeElapsed);
                 }
             }
             
-            // prune finished effects from the list after updating
-            effects.RemoveAll(x => x.IsDone);
+            // prune finished motions from the list after updating
+            motions.RemoveAll(x => x.IsFinished);
         }
 
-        public void AddEffect(IChoreography instance) => effects.Add(instance);
+        public void AddMotion(IActorMotion instance) => motions.Add(instance);
     }
 }

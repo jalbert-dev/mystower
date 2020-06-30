@@ -64,7 +64,7 @@ namespace Client.State
         {
             var vis = LookupMapActor(actor);
             if (vis != null)
-                Choreographer.AddEffect(new Effects.LerpMove(sx, sy, dx, dy, 10, vis));
+                Choreographer.AddMotion(new Motions.LerpMove(sx, sy, dx, dy, 10, vis));
         }
 
         public void OnEntityVanish(Actor actor)
@@ -109,7 +109,7 @@ namespace Client.State
                 if (info.IsKeyPressed(Keys.P))
                 {
                     foreach (var x in mapActors.Select((x, i) => (x, i)))
-                        Choreographer.AddEffect(new Effects.Wiggle(x.x, x.i % 3 == 0));
+                        Choreographer.AddMotion(new Motions.Wiggle(x.x, x.i % 3 == 0));
                 }
 
                 if (info.IsKeyPressed(Keys.F5))
@@ -135,6 +135,7 @@ namespace Client.State
 
                 if (selectedAction != null)
                 {
+                    System.Threading.Thread.Sleep(32);
                     var err = server.AssignActionForWaitingActor(selectedAction);
                     if (err != null)
                         Console.WriteLine(err.Message);
@@ -192,12 +193,12 @@ namespace Client.State
         {
             var attacker = LookupMapActor(actor);
             if (attacker != null)
-                Choreographer.AddEffect(new Effects.Wiggle(attacker, true, 30));
+                Choreographer.AddMotion(new Motions.Wiggle(attacker, true, 30));
             foreach (var a in result.results)
             {
                 var target = LookupMapActor(a.Target);
                 if (target != null)
-                    Choreographer.AddEffect(new Effects.Wiggle(target, false, 30));
+                    Choreographer.AddMotion(new Motions.Wiggle(target, false, 30));
                 OnAddLogMessage($"Actor attacks Actor!");
                 OnAddLogMessage($"{a.DamageDealt} damage!");
             }
