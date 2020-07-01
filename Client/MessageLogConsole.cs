@@ -25,6 +25,12 @@ namespace Client
             msgDisplay.Position = new Point(2, 1);
             msgDisplay.DefaultBackground = Color.Transparent;
 
+            msgDisplay.Cursor.PrintAppearance = new SadConsole.ColoredGlyph 
+            { 
+                Foreground=Color.Black, 
+                Background=Color.Transparent 
+            };
+
             Children.Add(msgDisplay);
         }
 
@@ -48,9 +54,6 @@ namespace Client
                 msgDisplay.Clear();
                 msgDisplay.Cursor.AutomaticallyShiftRowsUp = true;
                 msgDisplay.Cursor.UseLinuxLineEndings = true;
-
-                msgDisplay.Cursor.PrintAppearance =
-                    new SadConsole.ColoredGlyph { Foreground=Color.Black, Background=Color.Transparent };
 
                 msgDisplay.Cursor.Move(0, 0);
                 msgDisplay.Cursor.Print(string.Join("\n", RecentMessages));

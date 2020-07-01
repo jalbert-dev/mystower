@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using SadConsole;
 using SadConsole.Input;
 using SadRogue.Primitives;
 using Server;
@@ -9,8 +11,40 @@ using Server.Data;
 using Server.Logic;
 using Server.Message;
 
+using C = System.Console;
+
 namespace Client.State
 {
+    public class DebugStatsConsole : SadConsole.Console
+    {
+        public long LastUpdateTime { get; set; }
+        public long UpdateDelta { get; set; }
+        public long RenderDelta { get; set; }
+
+        public DebugStatsConsole() : base(40, 4)
+        {
+            DefaultBackground = Color.Transparent;
+            IsVisible = false;
+
+            Cursor.UseLinuxLineEndings = true;
+            Cursor.PrintAppearance = new SadConsole.ColoredGlyph 
+            { 
+                Foreground=Color.White, 
+                Background=Color.Transparent 
+            };
+        }
+
+        public override void Draw(TimeSpan delta)
+        {
+            this.Clear();
+            Cursor.Position = new Point(0, 0);
+            Cursor.Print($"Last simulation time: {LastUpdateTime}ms\n");
+            Cursor.Print($"   Last update delta: {UpdateDelta}ms\n");
+            Cursor.Print($"   Last render delta: {RenderDelta}ms\n");
+            base.Draw(delta);
+        }
+    }
+
     public class Gameplay : SadConsole.Console, IGameClient, IState<StateManager>
     {
         private GameServer server;
@@ -37,6 +71,8 @@ namespace Client.State
         // Contains the eventual server sim results
         private Task<SimResult>? serverSimulation = null;
 
+        private DebugStatsConsole debugStats = new DebugStatsConsole();
+
         public Gameplay(int w, int h, GameServer s) : base(w, h)
         {
             server = s;
@@ -52,6 +88,8 @@ namespace Client.State
                 Program.GameSizeH * 4 / 5);
             msgLogLayer.DefaultBackground = Color.Gray;
             Children.Add(msgLogLayer);
+
+            Children.Add(debugStats);
         }
 
         public void HandleMessages(IEnumerable<IGameMessage> messages)
@@ -60,15 +98,10 @@ namespace Client.State
                 msg.Dispatch(this);
         }
 
-        public void Init()
-        {
-            HandleMessages(server.GetClientInitMessages());
-        }
-
         public void ProcessServerResult(SimResult result)
         {
             if (result.Error != null)
-                Console.WriteLine(result.Error.Message);
+                C.WriteLine(result.Error.Message);
             else
                 HandleMessages(result.Messages);
             waitingActor = result.WaitingActor;
@@ -76,8 +109,9 @@ namespace Client.State
 
         public override void Update(TimeSpan timeElapsed)
         {
+            debugStats.UpdateDelta = timeElapsed.Milliseconds;
             // Only run the server simulation if we've selected an action
-            // or if we're not waiting for any actors
+            // or the server's not waiting on any actors
             if (nextAction != null || waitingActor == null)
             {
                 // If we're simulating, we're no longer waiting on a unit
@@ -88,7 +122,14 @@ namespace Client.State
                     {
                         // beware the thunk! copy the nextAction reference!
                         var next = nextAction;
-                        serverSimulation = Task.Run(() => server.Run(next));
+                        var updateTimer = new Stopwatch();
+                        updateTimer.Start();
+                        serverSimulation = 
+                            Task.Run(() => server.Run(next))
+                                .ContinueWith(result => {
+                                    debugStats.LastUpdateTime = updateTimer.ElapsedMilliseconds;
+                                    return result.Result;
+                                });
                     }
                     else if (serverSimulation.IsCompleted)
                     {
@@ -99,7 +140,10 @@ namespace Client.State
                 }
                 else
                 {
+                    var updateTimer = new Stopwatch();
+                    updateTimer.Start();
                     ProcessServerResult(server.Run(nextAction));
+                    debugStats.LastUpdateTime = updateTimer.ElapsedMilliseconds;
                 }
                 nextAction = null;
             }
@@ -109,6 +153,9 @@ namespace Client.State
 
         public override bool ProcessKeyboard(SadConsole.Input.Keyboard info)
         {
+            if (info.IsKeyPressed(Keys.F1))
+                debugStats.IsVisible = !debugStats.IsVisible;
+
             // need to handle input for any actor the server needs an action for
             if (!Choreographer.Busy && waitingActor != null)
             {
@@ -177,6 +224,7 @@ namespace Client.State
 
         public override void Draw(TimeSpan timeElapsed)
         {
+            debugStats.RenderDelta = timeElapsed.Milliseconds;
             Choreographer.PrepareDraw(mapActors, timeElapsed);
             
             if (waitingActor != null)
@@ -191,7 +239,7 @@ namespace Client.State
 
         public IState<StateManager>? OnEnter(StateManager obj)
         {
-            Init();
+            HandleMessages(server.GetClientInitMessages());
 
             obj.Children.Add(this);
             IsFocused = true;
