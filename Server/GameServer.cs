@@ -15,24 +15,39 @@ namespace Server
             public InvalidAI(string type) => this.type = type;
             public string Message => $"Invalid AI type '{type}'.";
         }
+    }
 
-        public class NoWaitingActor : IError
+    /// <summary>
+    /// Contains the results from the server running its simulation.
+    /// </summary>
+    public class SimResult
+    {
+        public SimResult(List<IGameMessage> messages, IError? error, Actor? waitingActor)
         {
-            public string Message => "Attempted to assign action when there's no actor waiting.";
+            Messages = messages;
+            Error = error;
+            WaitingActor = waitingActor;
         }
 
-        public class CantAssignNullAction : IError
-        {
-            public string Message => "Attempted to assign null action to waiting unit.";
-        }
+        /// <summary>
+        /// A list of messages for the client.
+        /// </summary>
+        public List<IGameMessage> Messages { get; }
+        /// <summary>
+        /// An optional error, if one occurred during simulation.
+        /// </summary>
+        public IError? Error { get; }
+        /// <summary>
+        /// The actor the server is waiting for input for, if one exists.
+        /// </summary>
+        public Data.Actor? WaitingActor { get; }
     }
 
     public class GameServer
     {
         ClientProxy proxyClient = new ClientProxy();
         Data.GameState gameState { get; }
-        public Data.Actor? WaitingOn { get; private set; } = null;
-        IAction? pendingAction;
+        Data.Actor? waitingOn = null;
 
         internal GameServer(GameState state)
         {
@@ -145,6 +160,11 @@ namespace Server
                 .Map(ActionExecutor(actor));
         }
 
+        /// <summary>
+        /// Returns an enumerable of any messages required to initialize
+        /// a client to the current world state.
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<IGameMessage> GetClientInitMessages() 
         {
             yield return new Message.MapChanged(gameState.map);
@@ -153,55 +173,46 @@ namespace Server
             yield break;
         }
 
-        /// Runs game world and fires IGameClient callbacks to all attached clients
-        /// until user input is required.
+        /// <summary>
+        /// Runs world simulation, and returns a SimResult object containing
+        /// the results of the simulation and any errors that occurred.
         /// 
-        /// Returns an error object if an error was encountered, else null.
-        public (List<IGameMessage>, IError?) Run()
+        /// If an actor's AI doesn't select any action, they are assumed to be
+        /// controlled by the client. At this point, simulation will stop and
+        /// that actor will be designated as the "waiting" actor in the SimResult.
+        /// 
+        /// At this point, the client must call Run() and pass in a valid action
+        /// for that actor to take before simulation can continue.
+        /// 
+        /// If an actor is waiting and a null action is given, the actor will
+        /// continue to wait, and simulation will not progress.
+        /// </summary>
+        /// <param name="pendingAction">An action for the waiting unit to take, or null if no action.</param>
+        public SimResult Run(IAction? pendingAction)
         {
             // first try to execute the pending action for the waiting actor, if any
-            if (WaitingOn != null && pendingAction != null)
+            if (waitingOn != null && pendingAction != null)
             {
-                ActionExecutor(WaitingOn)(pendingAction);
+                ActionExecutor(waitingOn)(pendingAction);
                 pendingAction = null;
-                WaitingOn = null;
+                waitingOn = null;
             }
 
             // simulate until an actor needs user input
-            while (WaitingOn == null)
+            while (waitingOn == null)
             {
                 var stepResult = Step();
                 if (!stepResult.IsSuccess)
-                    return (proxyClient.PopMessages(), stepResult.Err);
+                    return new SimResult(proxyClient.PopMessages(), stepResult.Err, waitingOn);
                 
                 var maybeActor = stepResult.Value;
                 if (!maybeActor.IsNone)
-                    WaitingOn = maybeActor.Value;
+                    waitingOn = maybeActor.Value;
             }
 
             // execution for this tick is finished, so collect messages from the
             // proxy client and return them
-            return (proxyClient.PopMessages(), null);
-        }
-
-        /// <summary>
-        /// If an actor is waiting for input from the client, attempts to
-        /// set their next action.
-        /// 
-        /// If no actor is waiting for input or given action is null, 
-        /// returns an appropriate error and does nothing.
-        /// 
-        /// Returns null on success, else returns any error that occurs.
-        /// </summary>
-        /// <param name="action">An IAction to execute.</param>
-        public IError? AssignActionForWaitingActor(IAction action)
-        {
-            if (WaitingOn == null)
-                return new Errors.NoWaitingActor();
-            if (action == null)
-                return new Errors.CantAssignNullAction();;
-            pendingAction = action;
-            return null;
+            return new SimResult(proxyClient.PopMessages(), null, waitingOn);
         }
     }
 }

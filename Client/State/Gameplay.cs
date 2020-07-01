@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using SadConsole.Input;
 using SadRogue.Primitives;
 using Server;
@@ -25,6 +26,16 @@ namespace Client.State
         private Choreographer Choreographer { get; } = new Choreographer();
 
         private bool returnToTitle = false;
+
+        // Contains an actor that the server is waiting on
+        private Server.Data.Actor? waitingActor;
+        // Contains the next selected action to relay to the server
+        private IAction? nextAction;
+
+        // If true, server simulation is performed asynchronously. (beware!)
+        private bool isAsyncUpdate = true;
+        // Contains the eventual server sim results
+        private Task<SimResult>? serverSimulation = null;
 
         public Gameplay(int w, int h, GameServer s) : base(w, h)
         {
@@ -54,20 +65,52 @@ namespace Client.State
             HandleMessages(server.GetClientInitMessages());
         }
 
+        public void ProcessServerResult(SimResult result)
+        {
+            if (result.Error != null)
+                Console.WriteLine(result.Error.Message);
+            else
+                HandleMessages(result.Messages);
+            waitingActor = result.WaitingActor;
+        }
+
         public override void Update(TimeSpan timeElapsed)
         {
-            var (msgs, err) = server.Run();
-            if (err != null)
-                Console.WriteLine(err.Message);
-            else
-                HandleMessages(msgs);
+            // Only run the server simulation if we've selected an action
+            // or if we're not waiting for any actors
+            if (nextAction != null || waitingActor == null)
+            {
+                // If we're simulating, we're no longer waiting on a unit
+                waitingActor = null;
+                if (isAsyncUpdate)
+                {
+                    if (serverSimulation == null)
+                    {
+                        // beware the thunk! copy the nextAction reference!
+                        var next = nextAction;
+                        serverSimulation = Task.Run(() => server.Run(next));
+                    }
+                    else if (serverSimulation.IsCompleted)
+                    {
+                        var result = serverSimulation.Result;
+                        ProcessServerResult(result);
+                        serverSimulation = null;
+                    }
+                }
+                else
+                {
+                    ProcessServerResult(server.Run(nextAction));
+                }
+                nextAction = null;
+            }
+
             base.Update(timeElapsed);
         }
 
         public override bool ProcessKeyboard(SadConsole.Input.Keyboard info)
         {
             // need to handle input for any actor the server needs an action for
-            if (!Choreographer.Busy && server.WaitingOn != null)
+            if (!Choreographer.Busy && waitingActor != null)
             {
                 IAction? selectedAction = null;
 
@@ -106,6 +149,12 @@ namespace Client.State
                     selectedAction = new Actions.TryAttack();
                 }
 
+                if (info.IsKeyPressed(Keys.A))
+                {
+                    isAsyncUpdate = !isAsyncUpdate;
+                    msgLogLayer.AddMessage($"Async update: {isAsyncUpdate}");
+                }
+
                 if (info.IsKeyPressed(Keys.Escape))
                 {
                     returnToTitle = true;
@@ -117,10 +166,7 @@ namespace Client.State
 
                 if (selectedAction != null)
                 {
-                    System.Threading.Thread.Sleep(32);
-                    var err = server.AssignActionForWaitingActor(selectedAction);
-                    if (err != null)
-                        Console.WriteLine(err.Message);
+                    nextAction = selectedAction;
                     // TODO: think this's technically wrong but I'm still trying to figure
                     //       out what's going on with SadConsole's keyboard input system
                     return true;
@@ -131,15 +177,11 @@ namespace Client.State
 
         public override void Draw(TimeSpan timeElapsed)
         {
-            if (!Choreographer.Busy)
-                foreach (var v in mapActors)
-                    v.SnapToActualPosition();
-
             Choreographer.PrepareDraw(mapActors, timeElapsed);
             
-            if (server.WaitingOn != null)
+            if (waitingActor != null)
             {
-                var entity = LookupMapActor(server.WaitingOn);
+                var entity = LookupMapActor(waitingActor);
                 if (entity != null)
                     mapLayer.CenterViewOn(entity);
             }

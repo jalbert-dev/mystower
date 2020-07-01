@@ -10,27 +10,26 @@ namespace Client
 {
     public class MapActor : Entity
     {
+        // TODO!: this really needs to be replaced by a handle or ID; direct access
+        //        to server data structures is VERY dangerous in async!
         public Actor Actor { get; }
         public SadConsole.Console ScrollingParent { get; }
-
-        public void SnapToActualPosition()
-        {
-            Position = new Point(Actor.position.x, Actor.position.y)
-                .SurfaceLocationToPixel(ScrollingParent.FontSize.X, ScrollingParent.FontSize.Y);
-        }
 
         public MapActor(SadConsole.Console parent, Actor actor) :
             base(Color.White, Color.Transparent, actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125)
         {
-            this.Actor = actor;
-            Animation.Font = parent.Font;
-            Animation.FontSize = parent.FontSize;
-            
-            Animation.UsePixelPositioning = true;
-
             parent.Children.Add(this);
             this.Parent = parent;
             ScrollingParent = parent;
+
+            this.Actor = actor;
+            Animation.Font = parent.Font;
+            Animation.FontSize = parent.FontSize;
+
+            Position = new Point(Actor.position.x, Actor.position.y)
+                .SurfaceLocationToPixel(ScrollingParent.FontSize.X, ScrollingParent.FontSize.Y);
+            
+            Animation.UsePixelPositioning = true;
         }
     }
 }
