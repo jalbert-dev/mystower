@@ -32,6 +32,7 @@ namespace Server
         List<IGameClient> clients = new List<IGameClient>();
         Data.GameState gameState { get; }
         public Data.Actor? WaitingOn { get; private set; } = null;
+        IAction? pendingAction;
 
         internal GameServer(GameState state)
         {
@@ -161,6 +162,14 @@ namespace Server
         /// Returns an error object if an error was encountered, else null.
         public IError? Run()
         {
+            // first try to execute the pending action for the waiting actor, if any
+            if (WaitingOn != null && pendingAction != null)
+            {
+                ActionExecutor(WaitingOn)(pendingAction);
+                pendingAction = null;
+                WaitingOn = null;
+            }
+
             while (WaitingOn == null)
             {
                 var stepResult = Step();
@@ -176,26 +185,21 @@ namespace Server
 
         /// <summary>
         /// If an actor is waiting for input from the client, attempts to
-        /// have them execute the given action.
+        /// set their next action.
         /// 
         /// If no actor is waiting for input or given action is null, 
         /// returns an appropriate error and does nothing.
         /// 
-        /// Returns any error that occurs.
+        /// Returns null on success, else returns any error that occurs.
         /// </summary>
         /// <param name="action">An IAction to execute.</param>
-        /// <returns>
-        /// Returns an error object if an error was encountered while executing
-        /// the action, otherwise null.
-        /// </returns>
         public IError? AssignActionForWaitingActor(IAction action)
         {
             if (WaitingOn == null)
                 return new Errors.NoWaitingActor();
             if (action == null)
                 return new Errors.CantAssignNullAction();;
-            ActionExecutor(WaitingOn)(action);
-            WaitingOn = null;
+            pendingAction = action;
             return null;
         }
     }
