@@ -10,7 +10,6 @@ namespace Server.Logic
         public class Idle : IAction
         {
             public int Execute(IClientProxy client, GameState gs, Actor actor) {
-                client.EmitMessage(new Message.AddedToLog("[c:r f:blue]Actor[c:u] just chills out for a bit..."));
                 return 10;
             }
         }

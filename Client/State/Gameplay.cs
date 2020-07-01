@@ -67,7 +67,12 @@ namespace Client.State
         private IAction? nextAction;
 
         // If true, server simulation is performed asynchronously. (beware!)
-        private bool isAsyncUpdate = true;
+        private bool isAsyncSim = true;
+        // The first simulation tick must be synchronous to avoid entering
+        // the draw step with no waiting actor (otherwise camera will "snap"
+        // into place on frame 2 and it looks odd)
+        private bool isFirstSim = true;
+        private bool ShouldAsyncSimulate => !isFirstSim && isAsyncSim;
         // Contains the eventual server sim results
         private Task<SimResult>? serverSimulation = null;
 
@@ -116,7 +121,7 @@ namespace Client.State
             {
                 // If we're simulating, we're no longer waiting on a unit
                 waitingActor = null;
-                if (isAsyncUpdate)
+                if (ShouldAsyncSimulate)
                 {
                     if (serverSimulation == null)
                     {
@@ -147,6 +152,7 @@ namespace Client.State
                 }
                 nextAction = null;
             }
+            isFirstSim = false;
 
             base.Update(timeElapsed);
         }
@@ -198,8 +204,8 @@ namespace Client.State
 
                 if (info.IsKeyPressed(Keys.A))
                 {
-                    isAsyncUpdate = !isAsyncUpdate;
-                    msgLogLayer.AddMessage($"Async update: {isAsyncUpdate}");
+                    isAsyncSim = !isAsyncSim;
+                    msgLogLayer.AddMessage($"Async update: {isAsyncSim}");
                 }
 
                 if (info.IsKeyPressed(Keys.Escape))
