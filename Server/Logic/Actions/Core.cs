@@ -9,9 +9,8 @@ namespace Server.Logic
     {
         public class Idle : IAction
         {
-            public int Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor) {
-                foreach (var c in clients)
-                    c.OnAddLogMessage("[c:r f:blue]Actor[c:u] just chills out for a bit...");
+            public int Execute(IClientProxy client, GameState gs, Actor actor) {
+                client.EmitMessage(new Message.AddedToLog("[c:r f:blue]Actor[c:u] just chills out for a bit..."));
                 return 10;
             }
         }
@@ -27,14 +26,13 @@ namespace Server.Logic
             public int dx { get; }
             public int dy { get; }
 
-            public int Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor)
+            public int Execute(IClientProxy client, GameState gs, Actor actor)
             {
                 var dstX = actor.position.x + dx;
                 var dstY = actor.position.y + dy;
                 if (Map.CanMoveInto(gs.map, gs.actors, dstX, dstY))
                 {
-                    foreach (var c in clients)
-                        c.OnEntityMove(actor, actor.position.x, actor.position.y, dx, dy);
+                    client.EmitMessage(new Message.EntityMoved(actor, actor.position.x, actor.position.y, dx, dy));
 
                     (actor.position.x, actor.position.y) = (dstX, dstY);
 
@@ -49,7 +47,7 @@ namespace Server.Logic
             // TODO: Should probably take an attack ID or something
             public TryAttack() { }
 
-            public int Execute(IEnumerable<IGameClient> clients, GameState gs, Actor actor)
+            public int Execute(IClientProxy client, GameState gs, Actor actor)
             {
                 // Determine attack targets
 
@@ -60,14 +58,12 @@ namespace Server.Logic
                     Math.Abs(a.position.y - actor.position.y) <= 1);
 
                 // Calculate + deal damage to each actor and store result in AttackResults
-                var results = new AttackResults(
-                    targets.Select(target => {
-                        return new AttackResult { Target=target, DamageDealt=3 };
-                    }));
+                var results = targets.Select(target => {
+                    return new AttackResult { Target=target, DamageDealt=3 };
+                });
 
                 // Emit AttackResult to clients
-                foreach (var c in clients)
-                    c.OnEntityAttack(actor, results);
+                client.EmitMessage(new Message.EntityAttacked(actor, results));
 
                 return 50;
             }

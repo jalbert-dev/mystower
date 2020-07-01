@@ -29,7 +29,7 @@ namespace Server
 
     public class GameServer
     {
-        List<IGameClient> clients = new List<IGameClient>();
+        ClientProxy proxyClient = new ClientProxy();
         Data.GameState gameState { get; }
         public Data.Actor? WaitingOn { get; private set; } = null;
         IAction? pendingAction;
@@ -104,8 +104,6 @@ namespace Server
             return sw.ToString();
         }
 
-        public IEnumerable<IGameClient> Clients => clients;
-
         // given an actor, spawns a function that has that actor execute
         // an action, or return the actor if no action was performed.
         Func<IAction?, Option<Actor>> ActionExecutor(Actor actor)
@@ -117,7 +115,7 @@ namespace Server
                 }
                 else
                 {
-                    actor.timeUntilAct = action.Execute(Clients, gameState, actor);
+                    actor.timeUntilAct = action.Execute(proxyClient, gameState, actor);
                     return Option.None;
                 }
             };
@@ -147,20 +145,19 @@ namespace Server
                 .Map(ActionExecutor(actor));
         }
 
-        public void RegisterClient(IGameClient client) 
+        public IEnumerable<IGameMessage> GetClientInitMessages() 
         {
-            clients.Add(client);
-            client.OnMapChange(gameState.map);
+            yield return new Message.MapChanged(gameState.map);
             foreach (var actor in gameState.actors)
-                client.OnEntityAppear(actor);
+                yield return new Message.EntityAppeared(actor);
+            yield break;
         }
-        public void UnregisterClient(IGameClient client) => clients.Remove(client);
 
         /// Runs game world and fires IGameClient callbacks to all attached clients
         /// until user input is required.
         /// 
         /// Returns an error object if an error was encountered, else null.
-        public IError? Run()
+        public (List<IGameMessage>, IError?) Run()
         {
             // first try to execute the pending action for the waiting actor, if any
             if (WaitingOn != null && pendingAction != null)
@@ -170,17 +167,21 @@ namespace Server
                 WaitingOn = null;
             }
 
+            // simulate until an actor needs user input
             while (WaitingOn == null)
             {
                 var stepResult = Step();
                 if (!stepResult.IsSuccess)
-                    return stepResult.Err;
+                    return (proxyClient.PopMessages(), stepResult.Err);
                 
                 var maybeActor = stepResult.Value;
                 if (!maybeActor.IsNone)
                     WaitingOn = maybeActor.Value;
             }
-            return null;
+
+            // execution for this tick is finished, so collect messages from the
+            // proxy client and return them
+            return (proxyClient.PopMessages(), null);
         }
 
         /// <summary>

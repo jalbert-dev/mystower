@@ -6,6 +6,7 @@ using SadRogue.Primitives;
 using Server;
 using Server.Data;
 using Server.Logic;
+using Server.Message;
 
 namespace Client.State
 {
@@ -42,44 +43,25 @@ namespace Client.State
             Children.Add(msgLogLayer);
         }
 
+        public void HandleMessages(IEnumerable<IGameMessage> messages)
+        {
+            foreach (var msg in messages)
+                msg.Dispatch(this);
+        }
+
         public void Init()
         {
-            server.RegisterClient(this);
+            HandleMessages(server.GetClientInitMessages());
         }
 
         public override void Update(TimeSpan timeElapsed)
         {
-            Server.IError? err = server.Run();
+            var (msgs, err) = server.Run();
             if (err != null)
                 Console.WriteLine(err.Message);
+            else
+                HandleMessages(msgs);
             base.Update(timeElapsed);
-        }
-
-        public void OnEntityAppear(Actor actor)
-        {
-            mapActors.Add(new MapActor(mapLayer, actor));
-        }
-
-        public void OnEntityMove(Actor actor, int sx, int sy, int dx, int dy)
-        {
-            var vis = LookupMapActor(actor);
-            if (vis != null)
-                Choreographer.AddMotion(new Motions.LerpMove(sx, sy, dx, dy, 10, vis));
-        }
-
-        public void OnEntityVanish(Actor actor)
-        {
-            mapActors.RemoveAll(x => x.Actor == actor);
-        }
-
-        public void OnAddLogMessage(string messageId)
-        {
-            msgLogLayer.AddMessage(messageId);
-        }
-
-        public void OnMapChange(MapData newMapData)
-        {
-            mapLayer.RebuildTileMap(newMapData);
         }
 
         public override bool ProcessKeyboard(SadConsole.Input.Keyboard info)
@@ -189,18 +171,48 @@ namespace Client.State
             return null;
         }
 
-        public void OnEntityAttack(Actor actor, AttackResults result)
+        public void HandleMessage(EntityAppeared msg)
         {
-            var attacker = LookupMapActor(actor);
+            mapActors.Add(new MapActor(mapLayer, msg.Actor));
+        }
+
+        public void HandleMessage(EntityVanished msg)
+        {
+            mapActors.RemoveAll(x => x.Actor == msg.Actor);
+        }
+
+        public void HandleMessage(EntityMoved msg)
+        {
+            var vis = LookupMapActor(msg.Actor);
+            if (vis != null)
+                Choreographer.AddMotion(new Motions.LerpMove(
+                    msg.SourceTile.x, msg.SourceTile.y, 
+                    msg.DestTile.x, msg.DestTile.y, 
+                    10, vis));
+        }
+
+        public void HandleMessage(MapChanged msg)
+        {
+            mapLayer.RebuildTileMap(msg.NewMapData);
+        }
+
+        public void HandleMessage(AddedToLog msg)
+        {
+            msgLogLayer.AddMessage(msg.MessageId);
+        }
+
+        public void HandleMessage(EntityAttacked msg)
+        {
+            var attacker = LookupMapActor(msg.Actor);
             if (attacker != null)
                 Choreographer.AddMotion(new Motions.Wiggle(attacker, true, 30));
-            foreach (var a in result.results)
+            foreach (var a in msg.Results)
             {
                 var target = LookupMapActor(a.Target);
                 if (target != null)
                     Choreographer.AddMotion(new Motions.Wiggle(target, false, 30));
-                OnAddLogMessage($"Actor attacks Actor!");
-                OnAddLogMessage($"{a.DamageDealt} damage!");
+                msgLogLayer.AddMessage($"Actor attacks Actor!");
+                msgLogLayer.AddMessage($"{a.DamageDealt} damage!");
             }
         }
     }

@@ -8,10 +8,4 @@ namespace Server.Data
         public Data.Actor Target;
         public int DamageDealt;
     }
-    public class AttackResults
-    {
-        public AttackResult[] results;
-
-        public AttackResults(IEnumerable<AttackResult> r) => results = r.ToArray();
-    }
 }
