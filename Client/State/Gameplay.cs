@@ -92,8 +92,8 @@ namespace Client.State
             // (ideally, the server will do less than 16ms of work per frame,
             //  meaning it may or may not have simulated the player's entire turn)
             var simResult = TimedRunSimulation(server,
-                                                userAction,
-                                                debugStats);
+                                               userAction,
+                                               debugStats);
             userAction = null;
             ProcessSimulationResult(simResult);
 

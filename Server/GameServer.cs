@@ -189,7 +189,8 @@ namespace Server
         /// continue to wait, and simulation will not progress.
         /// </summary>
         /// <param name="pendingAction">An action for the waiting unit to take, or null if no action.</param>
-        public SimResult Run(IAction? pendingAction)
+        /// <param name="maxSteps">The maximum number of actor turns to simulate before returning, or 0 for no limit.</param>
+        public SimResult Run(IAction? pendingAction, int maxSteps = 0)
         {
             // first try to execute the pending action for the waiting actor, if any
             if (waitingOn != null && pendingAction != null)
@@ -200,8 +201,12 @@ namespace Server
             }
 
             // simulate until an actor needs user input
+            int steps = 0;
             while (waitingOn == null)
             {
+                if (maxSteps > 0 && steps++ >= maxSteps)
+                    break;
+
                 var stepResult = Step();
                 if (!stepResult.IsSuccess)
                     return new SimResult(proxyClient.PopMessages(), stepResult.Err, waitingOn);
