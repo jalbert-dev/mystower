@@ -15,12 +15,12 @@ namespace Client
 
         public void HandleMessage(EntityVanished msg)
         {
-            Client.MapActors.RemoveAll(x => x.Actor.HandleEquals(msg.Actor));
+            Client.MapActors.Remove(msg.Actor);
         }
 
         public void HandleMessage(EntityMoved msg)
         {
-            var vis = Client.LookupMapActor(msg.Actor);
+            var vis = Client.MapActors.Lookup(msg.Actor);
             if (vis != null)
                 Client.Choreographer.AddMotion(new Motions.LerpMove(
                     msg.SourceTile.x, msg.SourceTile.y, 
@@ -40,12 +40,12 @@ namespace Client
 
         public void HandleMessage(EntityAttacked msg)
         {
-            var attacker = Client.LookupMapActor(msg.Actor);
+            var attacker = Client.MapActors.Lookup(msg.Actor);
             if (attacker != null)
                 Client.Choreographer.AddMotion(new Motions.Wiggle(attacker, true, 30));
             foreach (var a in msg.Results)
             {
-                var target = Client.LookupMapActor(a.Target);
+                var target = Client.MapActors.Lookup(a.Target);
                 if (target != null)
                     Client.Choreographer.AddMotion(new Motions.Wiggle(target, false, 30));
                 Client.MessageLog.AddMessage($"Actor attacks Actor!");

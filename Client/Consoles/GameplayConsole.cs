@@ -16,6 +16,37 @@ namespace Client.Consoles
 {
     public class Gameplay : SadConsole.Console
     {
+        public class ActorSet
+        {
+            List<MapActor> mapActors { get; } = new List<MapActor>(64);
+            public IEnumerable<MapActor> Actors => mapActors;
+
+            public void Remove(DataHandle<Actor> actor)
+            {
+                mapActors.RemoveAll(x => {
+                    var shouldRemove = x.Actor.HandleEquals(actor);
+                    if (shouldRemove)
+                        OnRemoveActor?.Invoke(x);
+                    return shouldRemove;
+                });
+            }
+
+            public MapActor? Lookup(DataHandle<Actor> actor)
+                => mapActors.FirstOrDefault(x => x.Actor.HandleEquals(actor));
+
+            public void Add(MapActor mapActor)
+            {
+                if (mapActors.Any(x => x.Actor.HandleEquals(mapActor.Actor)))
+                    return;
+                mapActors.Add(mapActor);
+            }
+
+            public MapActor? this[DataHandle<Actor> index] => Lookup(index);
+
+            public delegate void ActorRemovalHandler(MapActor actor);
+            public event ActorRemovalHandler? OnRemoveActor;
+        }
+
         public Consoles.TileMap TileMap { get; }
         public Consoles.MessageLog MessageLog { get; }
         public Consoles.DebugStats DebugStatsDisplay = new Consoles.DebugStats();
@@ -24,9 +55,7 @@ namespace Client.Consoles
         public Choreographer Choreographer { get; } = new Choreographer();
         public Util.CoroutineContainer Coroutines { get; } = new Util.CoroutineContainer();
 
-        public List<MapActor> MapActors { get; } = new List<MapActor>(64);
-        public MapActor? LookupMapActor(DataHandle<Actor> actor)
-            => MapActors.FirstOrDefault(x => x.Actor.HandleEquals(actor));
+        public ActorSet MapActors { get; } = new ActorSet();
 
         public bool ShouldReturnToTitle { get; private set; } = false;
         
@@ -37,6 +66,7 @@ namespace Client.Consoles
 
         // The actor the server is waiting on, if one exists.
         private DataHandle<Actor>? waitingActor;
+        private MapActor? fallbackCameraFocusActor;
 
         public Gameplay(int w, int h, GameServer s) : base(w, h)
         {
@@ -58,6 +88,12 @@ namespace Client.Consoles
             Children.Add(DebugStatsDisplay);
 
             Coroutines.Add(SimulationLoop(false));
+
+            MapActors.OnRemoveActor += (a) =>
+            {
+                if (fallbackCameraFocusActor == a)
+                    fallbackCameraFocusActor = null;
+            };
 
             HandleMessages(Server.GetClientInitMessages());
         }
@@ -82,7 +118,7 @@ namespace Client.Consoles
                                                     Consoles.DebugStats? debugStats = null)
         {
             var updateTimer = Stopwatch.StartNew();
-            var result = server.Run(nextAction);
+            var result = server.Run(nextAction, 64);
             if (debugStats != null)
                 debugStats.LastSimulationTime = updateTimer.ElapsedMilliseconds;
             return result;
@@ -176,12 +212,6 @@ namespace Client.Consoles
             if (info.IsKeyPressed(Keys.L))
                 MessageLog.ToggleVisible();
 
-            if (info.IsKeyPressed(Keys.P))
-            {
-                foreach (var x in MapActors.Select((x, i) => (x, i)))
-                    Choreographer.AddMotion(new Motions.Wiggle(x.x, x.i % 3 == 0));
-            }
-
             if (info.IsKeyPressed(Keys.F5))
             {
                 string save = Server.ToSaveGame();
@@ -200,14 +230,24 @@ namespace Client.Consoles
         public override void Draw(TimeSpan timeElapsed)
         {
             DebugStatsDisplay.RenderDelta = timeElapsed.Milliseconds;
-            Choreographer.PrepareDraw(MapActors, timeElapsed);
+            Choreographer.PrepareDraw(MapActors.Actors, timeElapsed);
+
+            // capture the first player-controlled actor as a fallback
+            // in the event that we don't have a waitingActor to use as a 
+            // camera target (most of the time these'll be the same)
+            fallbackCameraFocusActor ??= 
+                waitingActor.HasValue ? 
+                    MapActors[waitingActor.Value] : 
+                    null;
             
-            if (waitingActor.HasValue)
-            {
-                var entity = LookupMapActor(waitingActor.Value);
-                if (entity != null)
-                    TileMap.CenterViewOn(entity);
-            }
+            // prioritize focusing the camera on the waiting actor over the fallback
+            var cameraFocus = 
+                waitingActor.HasValue ?
+                    MapActors[waitingActor.Value] :
+                    fallbackCameraFocusActor;
+                    
+            if (cameraFocus != null)
+                TileMap.CenterViewOn(cameraFocus);
             
             base.Draw(timeElapsed);
         }
