@@ -44,15 +44,56 @@ namespace Server
         public Data.Actor? WaitingActor { get; }
     }
 
+    internal class RWLocked<T>
+    {
+        private readonly System.Threading.ReaderWriterLockSlim lockObj = new System.Threading.ReaderWriterLockSlim();
+
+        private readonly T resource;
+
+        public RWLocked(T obj)
+        {
+            resource = obj;
+        }
+
+        public U ReadResource<U>(Func<T, U> func)
+        {
+            lockObj.EnterReadLock();
+            var rv = func(resource);
+            lockObj.ExitReadLock();
+            return rv;
+        }
+
+        public void ReadResource(Action<T> action)
+        {
+            lockObj.EnterReadLock();
+            action(resource);
+            lockObj.ExitReadLock();
+        }
+
+        public U WriteResource<U>(Func<T, U> func)
+        {
+            lockObj.EnterWriteLock();
+            var rv = func(resource);
+            lockObj.ExitWriteLock();
+            return rv;
+        }
+        public void WriteResource(Action<T> action)
+        {
+            lockObj.EnterWriteLock();
+            action(resource);
+            lockObj.ExitWriteLock();
+        }
+    }
+
     public class GameServer
     {
         ClientProxy proxyClient = new ClientProxy();
-        Data.GameState gameState { get; }
-        Data.Actor? waitingOn = null;
+        RWLocked<GameState> gameStateLock { get; }
+        Actor? waitingOn = null;
 
         internal GameServer(GameState state)
         {
-            gameState = state;
+            gameStateLock = new RWLocked<GameState>(state);
         }
 
         private static MapData TestMap(int w, int h)
@@ -112,30 +153,28 @@ namespace Server
             => FromSaveGame(reader.ReadToEnd());
 
         public void ToSaveGame(TextWriter outStream)
-            => GameStateIO.SaveToStream(gameState, outStream);
+            => gameStateLock.ReadResource(gameState => GameStateIO.SaveToStream(gameState, outStream));
         public string ToSaveGame()
         {
             StringWriter sw = new StringWriter();
-            GameStateIO.SaveToStream(gameState, sw);
+            ToSaveGame(sw);
             return sw.ToString();
         }
 
         // given an actor, spawns a function that has that actor execute
         // an action, or return the actor if no action was performed.
-        Func<IAction?, Option<Actor>> ActionExecutor(Actor actor)
-        {
-            return (action) => {
+        Func<IAction?, Option<Actor>> ActionExecutor(GameState state, Actor actor)
+            => (action) => {
                 if (action == null)
                 {
                     return Option.Some(actor);
                 }
                 else
                 {
-                    actor.timeUntilAct = action.Execute(proxyClient, gameState, actor);
+                    actor.timeUntilAct = action.Execute(proxyClient, state, actor);
                     return Option.None;
                 }
             };
-        }
 
         /// Performs a single step of game logic on given server, firing callbacks
         /// to clients when appropriate.
@@ -144,7 +183,7 @@ namespace Server
         /// 
         /// Returns a Result containing an optional actor that must receive orders
         /// before processing can continue.
-        Result<Option<Actor>> Step()
+        Result<Option<Actor>> Step(GameState gameState)
         {
             // for now, a step is however long it takes for the next unit to move
             var maybeActor = TurnController.GetNextToAct(gameState.actors);
@@ -158,21 +197,23 @@ namespace Server
             return Logic.AIType.Lookup(actor.aiType)
                 .ErrorIfNone(() => new Errors.InvalidAI(actor.aiType))
                 .Map(aiFunc => aiFunc(gameState, actor))
-                .Map(ActionExecutor(actor));
+                .Map(ActionExecutor(gameState, actor));
         }
 
-        /// <summary>
-        /// Returns an enumerable of any messages required to initialize
-        /// a client to the current world state.
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerable<IGameMessage> GetClientInitMessages() 
+        private IEnumerable<IGameMessage> clientInitMessages(GameState gameState)
         {
             yield return new Message.MapChanged(gameState.map);
             foreach (var actor in gameState.actors)
                 yield return new Message.EntityAppeared(actor);
             yield break;
         }
+
+        /// <summary>
+        /// Returns an enumerable of any messages required to initialize
+        /// a client to the current world state.
+        /// </summary>
+        public IEnumerable<IGameMessage> GetClientInitMessages() 
+            => gameStateLock.ReadResource(clientInitMessages);
 
         /// <summary>
         /// Runs world simulation, and returns a SimResult object containing
@@ -191,34 +232,34 @@ namespace Server
         /// <param name="pendingAction">An action for the waiting unit to take, or null if no action.</param>
         /// <param name="maxSteps">The maximum number of actor turns to simulate before returning, or 0 for no limit.</param>
         public SimResult Run(IAction? pendingAction, int maxSteps = 0)
-        {
-            // first try to execute the pending action for the waiting actor, if any
-            if (waitingOn != null && pendingAction != null)
-            {
-                ActionExecutor(waitingOn)(pendingAction);
-                pendingAction = null;
-                waitingOn = null;
-            }
+            => gameStateLock.WriteResource(gameState => {
+                // first try to execute the pending action for the waiting actor, if any
+                if (waitingOn != null && pendingAction != null)
+                {
+                    ActionExecutor(gameState, waitingOn)(pendingAction);
+                    pendingAction = null;
+                    waitingOn = null;
+                }
 
-            // simulate until an actor needs user input
-            int steps = 0;
-            while (waitingOn == null)
-            {
-                if (maxSteps > 0 && steps++ >= maxSteps)
-                    break;
+                // simulate until an actor needs user input
+                int steps = 0;
+                while (waitingOn == null)
+                {
+                    if (maxSteps > 0 && steps++ >= maxSteps)
+                        break;
 
-                var stepResult = Step();
-                if (!stepResult.IsSuccess)
-                    return new SimResult(proxyClient.PopMessages(), stepResult.Err, waitingOn);
-                
-                var maybeActor = stepResult.Value;
-                if (!maybeActor.IsNone)
-                    waitingOn = maybeActor.Value;
-            }
+                    var stepResult = Step(gameState);
+                    if (!stepResult.IsSuccess)
+                        return new SimResult(proxyClient.PopMessages(), stepResult.Err, waitingOn);
+                    
+                    var maybeActor = stepResult.Value;
+                    if (!maybeActor.IsNone)
+                        waitingOn = maybeActor.Value;
+                }
 
-            // execution for this tick is finished, so collect messages from the
-            // proxy client and return them
-            return new SimResult(proxyClient.PopMessages(), null, waitingOn);
-        }
+                // execution for this tick is finished, so collect messages from the
+                // proxy client and return them
+                return new SimResult(proxyClient.PopMessages(), null, waitingOn);
+            });
     }
 }
