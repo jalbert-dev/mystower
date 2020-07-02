@@ -1,18 +1,5 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
-using SadConsole;
-using SadConsole.Input;
-using SadRogue.Primitives;
 using Server;
-using Server.Data;
-using Server.Logic;
-using Server.Message;
-
-using C = System.Console;
+using Util;
 
 namespace Client.State
 {

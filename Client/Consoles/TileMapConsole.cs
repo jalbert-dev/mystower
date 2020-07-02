@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using SadConsole;
 using SadRogue.Primitives;
 using Server.Data;
 
 using static SadConsole.Font;
 using static SadConsole.RectangleExtensions;
-using static SadRogue.Primitives.SadRogueRectangleExtensions;
-using C = System.Console;
 
 namespace Client.Consoles
 {

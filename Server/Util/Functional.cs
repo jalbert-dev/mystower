@@ -62,6 +62,12 @@ namespace Util.Functional
         public Option<U> Map<U>(Func<T, U> f)
             => Bind(x => Option.Some(f(x)));
     }
+    
+    public interface IError
+    {
+        string Message { get; }
+    }
+
     public struct Result<TValue>
     {
         bool success { get; }

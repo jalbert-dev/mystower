@@ -1,4 +1,4 @@
-namespace Client
+namespace Util
 {
     public interface IState<T>
     {
