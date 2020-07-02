@@ -24,6 +24,9 @@ namespace Client.State
         private Choreographer Choreographer { get; } = new Choreographer();
         private Util.CoroutineContainer Coroutines { get; } = new Util.CoroutineContainer();
         private DebugStatsConsole debugStats = new DebugStatsConsole();
+        
+        // The last valid key state. Consumed on use.
+        private SadConsole.Input.Keyboard? keyState = null;
 
         private List<MapActor> mapActors = new List<MapActor>(64);
         private MapActor? LookupMapActor(Actor actor)
@@ -31,12 +34,8 @@ namespace Client.State
 
         private bool returnToTitle = false;
 
-        // Contains an actor that the server is waiting on
+        // The actor the server is waiting on, if one exists.
         private Server.Data.Actor? waitingActor;
-
-        // An action to send to the server, derived from user input
-        private IAction? userAction = null;
-
 
         public Gameplay(int w, int h, GameServer s) : base(w, h)
         {
@@ -55,6 +54,8 @@ namespace Client.State
             Children.Add(msgLogLayer);
 
             Children.Add(debugStats);
+
+            Coroutines.Add(SimulationLoop(false));
         }
 
         public void HandleMessages(IEnumerable<IGameMessage> messages)
@@ -83,19 +84,40 @@ namespace Client.State
             return result;
         }
 
+        private IEnumerable SimulationLoop(bool async)
+        {
+            while (true)
+            {
+                IAction? userAction = null;
+                if (!Choreographer.IsBusy && keyState != null)
+                {
+                    userAction = TrySelectAction(keyState, waitingActor);
+                    keyState = null;
+                }
+                
+                var simTask = Task.Run(() => TimedRunSimulation(server, userAction, debugStats));
+
+                // TODO: async could work via two-bit prediction or something.
+                //       if the last few significant updates have been >16ms,
+                //       switch to async? or the other way around, keep a running
+                //       average of the update delta, and if it's around
+                //       <8ms, Sleep for 4ms to give the task time to complete?
+
+                // As written here, async incurs 1 frame of latency, which will
+                // cause slight but noticeable hitching when the player holds
+                // down a movement key! It does work, however, so with some
+                // clever prediction this could help with long updates.
+                if (async)
+                    yield return simTask;
+
+                ProcessSimulationResult(simTask.Result);
+                yield return null;
+            }
+        }
+
         public override void Update(TimeSpan timeElapsed)
         {
             debugStats.UpdateDelta = timeElapsed.Milliseconds;
-
-            // we'll run the server every frame. if the server needs input from
-            // the user, it won't do anything
-            // (ideally, the server will do less than 16ms of work per frame,
-            //  meaning it may or may not have simulated the player's entire turn)
-            var simResult = TimedRunSimulation(server,
-                                               userAction,
-                                               debugStats);
-            userAction = null;
-            ProcessSimulationResult(simResult);
 
             Coroutines.Update();
 
@@ -167,11 +189,7 @@ namespace Client.State
         public override bool ProcessKeyboard(SadConsole.Input.Keyboard info)
         {
             CheckNonGameplayHotkeys(info);
-
-            if (!Choreographer.IsBusy)
-            {
-                userAction = TrySelectAction(info, waitingActor);
-            }
+            keyState = info;
             return false;
         }
 
