@@ -56,7 +56,7 @@ namespace Client
         /// <summary>
         /// Returns whether the choreographer has motions to execute.
         /// </summary>
-        public bool Busy => motions.Count != 0;
+        public bool IsBusy => motions.Count != 0;
 
         public void PrepareDraw(IEnumerable<MapActor> actors, TimeSpan timeElapsed)
         {
