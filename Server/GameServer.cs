@@ -215,6 +215,8 @@ namespace Server
         public IEnumerable<IGameMessage> GetClientInitMessages() 
             => gameStateLock.ReadResource(clientInitMessages);
 
+        static List<IGameMessage> emptyMessageList = new List<IGameMessage>();
+
         /// <summary>
         /// Runs world simulation, and returns a SimResult object containing
         /// the results of the simulation and any errors that occurred.
@@ -232,7 +234,14 @@ namespace Server
         /// <param name="pendingAction">An action for the waiting unit to take, or null if no action.</param>
         /// <param name="maxSteps">The maximum number of actor turns to simulate before returning, or 0 for no limit.</param>
         public SimResult Run(IAction? pendingAction, int maxSteps = 0)
-            => gameStateLock.WriteResource(gameState => {
+        {
+            // if we're waiting for an input from the user but they haven't
+            // given us one, there's no need to continue
+            if (waitingOn != null && pendingAction == null)
+                return new SimResult(emptyMessageList, null, waitingOn);
+
+            // otherwise lock the game state for writing and do game logic
+            return gameStateLock.WriteResource(gameState => {
                 // first try to execute the pending action for the waiting actor, if any
                 if (waitingOn != null && pendingAction != null)
                 {
@@ -261,5 +270,6 @@ namespace Server
                 // proxy client and return them
                 return new SimResult(proxyClient.PopMessages(), null, waitingOn);
             });
+        }
     }
 }
