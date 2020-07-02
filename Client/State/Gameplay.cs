@@ -113,7 +113,9 @@ namespace Client.State
             waitingActor = result.WaitingActor;
         }
 
-        private static Task<SimResult> TimedRunSimulation(GameServer server, IAction? nextAction, DebugStatsConsole? debugStats = null)
+        private static Task<SimResult> TimedRunSimulation(GameServer server,
+                                                          IAction? nextAction,
+                                                          DebugStatsConsole? debugStats = null)
             =>  Task.Run(() => {
                     var updateTimer = Stopwatch.StartNew();
                     var result = server.Run(nextAction);
@@ -132,10 +134,7 @@ namespace Client.State
             {
                 // Contains the eventual server sim results
                 Task<SimResult> serverSimulation = TimedRunSimulation(server, nextAction, debugStats);
-                        
-                while (!serverSimulation.IsCompleted)
-                    yield return null;
-                    
+                yield return serverSimulation;
                 continuation(serverSimulation.Result);
             }
             else

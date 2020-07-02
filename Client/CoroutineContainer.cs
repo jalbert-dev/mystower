@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Client
 {
@@ -8,6 +9,13 @@ namespace Client
         public static IEnumerable WaitForFrames(int frameCount)
         {
             for (; frameCount >= 0; frameCount--)
+                yield return null;
+            yield break;
+        }
+
+        public static IEnumerable WaitForTask(Task task)
+        {
+            while (!task.IsCompleted)
                 yield return null;
             yield break;
         }
@@ -31,19 +39,25 @@ namespace Client
         {
             coroutines.RemoveAll(coStack => {
                 var co = coStack.Peek();
-                if (co.MoveNext() == false)
+                while (co.MoveNext() == false)
                 {
                     coStack.Pop();
-                }
-                else
-                {
-                    if (co.Current is IEnumerable nestedCo)
-                    {
-                        coStack.Push(nestedCo.GetEnumerator());
-                    }
-                }
 
-                return coStack.Count == 0;
+                    if (coStack.Count == 0)
+                        return true;
+                    
+                    co = coStack.Peek();
+                }
+                
+                if (co.Current is IEnumerable nestedCo)
+                {
+                    coStack.Push(nestedCo.GetEnumerator());
+                }
+                else if (co.Current is Task task)
+                {
+                    coStack.Push(Coroutines.WaitForTask(task).GetEnumerator());
+                }
+                return false;
             });
         }
     }
