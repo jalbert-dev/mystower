@@ -5,18 +5,16 @@ using Point = SadRogue.Primitives.Point;
 using Color = SadRogue.Primitives.Color;
 
 using static SadConsole.PointExtensions;
+using Server;
 
 namespace Client
 {
     public class MapActor : Entity
     {
-        // TODO!: this really needs to be replaced by a handle or ID; direct access
-        //        to server data structures is VERY dangerous in async!
-        public Actor Actor { get; }
+        public DataHandle<Actor> Actor { get; }
         public SadConsole.Console ScrollingParent { get; }
 
-        public MapActor(SadConsole.Console parent, Actor actor) :
-            base(Color.White, Color.Transparent, actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125)
+        public MapActor(SadConsole.Console parent, GameServer server, DataHandle<Actor> actor) : base(1,1)
         {
             parent.Children.Add(this);
             this.Parent = parent;
@@ -26,8 +24,16 @@ namespace Client
             Animation.Font = parent.Font;
             Animation.FontSize = parent.FontSize;
 
-            Position = new Point(Actor.position.x, Actor.position.y)
-                .SurfaceLocationToPixel(ScrollingParent.FontSize.X, ScrollingParent.FontSize.Y);
+            server.QueryData(Actor, actor => {
+                Animation.Surface.Cells[0] = new SadConsole.ColoredGlyph
+                {
+                    Foreground = Color.White,
+                    Background = Color.Transparent,
+                    Glyph = actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125,
+                };
+                Position = new Point(actor.position.x, actor.position.y)
+                    .SurfaceLocationToPixel(ScrollingParent.FontSize.X, ScrollingParent.FontSize.Y);
+            });
             
             Animation.UsePixelPositioning = true;
         }

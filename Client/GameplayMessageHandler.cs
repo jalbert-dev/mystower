@@ -10,12 +10,12 @@ namespace Client
 
         public void HandleMessage(EntityAppeared msg)
         {
-            Client.MapActors.Add(new MapActor(Client.TileMap, msg.Actor));
+            Client.MapActors.Add(new MapActor(Client.TileMap, Client.Server, msg.Actor));
         }
 
         public void HandleMessage(EntityVanished msg)
         {
-            Client.MapActors.RemoveAll(x => x.Actor == msg.Actor);
+            Client.MapActors.RemoveAll(x => x.Actor.HandleEquals(msg.Actor));
         }
 
         public void HandleMessage(EntityMoved msg)
@@ -30,7 +30,7 @@ namespace Client
 
         public void HandleMessage(MapChanged msg)
         {
-            Client.TileMap.RebuildTileMap(msg.NewMapData);
+            Client.Server.QueryData(msg.NewMapData, Client.TileMap.RebuildTileMap);
         }
 
         public void HandleMessage(AddedToLog msg)

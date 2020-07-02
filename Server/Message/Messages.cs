@@ -6,11 +6,11 @@ namespace Server.Message
 {
     public class EntityAppeared : IGameMessage
     {
-        public Data.Actor Actor { get; }
+        public DataHandle<Actor> Actor { get; }
 
-        public EntityAppeared(Actor actor)
+        internal EntityAppeared(Actor actor)
         {
-            Actor = actor;
+            Actor = actor.ToDataHandle();
         }
 
         public void Dispatch(IGameClient c) => c.HandleMessage(this);
@@ -18,11 +18,11 @@ namespace Server.Message
 
     public class EntityVanished : IGameMessage
     {
-        public Data.Actor Actor { get; }
+        public DataHandle<Actor> Actor { get; }
 
-        public EntityVanished(Actor actor)
+        internal EntityVanished(Actor actor)
         {
-            Actor = actor;
+            Actor = actor.ToDataHandle();
         }
 
         public void Dispatch(IGameClient c) => c.HandleMessage(this);
@@ -30,13 +30,13 @@ namespace Server.Message
 
     public class EntityMoved : IGameMessage
     {
-        public Data.Actor Actor { get; }
+        public DataHandle<Actor> Actor { get; }
         public Vec2i SourceTile;
         public Vec2i DestTile;
 
-        public EntityMoved(Actor actor, int sx, int sy, int dx, int dy)
+        internal EntityMoved(Actor actor, int sx, int sy, int dx, int dy)
         {
-            Actor = actor;
+            Actor = actor.ToDataHandle();
             SourceTile.x = sx;
             SourceTile.y = sy;
             DestTile.x = dx;
@@ -48,11 +48,11 @@ namespace Server.Message
 
     public class MapChanged : IGameMessage
     {
-        public Data.MapData NewMapData { get; }
+        public DataHandle<MapData> NewMapData { get; }
 
-        public MapChanged(MapData newMapData)
+        internal MapChanged(MapData newMapData)
         {
-            NewMapData = newMapData;
+            NewMapData = newMapData.ToDataHandle();
         }
 
         public void Dispatch(IGameClient c) => c.HandleMessage(this);
@@ -62,7 +62,7 @@ namespace Server.Message
     {
         public string MessageId { get; }
 
-        public AddedToLog(string messageId)
+        internal AddedToLog(string messageId)
         {
             MessageId = messageId;
         }
@@ -70,14 +70,26 @@ namespace Server.Message
         public void Dispatch(IGameClient c) => c.HandleMessage(this);
     }
 
+    public struct AttackResult
+    {
+        public DataHandle<Actor> Target;
+        public int DamageDealt;
+
+        public AttackResult(Actor target)
+        {
+            Target = target.ToDataHandle();
+            DamageDealt = 0;
+        }
+    }
     public class EntityAttacked : IGameMessage
     {
-        public Data.Actor Actor { get; }
-        public Data.AttackResult[] Results { get; }
 
-        public EntityAttacked(Data.Actor actor, IEnumerable<Data.AttackResult> results)
+        public DataHandle<Actor> Actor { get; }
+        public AttackResult[] Results { get; }
+
+        internal EntityAttacked(Data.Actor actor, IEnumerable<AttackResult> results)
         {
-            Actor = actor;
+            Actor = actor.ToDataHandle();
             Results = results.ToArray();
         }
 

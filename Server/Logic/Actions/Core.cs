@@ -57,8 +57,9 @@ namespace Server.Logic
                     Math.Abs(a.position.y - actor.position.y) <= 1);
 
                 // Calculate + deal damage to each actor and store result in AttackResults
-                var results = targets.Select(target => {
-                    return new AttackResult { Target=target, DamageDealt=3 };
+                var results = targets.Select(target => new Message.AttackResult(target) 
+                { 
+                    DamageDealt=3,
                 });
 
                 // Emit AttackResult to clients

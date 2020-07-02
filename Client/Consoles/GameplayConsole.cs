@@ -20,27 +20,27 @@ namespace Client.Consoles
         public Consoles.MessageLog MessageLog { get; }
         public Consoles.DebugStats DebugStatsDisplay = new Consoles.DebugStats();
 
+        public GameServer Server { get; }
         public Choreographer Choreographer { get; } = new Choreographer();
         public Util.CoroutineContainer Coroutines { get; } = new Util.CoroutineContainer();
 
         public List<MapActor> MapActors { get; } = new List<MapActor>(64);
-        public MapActor? LookupMapActor(Actor actor)
-            => MapActors.FirstOrDefault(x => x.Actor == actor);
+        public MapActor? LookupMapActor(DataHandle<Actor> actor)
+            => MapActors.FirstOrDefault(x => x.Actor.HandleEquals(actor));
 
         public bool ShouldReturnToTitle { get; private set; } = false;
         
-        private GameServer server;
         private GameplayMessageHandler msgHandler;
         
         // The last valid key state. Consumed on use.
         private SadConsole.Input.Keyboard? keyState = null;
 
         // The actor the server is waiting on, if one exists.
-        private Server.Data.Actor? waitingActor;
+        private DataHandle<Actor>? waitingActor;
 
         public Gameplay(int w, int h, GameServer s) : base(w, h)
         {
-            server = s;
+            Server = s;
             msgHandler = new GameplayMessageHandler(this);
 
             TileMap = new Consoles.TileMap(w / 4, h / 4);
@@ -59,7 +59,7 @@ namespace Client.Consoles
 
             Coroutines.Add(SimulationLoop(false));
 
-            HandleMessages(server.GetClientInitMessages());
+            HandleMessages(Server.GetClientInitMessages());
         }
 
         public void HandleMessages(IEnumerable<IGameMessage> messages)
@@ -99,7 +99,7 @@ namespace Client.Consoles
                     keyState = null;
                 }
                 
-                var simTask = Task.Run(() => TimedRunSimulation(server, userAction, DebugStatsDisplay));
+                var simTask = Task.Run(() => TimedRunSimulation(Server, userAction, DebugStatsDisplay));
 
                 // TODO: async could work via two-bit prediction or something.
                 //       if the last few significant updates have been >16ms,
@@ -135,9 +135,9 @@ namespace Client.Consoles
         /// If the given actor is null or the player's input does not correspond
         /// to any game action, returns null.
         /// </summary>
-        private IAction? TrySelectAction(SadConsole.Input.Keyboard info, Actor? waitingActor)
+        private static IAction? TrySelectAction(SadConsole.Input.Keyboard info, DataHandle<Actor>? waitingActor)
         {
-            if (waitingActor == null)
+            if (!waitingActor.HasValue)
                 return null;
 
             int dx = 0, dy = 0;
@@ -184,7 +184,7 @@ namespace Client.Consoles
 
             if (info.IsKeyPressed(Keys.F5))
             {
-                string save = server.ToSaveGame();
+                string save = Server.ToSaveGame();
                 System.IO.Directory.CreateDirectory("Saves");
                 System.IO.File.WriteAllText("Saves/save.sav", save);
             }
@@ -202,9 +202,9 @@ namespace Client.Consoles
             DebugStatsDisplay.RenderDelta = timeElapsed.Milliseconds;
             Choreographer.PrepareDraw(MapActors, timeElapsed);
             
-            if (waitingActor != null)
+            if (waitingActor.HasValue)
             {
-                var entity = LookupMapActor(waitingActor);
+                var entity = LookupMapActor(waitingActor.Value);
                 if (entity != null)
                     TileMap.CenterViewOn(entity);
             }

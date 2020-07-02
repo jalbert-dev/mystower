@@ -6,7 +6,6 @@ namespace Client.State
     public class Gameplay : IState<StateManager>
     {
         public Consoles.Gameplay GameplayConsole { get; }
-        private bool returnToTitle = false;
 
         private int Width { get; }
         private int Height { get; }

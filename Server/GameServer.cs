@@ -27,7 +27,7 @@ namespace Server
         {
             Messages = messages;
             Error = error;
-            WaitingActor = waitingActor;
+            WaitingActor = waitingActor?.ToDataHandle();
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace Server
         /// <summary>
         /// The actor the server is waiting for input for, if one exists.
         /// </summary>
-        public Data.Actor? WaitingActor { get; }
+        public DataHandle<Actor>? WaitingActor { get; }
     }
 
     internal class RWLocked<T>
@@ -90,6 +90,8 @@ namespace Server
         ClientProxy proxyClient = new ClientProxy();
         RWLocked<GameState> gameStateLock { get; }
         Actor? waitingOn = null;
+
+        static List<IGameMessage> emptyMessageList = new List<IGameMessage>();
 
         internal GameServer(GameState state)
         {
@@ -161,6 +163,17 @@ namespace Server
             return sw.ToString();
         }
 
+        /// <summary>
+        /// Queries the server for data by the given handle, and passes it to the
+        /// given action if found.
+        /// 
+        /// This method read-locks the server during execution.
+        /// 
+        /// Returns whether the query was successful.
+        /// </summary>
+        public bool QueryData<T>(DataHandle<T> handle, Action<T> action) where T : class
+            => gameStateLock.ReadResource(gs => handle.Query(gs, action));
+
         // given an actor, spawns a function that has that actor execute
         // an action, or return the actor if no action was performed.
         Func<IAction?, Option<Actor>> ActionExecutor(GameState state, Actor actor)
@@ -214,8 +227,6 @@ namespace Server
         /// </summary>
         public IEnumerable<IGameMessage> GetClientInitMessages() 
             => gameStateLock.ReadResource(clientInitMessages);
-
-        static List<IGameMessage> emptyMessageList = new List<IGameMessage>();
 
         /// <summary>
         /// Runs world simulation, and returns a SimResult object containing
