@@ -4,22 +4,22 @@ using System.Linq;
 using SadConsole;
 using SadRogue.Primitives;
 
-namespace Client
+namespace Client.Consoles
 {
-    public class MessageLogConsole : SadConsole.Console
+    public class MessageLog : SadConsole.Console
     {
-        private List<string> messages = new List<string>();
+        private List<string> messages = new List<string>(256);
         private bool dirty = true;
         private SadConsole.Console msgDisplay;
 
         // notice that this is oldest message first!
         private IEnumerable<string> RecentMessages
-            => MessageLog.Take(Height).Reverse();
+            => AllMessages.Take(Height).Reverse();
 
-        public IEnumerable<string> MessageLog
+        public IEnumerable<string> AllMessages
             => messages.Reverse<string>();
 
-        public MessageLogConsole(int w, int h) : base(w, h) 
+        public MessageLog(int w, int h) : base(w, h) 
         { 
             msgDisplay = new SadConsole.Console(w - 4, h - 2);
             msgDisplay.Position = new Point(2, 1);

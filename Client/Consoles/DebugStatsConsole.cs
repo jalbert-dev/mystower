@@ -2,16 +2,16 @@ using System;
 using SadConsole;
 using SadRogue.Primitives;
 
-namespace Client
+namespace Client.Consoles
 {
-    public class DebugStatsConsole : SadConsole.Console
+    public class DebugStats : SadConsole.Console
     {
         public long LastSimulationTime { get; set; }
         public long UpdateDelta { get; set; }
         public long RenderDelta { get; set; }
         public long Frame { get; set; }
 
-        public DebugStatsConsole() : base(40, 4)
+        public DebugStats() : base(40, 4)
         {
             DefaultBackground = Color.Transparent;
             IsVisible = false;

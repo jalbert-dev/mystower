@@ -16,21 +16,25 @@ using C = System.Console;
 
 namespace Client.State
 {
-    public class Gameplay : SadConsole.Console, IGameClient, IState<StateManager>
+    public class Gameplay : SadConsole.Console, IState<StateManager>
     {
+        public Consoles.TileMap TileMap { get; }
+        public Consoles.MessageLog MessageLog { get; }
+        public Consoles.DebugStats DebugStatsDisplay = new Consoles.DebugStats();
+
+        public Choreographer Choreographer { get; } = new Choreographer();
+        public Util.CoroutineContainer Coroutines { get; } = new Util.CoroutineContainer();
+
+        public List<MapActor> MapActors { get; } = new List<MapActor>(64);
+        public MapActor? LookupMapActor(Actor actor)
+            => MapActors.FirstOrDefault(x => x.Actor == actor);
+        
         private GameServer server;
-        private TileMapConsole mapLayer;
-        private MessageLogConsole msgLogLayer;
-        private Choreographer Choreographer { get; } = new Choreographer();
-        private Util.CoroutineContainer Coroutines { get; } = new Util.CoroutineContainer();
-        private DebugStatsConsole debugStats = new DebugStatsConsole();
+        private GameplayMessageHandler msgHandler;
         
         // The last valid key state. Consumed on use.
         private SadConsole.Input.Keyboard? keyState = null;
 
-        private List<MapActor> mapActors = new List<MapActor>(64);
-        private MapActor? LookupMapActor(Actor actor)
-            => mapActors.FirstOrDefault(x => x.Actor == actor);
 
         private bool returnToTitle = false;
 
@@ -40,20 +44,21 @@ namespace Client.State
         public Gameplay(int w, int h, GameServer s) : base(w, h)
         {
             server = s;
+            msgHandler = new GameplayMessageHandler(this);
 
-            mapLayer = new TileMapConsole(w / 4, h / 4);
-            Children.Add(mapLayer);
+            TileMap = new Consoles.TileMap(w / 4, h / 4);
+            Children.Add(TileMap);
 
-            msgLogLayer = new MessageLogConsole(
+            MessageLog = new Consoles.MessageLog(
                 Program.GameSizeW * 3 / 4, 
                 Program.GameSizeH * 1 / 5);
-            msgLogLayer.Position = new Point(
+            MessageLog.Position = new Point(
                 Program.GameSizeW / 8, 
                 Program.GameSizeH * 4 / 5);
-            msgLogLayer.DefaultBackground = Color.Gray;
-            Children.Add(msgLogLayer);
+            MessageLog.DefaultBackground = Color.Gray;
+            Children.Add(MessageLog);
 
-            Children.Add(debugStats);
+            Children.Add(DebugStatsDisplay);
 
             Coroutines.Add(SimulationLoop(false));
         }
@@ -61,7 +66,7 @@ namespace Client.State
         public void HandleMessages(IEnumerable<IGameMessage> messages)
         {
             foreach (var msg in messages)
-                msg.Dispatch(this);
+                msg.Dispatch(msgHandler);
         }
 
         private void ProcessSimulationResult(SimResult result)
@@ -75,7 +80,7 @@ namespace Client.State
 
         private static SimResult TimedRunSimulation(GameServer server,
                                                     IAction? nextAction,
-                                                    DebugStatsConsole? debugStats = null)
+                                                    Consoles.DebugStats? debugStats = null)
         {
             var updateTimer = Stopwatch.StartNew();
             var result = server.Run(nextAction);
@@ -95,7 +100,7 @@ namespace Client.State
                     keyState = null;
                 }
                 
-                var simTask = Task.Run(() => TimedRunSimulation(server, userAction, debugStats));
+                var simTask = Task.Run(() => TimedRunSimulation(server, userAction, DebugStatsDisplay));
 
                 // TODO: async could work via two-bit prediction or something.
                 //       if the last few significant updates have been >16ms,
@@ -117,7 +122,7 @@ namespace Client.State
 
         public override void Update(TimeSpan timeElapsed)
         {
-            debugStats.UpdateDelta = timeElapsed.Milliseconds;
+            DebugStatsDisplay.UpdateDelta = timeElapsed.Milliseconds;
 
             Coroutines.Update();
 
@@ -164,17 +169,17 @@ namespace Client.State
         private void CheckNonGameplayHotkeys(SadConsole.Input.Keyboard info)
         {
             if (info.IsKeyPressed(Keys.F1))
-                debugStats.IsVisible = !debugStats.IsVisible;
+                DebugStatsDisplay.IsVisible = !DebugStatsDisplay.IsVisible;
 
             if (info.IsKeyPressed(Keys.Escape))
                 returnToTitle = true;
 
             if (info.IsKeyPressed(Keys.L))
-                msgLogLayer.ToggleVisible();
+                MessageLog.ToggleVisible();
 
             if (info.IsKeyPressed(Keys.P))
             {
-                foreach (var x in mapActors.Select((x, i) => (x, i)))
+                foreach (var x in MapActors.Select((x, i) => (x, i)))
                     Choreographer.AddMotion(new Motions.Wiggle(x.x, x.i % 3 == 0));
             }
 
@@ -195,14 +200,14 @@ namespace Client.State
 
         public override void Draw(TimeSpan timeElapsed)
         {
-            debugStats.RenderDelta = timeElapsed.Milliseconds;
-            Choreographer.PrepareDraw(mapActors, timeElapsed);
+            DebugStatsDisplay.RenderDelta = timeElapsed.Milliseconds;
+            Choreographer.PrepareDraw(MapActors, timeElapsed);
             
             if (waitingActor != null)
             {
                 var entity = LookupMapActor(waitingActor);
                 if (entity != null)
-                    mapLayer.CenterViewOn(entity);
+                    TileMap.CenterViewOn(entity);
             }
             
             base.Draw(timeElapsed);
@@ -230,51 +235,6 @@ namespace Client.State
             obj.Children.Remove(this);
 
             return null;
-        }
-
-        public void HandleMessage(EntityAppeared msg)
-        {
-            mapActors.Add(new MapActor(mapLayer, msg.Actor));
-        }
-
-        public void HandleMessage(EntityVanished msg)
-        {
-            mapActors.RemoveAll(x => x.Actor == msg.Actor);
-        }
-
-        public void HandleMessage(EntityMoved msg)
-        {
-            var vis = LookupMapActor(msg.Actor);
-            if (vis != null)
-                Choreographer.AddMotion(new Motions.LerpMove(
-                    msg.SourceTile.x, msg.SourceTile.y, 
-                    msg.DestTile.x, msg.DestTile.y, 
-                    10, vis));
-        }
-
-        public void HandleMessage(MapChanged msg)
-        {
-            mapLayer.RebuildTileMap(msg.NewMapData);
-        }
-
-        public void HandleMessage(AddedToLog msg)
-        {
-            msgLogLayer.AddMessage(msg.MessageId);
-        }
-
-        public void HandleMessage(EntityAttacked msg)
-        {
-            var attacker = LookupMapActor(msg.Actor);
-            if (attacker != null)
-                Choreographer.AddMotion(new Motions.Wiggle(attacker, true, 30));
-            foreach (var a in msg.Results)
-            {
-                var target = LookupMapActor(a.Target);
-                if (target != null)
-                    Choreographer.AddMotion(new Motions.Wiggle(target, false, 30));
-                msgLogLayer.AddMessage($"Actor attacks Actor!");
-                msgLogLayer.AddMessage($"{a.DamageDealt} damage!");
-            }
         }
     }
 }

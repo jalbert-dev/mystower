@@ -10,13 +10,13 @@ using static SadConsole.RectangleExtensions;
 using static SadRogue.Primitives.SadRogueRectangleExtensions;
 using C = System.Console;
 
-namespace Client
+namespace Client.Consoles
 {
-    public class TileMapConsole : SadConsole.Console
+    public class TileMap : SadConsole.Console
     {
         private TileMapRenderer _tilemapRenderer;
 
-        public TileMapConsole(int w, int h) : base(w / 2, h)
+        public TileMap(int w, int h) : base(w / 2, h)
         {
             DefaultBackground = Color.Black;
             Font = SadConsole.GameHost.Instance.Fonts["Tileset"];
