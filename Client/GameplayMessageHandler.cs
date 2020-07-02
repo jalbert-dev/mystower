@@ -5,8 +5,8 @@ namespace Client
 {
     public class GameplayMessageHandler : IGameClient
     {
-        State.Gameplay Client { get; }
-        public GameplayMessageHandler(State.Gameplay client) => this.Client = client;
+        Consoles.Gameplay Client { get; }
+        public GameplayMessageHandler(Consoles.Gameplay client) => this.Client = client;
 
         public void HandleMessage(EntityAppeared msg)
         {
