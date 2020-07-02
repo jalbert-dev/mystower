@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Server.Data;
-using Server.Util.Functional;
+using Util.Functional;
 
 namespace Server.Logic
 {

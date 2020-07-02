@@ -1,6 +1,6 @@
 using System;
 
-namespace Server.Util.Functional
+namespace Util.Functional
 {
     public static class FunctionalExtensions
     {

@@ -1,4 +1,4 @@
-namespace Server
+namespace Util
 {
     public interface IError
     {

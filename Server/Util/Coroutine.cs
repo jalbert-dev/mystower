@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Client
+namespace Util
 {
     public static class Coroutines
     {

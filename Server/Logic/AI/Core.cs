@@ -1,4 +1,4 @@
-using Server.Util;
+using Util;
 
 namespace Server.Logic
 {

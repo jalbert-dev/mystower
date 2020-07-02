@@ -1,6 +1,6 @@
 using System;
 
-namespace Server.Util.Functional
+namespace Util.Functional
 {
     [System.Serializable]
     public class OptionIsNoneException : System.Exception

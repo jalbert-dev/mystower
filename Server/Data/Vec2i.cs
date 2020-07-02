@@ -1,6 +1,6 @@
 
 using System;
-using Server.Util;
+using Util;
 
 namespace Server.Data
 {

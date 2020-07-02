@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using Server.Data;
 using Server.Logic;
-using Server.Util.Functional;
+using Util;
+using Util.Functional;
 
 namespace Server
 {

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Server.Util;
+using Util;
 
 namespace Server.Data
 {

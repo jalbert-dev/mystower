@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace Server.Util
+namespace Util
 {
     public static class Stringify
     {

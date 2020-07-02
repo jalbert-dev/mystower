@@ -60,7 +60,7 @@ namespace Client.State
 
         private Choreographer Choreographer { get; } = new Choreographer();
 
-        private CoroutineContainer Coroutines { get; } = new CoroutineContainer();
+        private Util.CoroutineContainer Coroutines { get; } = new Util.CoroutineContainer();
 
         private bool returnToTitle = false;
 
