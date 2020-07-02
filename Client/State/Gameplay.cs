@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -17,7 +18,7 @@ namespace Client.State
 {
     public class DebugStatsConsole : SadConsole.Console
     {
-        public long LastUpdateTime { get; set; }
+        public long LastSimulationTime { get; set; }
         public long UpdateDelta { get; set; }
         public long RenderDelta { get; set; }
 
@@ -38,7 +39,7 @@ namespace Client.State
         {
             this.Clear();
             Cursor.Position = new Point(0, 0);
-            Cursor.Print($"Last simulation time: {LastUpdateTime}ms\n");
+            Cursor.Print($"Last simulation time: {LastSimulationTime}ms\n");
             Cursor.Print($"   Last update delta: {UpdateDelta}ms\n");
             Cursor.Print($"   Last render delta: {RenderDelta}ms\n");
             base.Draw(delta);
@@ -59,6 +60,8 @@ namespace Client.State
 
         private Choreographer Choreographer { get; } = new Choreographer();
 
+        private CoroutineContainer Coroutines { get; } = new CoroutineContainer();
+
         private bool returnToTitle = false;
 
         // Contains an actor that the server is waiting on
@@ -73,8 +76,6 @@ namespace Client.State
         // into place on frame 2 and it looks odd)
         private bool isFirstSim = true;
         private bool ShouldAsyncSimulate => !isFirstSim && isAsyncSim;
-        // Contains the eventual server sim results
-        private Task<SimResult>? serverSimulation = null;
 
         private DebugStatsConsole debugStats = new DebugStatsConsole();
 
@@ -112,6 +113,38 @@ namespace Client.State
             waitingActor = result.WaitingActor;
         }
 
+        private static Task<SimResult> TimedRunSimulation(GameServer server, IAction? nextAction, DebugStatsConsole? debugStats = null)
+            =>  Task.Run(() => {
+                    var updateTimer = Stopwatch.StartNew();
+                    var result = server.Run(nextAction);
+                    if (debugStats != null)
+                        debugStats.LastSimulationTime = updateTimer.ElapsedMilliseconds;
+                    return result;
+                });
+
+        private static IEnumerable RunServerSimulation(bool async,
+                                                       GameServer server,
+                                                       IAction? nextAction,
+                                                       Action<SimResult> continuation,
+                                                       DebugStatsConsole? debugStats = null)
+        {
+            if (async)
+            {
+                // Contains the eventual server sim results
+                Task<SimResult> serverSimulation = TimedRunSimulation(server, nextAction, debugStats);
+                        
+                while (!serverSimulation.IsCompleted)
+                    yield return null;
+                    
+                continuation(serverSimulation.Result);
+            }
+            else
+            {
+                continuation(TimedRunSimulation(server, nextAction, debugStats).Result);
+            }
+            yield break;
+        }
+
         public override void Update(TimeSpan timeElapsed)
         {
             debugStats.UpdateDelta = timeElapsed.Milliseconds;
@@ -119,40 +152,19 @@ namespace Client.State
             // or the server's not waiting on any actors
             if (nextAction != null || waitingActor == null)
             {
+                Coroutines.Start(RunServerSimulation(ShouldAsyncSimulate,
+                                                     server,
+                                                     nextAction,
+                                                     ProcessServerResult,
+                                                     debugStats));
+                
                 // If we're simulating, we're no longer waiting on a unit
                 waitingActor = null;
-                if (ShouldAsyncSimulate)
-                {
-                    if (serverSimulation == null)
-                    {
-                        // beware the thunk! copy the nextAction reference!
-                        var next = nextAction;
-                        var updateTimer = new Stopwatch();
-                        updateTimer.Start();
-                        serverSimulation = 
-                            Task.Run(() => server.Run(next))
-                                .ContinueWith(result => {
-                                    debugStats.LastUpdateTime = updateTimer.ElapsedMilliseconds;
-                                    return result.Result;
-                                });
-                    }
-                    else if (serverSimulation.IsCompleted)
-                    {
-                        var result = serverSimulation.Result;
-                        ProcessServerResult(result);
-                        serverSimulation = null;
-                    }
-                }
-                else
-                {
-                    var updateTimer = new Stopwatch();
-                    updateTimer.Start();
-                    ProcessServerResult(server.Run(nextAction));
-                    debugStats.LastUpdateTime = updateTimer.ElapsedMilliseconds;
-                }
                 nextAction = null;
             }
             isFirstSim = false;
+
+            Coroutines.Update();
 
             base.Update(timeElapsed);
         }
