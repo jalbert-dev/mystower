@@ -22,6 +22,7 @@ namespace Server.Tests
 
         static IEnumerable Noop() { yield break; }
         static IEnumerable OneFrameCoroutine() { yield return null; yield break; }
+        static IEnumerable Nested(IEnumerable nest) { yield return nest; yield break; }
 
         [Property] public Property StepExecutesCoroutineBody()
             => Prop.ForAll(Gen.Choose(0, 50).ToArbitrary(), limit => {
@@ -39,6 +40,14 @@ namespace Server.Tests
                 return co.IsDone;
             });
 
+        [Fact] public void SteppingFinishedCoroutineDoesNothing()
+        {
+            var co = new Coroutine(Noop());
+            for (int i = 0; i < 999; i++)
+                co.Step();
+            co.IsDone.Should().BeTrue();
+        }
+
         [Fact] public void IsDoneIsFalseAfterCoroutineConstruction()
             => new Coroutine(Noop()).IsDone.Should().BeFalse();
 
@@ -55,5 +64,60 @@ namespace Server.Tests
             co.Step();
             co.IsDone.Should().BeTrue();
         }
+
+        [Fact] public void YieldingNestedEnumerableExecutesImmediately()
+        {
+            int result = -1;
+            var co = new Coroutine(Nested(Counter(10, x => result = x)));
+            co.Step();
+            result.Should().Be(0);
+        }
+
+        [Fact] public void WhenNestedEnumerableFinishesParentResumesImmediately()
+        {
+            static IEnumerable SetAfterOneFrame<T>(T value, Action<T> callback)
+            {
+                yield return OneFrameCoroutine();
+                callback(value);
+                yield break;
+            }
+
+            int result = -1;
+            var co = new Coroutine(SetAfterOneFrame(24, x => result = x));
+            co.Step();
+            result.Should().Be(-1);
+            co.Step();
+            result.Should().Be(24);
+            co.IsDone.Should().BeTrue();
+        }
+
+        [Property] public Property NestedImmediateCoroutinesAllExecuteInOneStep()
+            => Prop.ForAll(Gen.Choose(1, 24).ToArbitrary(), nestingLevels => {
+                int node = 0;
+                int leaf = 0;
+
+                IEnumerable Node(IEnumerable next)
+                {
+                    node++;
+                    yield return next;
+                    yield break;
+                }
+                IEnumerable Leaf()
+                {
+                    leaf++;
+                    yield break;
+                }
+
+                IEnumerable en = Leaf();
+                for (int i = 0; i < nestingLevels; i++)
+                    en = Node(en);
+
+                var co = new Coroutine(en);
+                co.Step();
+
+                node.Should().Be(nestingLevels);
+                leaf.Should().Be(1);
+                co.IsDone.Should().BeTrue();
+            });
     }
 }

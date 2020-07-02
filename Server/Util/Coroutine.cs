@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Util
@@ -31,15 +32,18 @@ namespace Util
             Add(enumerable);
         }
 
-        public void Step()
+        bool InnerStep()
         {
+            if (IsDone)
+                return false;
+            
             var co = callstack.Peek();
             while (co.MoveNext() == false)
             {
                 callstack.Pop();
 
                 if (IsDone)
-                    return;
+                    return false;
                 
                 co = callstack.Peek();
             }
@@ -47,19 +51,24 @@ namespace Util
             if (co.Current is IEnumerable nestedCo)
             {
                 Add(nestedCo);
+                return true;
             }
             else if (co.Current is Task task)
             {
                 Add(Coroutines.WaitForTask(task));
+                return true;
             }
+            return false;
+        }
+
+        public void Step()
+        {
+            while (InnerStep());
         }
 
         public bool IsDone => callstack.Count == 0;
 
-        void Add(IEnumerable enumerable)
-        {
-            callstack.Push(enumerable.GetEnumerator());
-        }
+        void Add(IEnumerable enumerable) => callstack.Push(enumerable.GetEnumerator());
 
         Stack<IEnumerator> callstack;
     }
@@ -71,7 +80,13 @@ namespace Util
 
         public void Start(IEnumerable co) 
         {
-            coroutines.Add(new Coroutine(co));
+            Add(co);
+            coroutines.Last().Step();
+        }
+        public void Add(IEnumerable co)
+        {
+            var coroutine = new Coroutine(co);
+            coroutines.Add(coroutine);
         }
         public void ClearAll() => coroutines.Clear();
 
