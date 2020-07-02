@@ -21,43 +21,65 @@ namespace Util
         }
     }
 
-    public class CoroutineContainer
+    public class Coroutine
     {
         private const int INITIAL_STACK_SIZE = 8;
 
-        List<Stack<IEnumerator>> coroutines = new List<Stack<IEnumerator>>();
+        public Coroutine(IEnumerable enumerable)
+        {
+            callstack = new Stack<IEnumerator>(INITIAL_STACK_SIZE);
+            Add(enumerable);
+        }
+
+        public void Step()
+        {
+            var co = callstack.Peek();
+            while (co.MoveNext() == false)
+            {
+                callstack.Pop();
+
+                if (IsDone)
+                    return;
+                
+                co = callstack.Peek();
+            }
+            
+            if (co.Current is IEnumerable nestedCo)
+            {
+                Add(nestedCo);
+            }
+            else if (co.Current is Task task)
+            {
+                Add(Coroutines.WaitForTask(task));
+            }
+        }
+
+        public bool IsDone => callstack.Count == 0;
+
+        void Add(IEnumerable enumerable)
+        {
+            callstack.Push(enumerable.GetEnumerator());
+        }
+
+        Stack<IEnumerator> callstack;
+    }
+
+    public class CoroutineContainer
+    {
+
+        List<Coroutine> coroutines = new List<Coroutine>();
 
         public void Start(IEnumerable co) 
         {
-            var execStack = new Stack<IEnumerator>(INITIAL_STACK_SIZE);
-            execStack.Push(co.GetEnumerator());
-            coroutines.Add(execStack);
+            coroutines.Add(new Coroutine(co));
         }
         public void ClearAll() => coroutines.Clear();
 
         public void Update()
         {
-            coroutines.RemoveAll(coStack => {
-                var co = coStack.Peek();
-                while (co.MoveNext() == false)
-                {
-                    coStack.Pop();
-
-                    if (coStack.Count == 0)
-                        return true;
-                    
-                    co = coStack.Peek();
-                }
-                
-                if (co.Current is IEnumerable nestedCo)
-                {
-                    coStack.Push(nestedCo.GetEnumerator());
-                }
-                else if (co.Current is Task task)
-                {
-                    coStack.Push(Coroutines.WaitForTask(task).GetEnumerator());
-                }
-                return false;
+            coroutines.RemoveAll(coroutine => {
+                coroutine.Step();
+                return coroutine.IsDone;
             });
         }
     }
