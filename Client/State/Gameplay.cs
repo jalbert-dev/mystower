@@ -27,7 +27,7 @@ namespace Client.State
         public IState<StateManager>? Exec(StateManager obj)
         {
             if (GameplayConsole.ShouldReturnToTitle)
-                return new State.TitleScreen(Width, Height);
+                return new State.TitleScreen();
             return null;
         }
 

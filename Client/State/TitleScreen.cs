@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using System.IO;
+using SadConsole;
 using SadConsole.Input;
 using SadRogue.Primitives;
 using Util;
 
 namespace Client.State
 {
-    public class TitleScreen : SadConsole.UI.ControlsConsole, IState<StateManager>
+    public class TitleScreen : SadConsole.UI.ControlsConsole, IState<StateManager>, IResizeHandler
     {
         public SadConsole.UI.Controls.Button btnNewGame = new SadConsole.UI.Controls.Button(20);
         public SadConsole.UI.Controls.Button btnLoadGame = new SadConsole.UI.Controls.Button(20);
@@ -19,15 +20,11 @@ namespace Client.State
 
         List<SadConsole.UI.Controls.Button> focusOrder;
         int focused = 0;
-        public TitleScreen(int w, int h) : base(w, h) 
+        public TitleScreen() : base(1, 1) 
         {
             btnNewGame.Text = "New Game";
             btnLoadGame.Text = "Load Game";
             btnExit.Text = "Exit";
-
-            btnNewGame.Position = new SadRogue.Primitives.Point(w / 2 - btnNewGame.Width / 2, h / 2);
-            btnLoadGame.PlaceRelativeTo(btnNewGame, Direction.Types.Down, 2);
-            btnExit.PlaceRelativeTo(btnLoadGame, Direction.Types.Down, 2);
 
             lblName.Alignment = SadConsole.HorizontalAlignment.Center;
             
@@ -47,6 +44,18 @@ namespace Client.State
                 btnExit,
             };
             TriggerFocus();
+
+            OnWindowResize(SadConsole.Settings.Rendering.RenderWidth, SadConsole.Settings.Rendering.RenderHeight);
+        }
+
+        public void OnWindowResize(int width, int height)
+        {
+            var (w, h) = (width / FontSize.X, height / FontSize.Y);
+            Resize(w, h, w, h, false);
+
+            btnNewGame.Position = new SadRogue.Primitives.Point(w / 2 - btnNewGame.Width / 2, h / 2);
+            btnLoadGame.PlaceRelativeTo(btnNewGame, Direction.Types.Down, 2);
+            btnExit.PlaceRelativeTo(btnLoadGame, Direction.Types.Down, 2);
         }
 
         private void TriggerFocus()
