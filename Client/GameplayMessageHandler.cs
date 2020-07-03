@@ -1,6 +1,4 @@
-using System.Collections;
 using Server;
-using Server.Data;
 using Server.Message;
 
 namespace Client
@@ -26,7 +24,7 @@ namespace Client
             if (vis != null)
                 Client.Choreographer.AddMotion(
                     vis,
-                    (actor, _) => Motions.LerpMove(actor, msg.SourceTile, msg.DestTile, 10),
+                    Motions.LerpMove(vis, msg.SourceTile, msg.DestTile, 10),
                     Choreographer.Ordering.Simultaneous);
         }
 
@@ -44,18 +42,22 @@ namespace Client
         {
             var attacker = Client.MapActors.Lookup(msg.Actor);
             if (attacker != null)
+            {
                 Client.Choreographer.AddMotion(
                     attacker,
-                    (actor, _) => Motions.Wiggle(actor, 20, 1, 10),
+                    Motions.Wiggle(attacker, 20, 1, 10),
                     Choreographer.Ordering.Solo);
+            }
             foreach (var a in msg.Results)
             {
                 var target = Client.MapActors.Lookup(a.Target);
                 if (target != null)
+                {
                     Client.Choreographer.AddMotion(
                         target,
-                        (actor, _) => Motions.Wiggle(actor, 60, 4, 8),
+                        Motions.Wiggle(target, 60, 4, 8),
                         Choreographer.Ordering.Solo);
+                }
                 Client.MessageLog.AddMessage($"Actor attacks Actor!");
                 Client.MessageLog.AddMessage($"{a.DamageDealt} damage!");
             }

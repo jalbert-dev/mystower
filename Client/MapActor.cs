@@ -12,13 +12,13 @@ namespace Client
     public class MapActor : Entity
     {
         public DataHandle<Actor> Actor { get; }
-        public SadConsole.Console ScrollingParent { get; }
+        public SadConsole.Console ParentTileMap { get; }
 
         public MapActor(SadConsole.Console parent, GameServer server, DataHandle<Actor> actor) : base(1,1)
         {
             parent.Children.Add(this);
             this.Parent = parent;
-            ScrollingParent = parent;
+            ParentTileMap = parent;
 
             this.Actor = actor;
             Animation.Font = parent.Font;
@@ -32,7 +32,7 @@ namespace Client
                     Glyph = actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125,
                 };
                 Position = new Point(actor.position.x, actor.position.y)
-                    .SurfaceLocationToPixel(ScrollingParent.FontSize.X, ScrollingParent.FontSize.Y);
+                    .SurfaceLocationToPixel(ParentTileMap.FontSize.X, ParentTileMap.FontSize.Y);
             });
             
             Animation.UsePixelPositioning = true;

@@ -18,7 +18,7 @@ namespace Client
                                            Vec2i dst,
                                            int duration)
         {
-            var tileScale = actor.ScrollingParent.FontSize;
+            var tileScale = actor.ParentTileMap.FontSize;
             var Source = new Vector2(src.x * tileScale.X, src.y * tileScale.Y);
             var Dest = Source + new Vector2(dst.x * tileScale.X, dst.y * tileScale.Y);
 

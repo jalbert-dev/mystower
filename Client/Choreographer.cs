@@ -121,5 +121,11 @@ namespace Client
                 }
             }
         }
+
+        public void AddMotion(MapActor target, Func<MapActor, IEnumerable> coroutineProducer, Ordering ordering)
+            => AddMotion(target, (actor, _) => coroutineProducer(actor), ordering);
+
+        public void AddMotion(MapActor target, IEnumerable coroutine, Ordering ordering)
+            => AddMotion(target, (_, __) => coroutine, ordering);
     }
 }
