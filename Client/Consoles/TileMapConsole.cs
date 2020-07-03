@@ -13,20 +13,27 @@ namespace Client.Consoles
     {
         private TileMapRenderer _tilemapRenderer;
 
-        public TileMap(int w, int h) : base(w / 2, h)
+        private int canvasWidth, canvasHeight;
+
+        public TileMap() : base(1, 1)
         {
             DefaultBackground = Color.Black;
             Font = SadConsole.GameHost.Instance.Fonts["Tileset"];
             FontSize = Font.GetFontSize(Sizes.Four);
             Renderer = _tilemapRenderer = new TileMapRenderer();
+
+            ResizePx(SadConsole.Settings.Rendering.RenderWidth, SadConsole.Settings.Rendering.RenderHeight, 1, 1);
         }
 
-        public void ResizePx(int w, int h)
+        public void ResizePx(int w, int h) => ResizePx(w, h, BufferWidth, BufferHeight);
+        public void ResizePx(int w, int h, int bufferWidth, int bufferHeight)
         {
             // https://stackoverflow.com/a/53520604 -- handy ceil implementation for ints!
             var neededWidth = (w / FontSize.X) + (w % FontSize.X == 0 ? 0 : 1);
             var neededHeight = (h / FontSize.Y) + (h % FontSize.Y == 0 ? 0 : 1);
-            Resize(neededWidth, neededHeight, BufferWidth, BufferHeight, false);
+            Resize(neededWidth, neededHeight, bufferWidth, bufferHeight, false);
+            canvasWidth = w;
+            canvasHeight = h;
         }
 
         public void RebuildTileMap(MapData map)
@@ -34,7 +41,7 @@ namespace Client.Consoles
             int w = map.Width;
             int h = map.Height;
 
-            this.Resize(ViewWidth, ViewHeight, w, h, false);
+            this.ResizePx(canvasWidth, canvasHeight, w, h);
 
             this.Clear();
 
@@ -56,6 +63,15 @@ namespace Client.Consoles
             var vp = Surface.View;
             // ! .ToPixels(Point) is currently broken
             var viewPortPx = vp.ToPixels(FontSize.X, FontSize.Y);
+
+            // before anything, we need to clamp the viewport size to our canvas size
+            // this is a hack piled on top of other hacks, but it prevents the topleft from
+            // snapping to the nearest tile
+            if (viewPortPx.Width > canvasWidth)
+                viewPortPx = viewPortPx.WithWidth(canvasWidth);
+            if (viewPortPx.Height > canvasHeight)
+                viewPortPx = viewPortPx.WithHeight(canvasHeight);
+               
             var halfSize = new Point(FontSize.X / 2, FontSize.Y / 2);
             var centered = viewPortPx.WithCenter(actor.Position + halfSize);
 

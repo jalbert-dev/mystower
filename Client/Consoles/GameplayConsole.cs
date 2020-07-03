@@ -68,21 +68,15 @@ namespace Client.Consoles
         private DataHandle<Actor>? waitingActor;
         private MapActor? fallbackCameraFocusActor;
 
-        public Gameplay(int w, int h, GameServer s) : base(w, h)
+        public Gameplay(GameServer s) : base(1, 1)
         {
             Server = s;
             msgHandler = new GameplayMessageHandler(this);
 
-            TileMap = new Consoles.TileMap(w / 4, h / 4);
+            TileMap = new Consoles.TileMap();
             Children.Add(TileMap);
 
-            MessageLog = new Consoles.MessageLog(
-                Program.GameSizeW * 3 / 4, 
-                Program.GameSizeH * 1 / 5);
-            MessageLog.Position = new Point(
-                Program.GameSizeW / 8, 
-                Program.GameSizeH * 4 / 5);
-            MessageLog.DefaultBackground = Color.Gray;
+            MessageLog = new Consoles.MessageLog();
             Children.Add(MessageLog);
 
             Children.Add(DebugStatsDisplay);
@@ -96,6 +90,8 @@ namespace Client.Consoles
             };
 
             HandleMessages(Server.GetClientInitMessages());
+
+            OnWindowResize(SadConsole.Settings.Rendering.RenderWidth, SadConsole.Settings.Rendering.RenderHeight);
         }
 
         public void HandleMessages(IEnumerable<IGameMessage> messages)
@@ -263,6 +259,12 @@ namespace Client.Consoles
         public void OnWindowResize(int width, int height)
         {
             TileMap.ResizePx(width, height);
+
+            var msgW = width / MessageLog.FontSize.X * 3 / 5;
+            var msgH = height / MessageLog.FontSize.Y * 1 / 5;
+            int msgX = width / 2;
+            int msgY = height - 40;
+            MessageLog.Reposition(msgX, msgY, msgW, msgH);
         }
     }
 }

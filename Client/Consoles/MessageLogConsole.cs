@@ -19,9 +19,12 @@ namespace Client.Consoles
         public IEnumerable<string> AllMessages
             => messages.Reverse<string>();
 
-        public MessageLog(int w, int h) : base(w, h) 
+        public MessageLog() : base(1, 1) 
         { 
-            msgDisplay = new SadConsole.Console(w - 4, h - 2);
+            DefaultBackground = Color.Gray;
+            UsePixelPositioning = true;
+
+            msgDisplay = new SadConsole.Console(1, 1);
             msgDisplay.Position = new Point(2, 1);
             msgDisplay.DefaultBackground = Color.Transparent;
 
@@ -32,6 +35,18 @@ namespace Client.Consoles
             };
 
             Children.Add(msgDisplay);
+        }
+
+        public void Reposition(int x, int y, int w, int h)
+        {
+            Resize(w, h, w, h, false);
+
+            // By default, the origin of the message log is at the center-bottom
+            Position = new Point(x - w * FontSize.X / 2, y - h * FontSize.Y);
+
+            msgDisplay.Resize(w - 4, h - 2, w - 4, h - 2, false);
+
+            dirty = true;
         }
 
         public override void Update(TimeSpan timeElapsed)

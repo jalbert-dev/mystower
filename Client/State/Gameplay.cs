@@ -12,7 +12,7 @@ namespace Client.State
 
         public Gameplay(int w, int h, GameServer s)
         {
-            GameplayConsole = new Consoles.Gameplay(w, h, s);
+            GameplayConsole = new Consoles.Gameplay(s);
             Width = w;
             Height = h;
         }
