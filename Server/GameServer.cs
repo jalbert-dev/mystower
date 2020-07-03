@@ -218,7 +218,6 @@ namespace Server
             yield return new Message.MapChanged(gameState.map);
             foreach (var actor in gameState.actors)
                 yield return new Message.EntityAppeared(actor);
-            yield break;
         }
 
         /// <summary>

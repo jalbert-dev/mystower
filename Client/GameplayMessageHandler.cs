@@ -1,4 +1,6 @@
+using System.Collections;
 using Server;
+using Server.Data;
 using Server.Message;
 
 namespace Client
@@ -22,10 +24,10 @@ namespace Client
         {
             var vis = Client.MapActors.Lookup(msg.Actor);
             if (vis != null)
-                Client.Choreographer.AddMotion(new Motions.LerpMove(
-                    msg.SourceTile.x, msg.SourceTile.y, 
-                    msg.DestTile.x, msg.DestTile.y, 
-                    10, vis));
+                Client.Choreographer.AddMotion(
+                    vis,
+                    (actor, _) => Motions.LerpMove(actor, msg.SourceTile, msg.DestTile, 10),
+                    Choreographer.Ordering.Simultaneous);
         }
 
         public void HandleMessage(MapChanged msg)
@@ -42,12 +44,18 @@ namespace Client
         {
             var attacker = Client.MapActors.Lookup(msg.Actor);
             if (attacker != null)
-                Client.Choreographer.AddMotion(new Motions.Wiggle(attacker, true, 30));
+                Client.Choreographer.AddMotion(
+                    attacker,
+                    (actor, _) => Motions.Wiggle(actor, 20, 1, 10),
+                    Choreographer.Ordering.Solo);
             foreach (var a in msg.Results)
             {
                 var target = Client.MapActors.Lookup(a.Target);
                 if (target != null)
-                    Client.Choreographer.AddMotion(new Motions.Wiggle(target, false, 30));
+                    Client.Choreographer.AddMotion(
+                        target,
+                        (actor, _) => Motions.Wiggle(actor, 60, 4, 8),
+                        Choreographer.Ordering.Solo);
                 Client.MessageLog.AddMessage($"Actor attacks Actor!");
                 Client.MessageLog.AddMessage($"{a.DamageDealt} damage!");
             }

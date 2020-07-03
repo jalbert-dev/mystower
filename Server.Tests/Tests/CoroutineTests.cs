@@ -17,12 +17,11 @@ namespace Server.Tests
                 callback(i);
                 yield return null;
             }
-            yield break;
         }
 
         static IEnumerable Noop() { yield break; }
-        static IEnumerable OneFrameCoroutine() { yield return null; yield break; }
-        static IEnumerable Nested(IEnumerable nest) { yield return nest; yield break; }
+        static IEnumerable OneFrameCoroutine() { yield return null; }
+        static IEnumerable Nested(IEnumerable nest) { yield return nest; }
 
         [Property] public Property StepExecutesCoroutineBody()
             => Prop.ForAll(Gen.Choose(0, 50).ToArbitrary(), limit => {
@@ -79,7 +78,6 @@ namespace Server.Tests
             {
                 yield return OneFrameCoroutine();
                 callback(value);
-                yield break;
             }
 
             int result = -1;
@@ -100,7 +98,6 @@ namespace Server.Tests
                 {
                     node++;
                     yield return next;
-                    yield break;
                 }
                 IEnumerable Leaf()
                 {

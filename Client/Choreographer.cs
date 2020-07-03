@@ -1,89 +1,125 @@
+using Util;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using SadRogue.Primitives;
 
 namespace Client
 {
+    public class ChoreographyStep
+    {
+        private const int INITIAL_MOTION_LIST_LEN = 4;
+
+        Dictionary<MapActor, List<Coroutine>> motions = new Dictionary<MapActor, List<Coroutine>>();
+
+        public bool IsDone => motions.Values.All(x => x.Count == 0);
+
+        public void Clear() => motions.Clear();
+
+        public void QueueMotion(MapActor target, Func<MapActor, ChoreographyStep, IEnumerable> coroutineProducer)
+        {
+            motions.TryGetValue(target, out var motionList);
+            if (motionList == null)
+                motions.Add(target, new List<Coroutine>(INITIAL_MOTION_LIST_LEN));
+            motions[target].Add(new Coroutine(coroutineProducer(target, this)));
+        }
+
+        public void Update()
+        {
+            foreach (var motionList in motions.Values)
+            {
+                var frontMotion = motionList.FirstOrDefault();
+                if (frontMotion != null)
+                {
+                    frontMotion.Step();
+                    if (frontMotion.IsDone)
+                        motionList.RemoveAt(0);
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// A Choreographer coordinates the motion of multiple MapActors.
     /// Individual motions are expressed by IActorMotion instances.
     /// </summary>
     public class Choreographer
     {
-        List<IActorMotion> motions = new List<IActorMotion>(32);
-        IEnumerable<IActorMotion> ActiveMotions => motions.Where(x => !x.IsFinished);
-        /// <summary>
-        /// A list of all motions up to the first global-sequential motion.
-        /// </summary>
-        IEnumerable<IActorMotion> ActiveMotionsThisStep
-        {
-            get
-            {
-                if (ActiveMotions.Count() == 0)
-                    yield break;
-
-                var firstMotion = ActiveMotions.First();
-                yield return firstMotion;
-                
-                if (!firstMotion.IsGlobalSequential)
-                    foreach (var eff in ActiveMotions.Skip(1).TakeWhile(x => !x.IsGlobalSequential))
-                        yield return eff;
-                yield break;
-            }
-        }
-
-        /// <summary>
-        /// Given an enumerable of active motions, filters it by actor and returns
-        /// an enumerable of all motions up to the first actor-sequential motion.
-        /// </summary>
-        static IEnumerable<IActorMotion> ActiveLocalMotions(MapActor actor, IEnumerable<IActorMotion> activeGlobalMotions)
-        {
-            var actorMotions = activeGlobalMotions.Where(x => x.MapActor == actor);
-
-            if (actorMotions.Count() == 0)
-                yield break;
-
-            var first = actorMotions.First();
-            yield return first;
-
-            if (!first.IsActorSequential)
-                foreach (var mot in actorMotions.Skip(1).TakeWhile(x => !x.IsActorSequential))
-                    yield return mot;
-            yield break;
-        }
+        List<ChoreographyStep> steps = new List<ChoreographyStep>(16);
 
         /// <summary>
         /// Returns whether the choreographer has motions to execute.
         /// </summary>
-        public bool IsBusy => motions.Count != 0;
+        public bool IsBusy => steps.Count != 0;
 
-        public void PrepareDraw(IEnumerable<MapActor> actors, TimeSpan timeElapsed)
+        public void PrepareDraw(TimeSpan timeElapsed)
         {
-            // Globally-sequential motions can't be played until all motions
-            // before it have finished, so if a global-sequential motion exists
-            // and isn't at the front of the queue, process all motions up to it
-            var activeMotions = ActiveMotionsThisStep;
-            
-            foreach (var actor in actors)
-            {
-                // Actors have their position offsets reset each frame to allow
-                // multiple motions to sum their individual offsets.
-                actor.PositionOffset = default(Point);
+            var currentStep = steps.ElementAtOrDefault(0);
 
-                // Actor-sequential motions must be played in order per-actor,
-                // so we'll apply motions up to the first actor-sequential
-                // motion, or the first motion if it is actor-sequential.
-                foreach (var mot in ActiveLocalMotions(actor, activeMotions))
-                {
-                    mot.Apply(timeElapsed);
-                }
+            if (currentStep != null)
+            {
+                currentStep.Update();
+                
+                // prune finished steps from the list after updating
+                if (currentStep.IsDone)
+                    steps.RemoveAt(0);
             }
-            
-            // prune finished motions from the list after updating
-            motions.RemoveAll(x => x.IsFinished);
         }
 
-        public void AddMotion(IActorMotion instance) => motions.Add(instance);
+        public enum Ordering
+        {
+            /// <summary>
+            /// Solo motions are placed into their own exclusive choreography step
+            /// at the end of the step queue.
+            /// </summary>
+            Solo,
+            /// <summary>
+            /// Simultaneous motions are appended to the step at the end of the step queue.
+            /// </summary>
+            Simultaneous,
+        }
+
+        ChoreographyStep QueueNewStep()
+        {
+            var lastStep = steps.LastOrDefault();
+            // if there exists an empty step at the end of the queue, there's
+            // no need to create another; just reuse it
+            if (lastStep != null && lastStep.IsDone)
+            {
+                lastStep.Clear();
+                return lastStep;
+            }
+
+            // otherwise make and return a new step
+            steps.Add(new ChoreographyStep());
+            return steps.Last();
+        }
+
+        public void AddMotion(MapActor target, Func<MapActor, ChoreographyStep, IEnumerable> coroutineProducer, Ordering ordering)
+        {
+            if (ordering == Ordering.Solo)
+            {
+                // solo motions force creation of an exclusive step,
+                // after which we pad the end with an extra blank step
+                // to avoid new motions from adding to the exclusive step
+
+                QueueNewStep().QueueMotion(target, coroutineProducer);
+                QueueNewStep();
+            }
+            else if (ordering == Ordering.Simultaneous)
+            {
+                // simultaneous motions are put into the last step in the queue.
+                // if no steps exist, we need to create one
+                var lastStep = steps.LastOrDefault();
+                if (lastStep != null)
+                {
+                    lastStep.QueueMotion(target, coroutineProducer);
+                }
+                else
+                {
+                    QueueNewStep().QueueMotion(target, coroutineProducer);
+                }
+            }
+        }
     }
 }

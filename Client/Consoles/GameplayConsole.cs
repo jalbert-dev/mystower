@@ -230,7 +230,15 @@ namespace Client.Consoles
         public override void Draw(TimeSpan timeElapsed)
         {
             DebugStatsDisplay.RenderDelta = timeElapsed.Milliseconds;
-            Choreographer.PrepareDraw(MapActors.Actors, timeElapsed);
+
+            foreach (var actor in MapActors.Actors)
+            {
+                // Actors have their position offsets reset each frame to allow
+                // multiple motions to sum their individual offsets.
+                actor.PositionOffset = default(Point);
+            }
+
+            Choreographer.PrepareDraw(timeElapsed);
 
             // capture the first player-controlled actor as a fallback
             // in the event that we don't have a waitingActor to use as a 

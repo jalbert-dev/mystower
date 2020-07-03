@@ -1,43 +1,35 @@
 using System;
+using System.Collections;
 using Microsoft.Xna.Framework;
+using Server.Data;
 
-namespace Client.Motions
+namespace Client
 {
-    public class LerpMove : Base
+    public static partial class Motions
     {
-        public Vector2 Source { get; set; }
-        public Vector2 Dest { get; set; }
-        public int Interval { get; }
-
-        private int frameTime = 0;
-
         /// <summary>
         /// Creates a motion expressing lerped movement from one tile to another.
         /// </summary>
-        /// <param name="sx">Source tile X.</param>
-        /// <param name="sy">Source tile Y.</param>
-        /// <param name="dx">Dest tile X.</param>
-        /// <param name="dy">Dest tile Y.</param>
-        /// <param name="t">Duration of movement (in frames).</param>
-        /// <param name="actor">The actor to move.</param>
-        /// <returns></returns>
-        public LerpMove(int sx, int sy, int dx, int dy, int t, MapActor actor) : base(actor) 
+        /// <param name="src">Source tile coordinates.</param>
+        /// <param name="dst">Destination tile coordinates.</param>
+        /// <param name="duration">Duration of movement (in frames).</param>
+        public static IEnumerable LerpMove(MapActor actor,
+                                           Vec2i src,
+                                           Vec2i dst,
+                                           int duration)
         {
             var tileScale = actor.ScrollingParent.FontSize;
-            Source = new Vector2(sx * tileScale.X, sy * tileScale.Y);
-            Dest = Source + new Vector2(dx * tileScale.X, dy * tileScale.Y);
-            Interval = t;
-        }
+            var Source = new Vector2(src.x * tileScale.X, src.y * tileScale.Y);
+            var Dest = Source + new Vector2(dst.x * tileScale.X, dst.y * tileScale.Y);
 
-        public override bool IsGlobalSequential => false;
-        public override bool IsActorSequential => true;
-        public override bool IsFinished => frameTime >= Interval;
+            for (int t = 0; t < duration; t++)
+            {
+                var floatOffset = Vector2.LerpPrecise(Source, Dest, (float)t / (float)duration);
+                actor.Position = floatOffset.ToPoint().ToPoint();
+                yield return null;
+            }
 
-        public override void Apply(TimeSpan timeElapsed)
-        {
-            frameTime++;
-            var floatOffset = Vector2.LerpPrecise(Source, Dest, (float)frameTime / (float)Interval);
-            MapActor.Position = floatOffset.ToPoint().ToPoint();
+            actor.Position = Dest.ToPoint().ToPoint();
         }
     }
 }

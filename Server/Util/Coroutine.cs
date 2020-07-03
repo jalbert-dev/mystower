@@ -15,7 +15,6 @@ namespace Util
         {
             for (; frameCount >= 0; frameCount--)
                 yield return null;
-            yield break;
         }
 
         /// <summary>
@@ -27,7 +26,6 @@ namespace Util
         {
             while (!task.IsCompleted)
                 yield return null;
-            yield break;
         }
     }
 

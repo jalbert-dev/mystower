@@ -1,49 +1,26 @@
-using System;
+using System.Collections;
 using SadRogue.Primitives;
 
-namespace Client.Motions
+namespace Client
 {
-    public abstract class Base : IActorMotion
+    public static partial class Motions
     {
-        public MapActor MapActor { get; private set; }
-        public virtual bool IsFinished { get; private set; } = false;
-        public abstract bool IsGlobalSequential { get; }
-        public abstract bool IsActorSequential { get; }
-        public abstract void Apply(TimeSpan timeElapsed);
-
-        public Base(MapActor actor) => MapActor = actor;
-    }
-
-    public class Wiggle : Base
-    {
-        int t = 0;
-        readonly int duration;
-
-        Point offset = new Point(0, 0);
-        bool dir = false;
-
-        public Wiggle(MapActor actor, bool blocking, int time = 60) : base(actor) 
-        { 
-            duration = time;
-            blocks = blocking; 
-        }
-
-        bool blocks;
-        public override bool IsGlobalSequential => blocks;
-        public override bool IsActorSequential => blocks;
-        public override bool IsFinished => t > duration;
-
-        public override void Apply(TimeSpan timeElapsed)
+        public static IEnumerable Wiggle(MapActor actor, int duration, int speed, int amplitude)
         {
-            offset = offset.WithX(offset.X + (dir ? 1 : -1));
-            if (offset.X <= -8)
-                dir = true;
-            else if (offset.X >= 8)
-                dir = false;
+            Point offset = default(Point);
+            bool dir = false;
 
-            MapActor.PositionOffset += offset;
+            for (int t = 0; t <= duration; t++)
+            {
+                offset = offset.WithX(offset.X + (dir ? speed : -speed));
+                if (offset.X <= -amplitude)
+                    dir = true;
+                else if (offset.X >= amplitude)
+                    dir = false;
 
-            t++;
+                actor.PositionOffset += offset;
+                yield return null;
+            }
         }
     }
 }
