@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using Microsoft.Xna.Framework;
 using Server.Data;
@@ -22,7 +21,7 @@ namespace Client
             var Source = new Vector2(src.x * tileScale.X, src.y * tileScale.Y);
             var Dest = Source + new Vector2(dst.x * tileScale.X, dst.y * tileScale.Y);
 
-            for (int t = 0; t < duration; t++)
+            for (int t = 1; t < duration; t++)
             {
                 var floatOffset = Vector2.LerpPrecise(Source, Dest, (float)t / (float)duration);
                 actor.Position = floatOffset.ToPoint().ToPoint();
