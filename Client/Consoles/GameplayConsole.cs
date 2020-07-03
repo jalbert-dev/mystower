@@ -14,7 +14,7 @@ using C = System.Console;
 
 namespace Client.Consoles
 {
-    public class Gameplay : SadConsole.Console
+    public class Gameplay : SadConsole.Console, IResizeHandler
     {
         public class ActorSet
         {
@@ -258,6 +258,11 @@ namespace Client.Consoles
                 TileMap.CenterViewOn(cameraFocus);
             
             base.Draw(timeElapsed);
+        }
+
+        public void OnWindowResize(int width, int height)
+        {
+            TileMap.ResizePx(width, height);
         }
     }
 }

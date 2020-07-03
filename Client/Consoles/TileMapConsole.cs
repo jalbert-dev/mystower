@@ -21,6 +21,14 @@ namespace Client.Consoles
             Renderer = _tilemapRenderer = new TileMapRenderer();
         }
 
+        public void ResizePx(int w, int h)
+        {
+            // https://stackoverflow.com/a/53520604 -- handy ceil implementation for ints!
+            var neededWidth = (w / FontSize.X) + (w % FontSize.X == 0 ? 0 : 1);
+            var neededHeight = (h / FontSize.Y) + (h % FontSize.Y == 0 ? 0 : 1);
+            Resize(neededWidth, neededHeight, BufferWidth, BufferHeight, false);
+        }
+
         public void RebuildTileMap(MapData map)
         {
             int w = map.Width;
@@ -70,8 +78,8 @@ namespace Client.Consoles
                 .WithY(centered.Y / FontSize.Y);
 
             _tilemapRenderer.ViewportPixelOffset = new Point(centered.X % FontSize.X, centered.Y % FontSize.Y);
-            _tilemapRenderer.NearEdgeX = Surface.View.MaxExtentX >= BufferWidth - 1;
-            _tilemapRenderer.NearEdgeY = Surface.View.MaxExtentY >= BufferHeight - 1;
+            _tilemapRenderer.ToEdgeX = BufferWidth - 1 - Surface.View.MaxExtentX;
+            _tilemapRenderer.ToEdgeY = BufferHeight - 1 - Surface.View.MaxExtentY;
         }
 
         public override void Draw(System.TimeSpan timeElapsed)

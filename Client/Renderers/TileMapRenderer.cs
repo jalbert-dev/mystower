@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework.Graphics;
 using SadConsole;
 using SadRogue.Primitives;
@@ -13,8 +14,12 @@ namespace Client
         //       SadConsole's default renderer is. v9 made this worse, if anything!
 
         public Point ViewportPixelOffset;
-        public bool NearEdgeX = false;
-        public bool NearEdgeY = false;
+        public int ToEdgeX;
+        public int ToEdgeY;
+
+        private const int MAX_EXTRA_TILES = 1;
+        private int ExtraViewWidth => Math.Clamp(ToEdgeX, 0, MAX_EXTRA_TILES);
+        private int ExtraViewHeight => Math.Clamp(ToEdgeY, 0, MAX_EXTRA_TILES);
 
         public override void Render(IScreenSurface screen)
         {
@@ -34,11 +39,14 @@ namespace Client
         {
             if (!force && !screen.IsDirty && BackingTexture != null) return;
 
-            var extW = screen.AbsoluteArea.Width + screen.FontSize.X;
-            var extH = screen.AbsoluteArea.Height + screen.FontSize.Y;
+            var extW = screen.AbsoluteArea.Width + screen.FontSize.X * MAX_EXTRA_TILES;
+            var extH = screen.AbsoluteArea.Height + screen.FontSize.Y * MAX_EXTRA_TILES;
 
-            var vW = screen.Surface.View.Width + (NearEdgeX ? 0 : 1);
-            var vH = screen.Surface.View.Height + (NearEdgeY ? 0 : 1);
+            var exVW = ExtraViewWidth;
+            var exVH = ExtraViewHeight;
+            
+            var vW = screen.Surface.View.Width + exVW;
+            var vH = screen.Surface.View.Height + exVH;
 
             // Update texture if something is out of size.
             if (BackingTexture == null || extW != BackingTexture.Width || extH != BackingTexture.Height)
@@ -59,10 +67,8 @@ namespace Client
                 }
             }
 
-            if (!NearEdgeX)
-                screen.Surface.ViewWidth++;
-            if (!NearEdgeY)
-                screen.Surface.ViewHeight++;
+            screen.Surface.ViewWidth += exVW;
+            screen.Surface.ViewHeight += exVH;
 
             // Render parts of the surface
             RefreshBegin(screen);
@@ -72,10 +78,8 @@ namespace Client
 
             RefreshEnd(screen);
 
-            if (!NearEdgeX)
-                screen.Surface.ViewWidth--;
-            if (!NearEdgeY)
-                screen.Surface.ViewHeight--;
+            screen.Surface.ViewWidth -= exVW;
+            screen.Surface.ViewHeight -= exVH;
 
             screen.IsDirty = false;
         }
