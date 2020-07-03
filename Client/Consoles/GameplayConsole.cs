@@ -206,9 +206,6 @@ namespace Client.Consoles
             if (info.IsKeyPressed(Keys.F1))
                 DebugStatsDisplay.IsVisible = !DebugStatsDisplay.IsVisible;
 
-            if (info.IsKeyPressed(Keys.F4))
-                SadConsole.Game.Instance.ToggleFullScreen();
-
             if (info.IsKeyPressed(Keys.Escape))
                 ShouldReturnToTitle = true;
 
