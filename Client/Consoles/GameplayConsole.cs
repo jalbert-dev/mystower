@@ -174,6 +174,16 @@ namespace Client.Consoles
         /// </summary>
         private static IAction? TrySelectAction(SadConsole.Input.Keyboard info, MapActor? pc, ActorSet actors)
         {
+            if (info.IsKeyPressed(Keys.Z))
+            {
+                return new Actions.TryAttack();
+            }
+
+            if (info.IsKeyPressed(Keys.Space))
+            {
+                return new Actions.Idle();
+            }
+
             int dx = 0, dy = 0;
             if (info.IsKeyDown(Keys.Left)) dx -= 1;
             if (info.IsKeyDown(Keys.Right)) dx += 1;
@@ -189,16 +199,6 @@ namespace Client.Consoles
                     return new Actions.Face(dx, dy);
                 else
                     return new Actions.Move(dx, dy);
-            }
-
-            if (info.IsKeyPressed(Keys.Space))
-            {
-                return new Actions.Idle();
-            }
-
-            if (info.IsKeyPressed(Keys.Z))
-            {
-                return new Actions.TryAttack();
             }
 
             return null;
