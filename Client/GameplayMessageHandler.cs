@@ -54,21 +54,21 @@ namespace Client
             {
                 Client.Choreographer.AddMotion(
                     attacker,
-                    Motions.Wiggle(attacker, 20, 1, 10),
+                    (actor, step) => Motions.Lunge(attacker, 4, 6, 0.33f, 
+                        () => {
+                            foreach (var a in msg.Results)
+                            {
+                                var target = Client.MapActors.Lookup(a.Target);
+                                if (target != null)
+                                    step.QueueMotion(target, Motions.Wiggle(target, 20, 4, 8));
+                                Client.MessageLog.AddMessage($"{a.DamageDealt} damage!");
+                            }
+                        }),
                     Choreographer.Ordering.Solo);
             }
             foreach (var a in msg.Results)
             {
-                var target = Client.MapActors.Lookup(a.Target);
-                if (target != null)
-                {
-                    Client.Choreographer.AddMotion(
-                        target,
-                        Motions.Wiggle(target, 60, 4, 8),
-                        Choreographer.Ordering.Solo);
-                }
                 Client.MessageLog.AddMessage($"Actor attacks Actor!");
-                Client.MessageLog.AddMessage($"{a.DamageDealt} damage!");
             }
         }
     }

@@ -1,5 +1,8 @@
+using System;
 using System.Collections;
+using Microsoft.Xna.Framework;
 using SadRogue.Primitives;
+using Point = SadRogue.Primitives.Point;
 
 namespace Client
 {
@@ -18,6 +21,30 @@ namespace Client
                 else if (offset.X >= amplitude)
                     dir = false;
 
+                actor.PositionOffset += offset;
+                yield return null;
+            }
+        }
+
+        public static IEnumerable Lunge(MapActor actor, int t1, int t2, float depth, Action middle)
+        {
+            var offset = default(Point);
+            var tileScale = actor.ParentTileMap.FontSize;
+            var extent = tileScale * depth * new Point(actor.Facing.x, actor.Facing.y);
+            var extentf = new Vector2(extent.X, extent.Y);
+            
+            for (int i = 1; i <= t1; i++)
+            {
+                offset = Vector2.LerpPrecise(Vector2.Zero, extentf, (float)i / t1).ToPoint().ToPoint();
+                actor.PositionOffset += offset;
+                yield return null;
+            }
+
+            middle();
+
+            for (int i = 1; i <= t2; i++)
+            {
+                offset = Vector2.LerpPrecise(extentf, Vector2.Zero, (float)i / t2).ToPoint().ToPoint();
                 actor.PositionOffset += offset;
                 yield return null;
             }

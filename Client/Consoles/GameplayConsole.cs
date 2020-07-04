@@ -127,7 +127,7 @@ namespace Client.Consoles
                 IAction? userAction = null;
                 if (!Choreographer.IsBusy && keyState != null)
                 {
-                    userAction = TrySelectAction(keyState, waitingActor);
+                    userAction = TrySelectAction(keyState, waitingActor, MapActors);
                     keyState = null;
                 }
                 
@@ -160,6 +160,9 @@ namespace Client.Consoles
             base.Update(timeElapsed);
         }
 
+        private static bool ManualFacing(SadConsole.Input.Keyboard keyboard)
+            => keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl);
+
         /// <summary>
         /// Attempts to parse the user's input into a valid game action for the
         /// given actor.
@@ -167,10 +170,12 @@ namespace Client.Consoles
         /// If the given actor is null or the player's input does not correspond
         /// to any game action, returns null.
         /// </summary>
-        private static IAction? TrySelectAction(SadConsole.Input.Keyboard info, DataHandle<Actor>? waitingActor)
+        private static IAction? TrySelectAction(SadConsole.Input.Keyboard info, DataHandle<Actor>? waitingActor, ActorSet actors)
         {
             if (!waitingActor.HasValue)
                 return null;
+            var pcHandle = waitingActor.Value;
+            var pc = actors.Lookup(pcHandle);
 
             int dx = 0, dy = 0;
             if (info.IsKeyDown(Keys.Left)) dx -= 1;
@@ -180,9 +185,11 @@ namespace Client.Consoles
 
             if (dx != 0 || dy != 0)
             {
-                if (info.IsKeyDown(Keys.LeftControl) || info.IsKeyDown(Keys.RightControl))
+                // we shouldn't move in a direction we aren't facing, so if the PC
+                // isn't already facing the input direction, emit a set-facing
+                // action instead of a move
+                if (ManualFacing(info) || (pc != null && pc.Facing != new Vec2i(dx, dy)))
                     return new Actions.Face(dx, dy);
-                // try movement
                 else
                     return new Actions.Move(dx, dy);
             }

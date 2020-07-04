@@ -11,6 +11,9 @@ namespace Client
         private const int INITIAL_MOTION_LIST_LEN = 4;
 
         Dictionary<MapActor, List<Coroutine>> motions = new Dictionary<MapActor, List<Coroutine>>();
+        List<(MapActor, Func<MapActor, ChoreographyStep, IEnumerable>)> deferred = new List<(MapActor, Func<MapActor, ChoreographyStep, IEnumerable>)>();
+
+        bool deferQueuing = false;
 
         public bool IsDone => motions.Values.All(x => x.Count == 0);
 
@@ -18,14 +21,25 @@ namespace Client
 
         public void QueueMotion(MapActor target, Func<MapActor, ChoreographyStep, IEnumerable> coroutineProducer)
         {
-            motions.TryGetValue(target, out var motionList);
-            if (motionList == null)
-                motions.Add(target, new List<Coroutine>(INITIAL_MOTION_LIST_LEN));
-            motions[target].Add(new Coroutine(coroutineProducer(target, this)));
+            if (deferQueuing)
+            {
+                deferred.Add( (target, coroutineProducer) );
+            }
+            else
+            {
+                motions.TryGetValue(target, out var motionList);
+                if (motionList == null)
+                    motions.Add(target, new List<Coroutine>(INITIAL_MOTION_LIST_LEN));
+                motions[target].Add(new Coroutine(coroutineProducer(target, this)));
+            }
         }
+
+        public void QueueMotion(MapActor target, IEnumerable coroutine)
+            => QueueMotion(target, (_, __) => coroutine);
 
         public void Update()
         {
+            deferQueuing = true;
             foreach (var motionList in motions.Values)
             {
                 var frontMotion = motionList.FirstOrDefault();
@@ -36,6 +50,16 @@ namespace Client
                         motionList.RemoveAt(0);
                 }
             }
+            deferQueuing = false;
+            
+            QueueDeferred();
+        }
+
+        private void QueueDeferred()
+        {
+            foreach (var (actor, producer) in deferred)
+                QueueMotion(actor, producer);
+            deferred.Clear();
         }
     }
 

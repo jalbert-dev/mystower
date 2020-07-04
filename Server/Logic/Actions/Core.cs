@@ -31,11 +31,11 @@ namespace Server.Logic
                 var dstY = actor.position.y + dy;
                 if (Map.CanMoveInto(gs.map, gs.actors, dstX, dstY))
                 {
-                    client.EmitMessage(new Message.EntityMoved(actor, actor.position.x, actor.position.y, dx, dy));
-                    (actor.position.x, actor.position.y) = (dstX, dstY);
-
                     (actor.facing.x, actor.facing.y) = (dx, dy);
                     client.EmitMessage(new Message.EntityFaced(actor, actor.facing));
+
+                    client.EmitMessage(new Message.EntityMoved(actor, actor.position.x, actor.position.y, dx, dy));
+                    (actor.position.x, actor.position.y) = (dstX, dstY);
 
                     return 20;
                 }
@@ -67,11 +67,11 @@ namespace Server.Logic
             {
                 // Determine attack targets
 
-                // For now, just take all actors surrounding target
+                // For now, find actor in facing adjacent tile
                 var targets = gs.actors.Where(a =>
                     a != actor &&
-                    Math.Abs(a.position.x - actor.position.x) <= 1 &&
-                    Math.Abs(a.position.y - actor.position.y) <= 1);
+                    a.position.x == actor.position.x + actor.facing.x &&
+                    a.position.y == actor.position.y + actor.facing.y);
 
                 // Calculate + deal damage to each actor and store result in AttackResults
                 var results = targets.Select(target => new Message.AttackResult(target) 
