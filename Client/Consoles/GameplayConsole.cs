@@ -227,6 +227,7 @@ namespace Client.Consoles
         {
             foreach (var actor in MapActors.Actors)
                 actor.ShowFacingMarker = value;
+            TileMap.IsGridVisible = value;
         }
 
         public override bool ProcessKeyboard(SadConsole.Input.Keyboard info)

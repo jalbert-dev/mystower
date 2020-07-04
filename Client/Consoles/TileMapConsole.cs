@@ -15,12 +15,25 @@ namespace Client.Consoles
 
         private int canvasWidth, canvasHeight;
 
+        private SadConsole.Console grid;
+        private TileMapRenderer _gridRenderer;
+
+        public bool IsGridVisible { set => grid.IsVisible = value; }
+
         public TileMap() : base(1, 1)
         {
             DefaultBackground = Color.Black;
             Font = SadConsole.GameHost.Instance.Fonts["Tileset"];
             FontSize = Font.GetFontSize(Sizes.Four);
             Renderer = _tilemapRenderer = new TileMapRenderer();
+
+            grid = new SadConsole.Console(1, 1);
+            grid.Font = SadConsole.GameHost.Instance.Fonts["Directionals"];
+            grid.FontSize = grid.Font.GetFontSize(Sizes.Four);
+            Children.Add(grid);
+            grid.Parent = this;
+            grid.Renderer = _gridRenderer = new TileMapRenderer();
+            grid.DefaultBackground = Color.Transparent;
 
             ResizePx(SadConsole.Settings.Rendering.RenderWidth, SadConsole.Settings.Rendering.RenderHeight, 1, 1);
         }
@@ -31,7 +44,9 @@ namespace Client.Consoles
             // https://stackoverflow.com/a/53520604 -- handy ceil implementation for ints!
             var neededWidth = (w / FontSize.X) + (w % FontSize.X == 0 ? 0 : 1);
             var neededHeight = (h / FontSize.Y) + (h % FontSize.Y == 0 ? 0 : 1);
+
             Resize(neededWidth, neededHeight, bufferWidth, bufferHeight, false);
+            grid.Resize(neededWidth, neededHeight, bufferWidth, bufferHeight, false);
             canvasWidth = w;
             canvasHeight = h;
         }
@@ -42,8 +57,8 @@ namespace Client.Consoles
             int h = map.Height;
 
             this.ResizePx(canvasWidth, canvasHeight, w, h);
-
             this.Clear();
+            grid.Clear();
 
             // VERY temporary...
             var r = new Random();
@@ -51,11 +66,16 @@ namespace Client.Consoles
             var Tree = new List<int> { 48, 49, 50, 51 };
 
             for (int i = 0; i < w; i++)
+            {
                 for (int j = 0; j < h; j++)
+                {
                     this.SetGlyph(i, j,
                         map.tiles[i,j] == 0 ? Grass[r.Next(4)] : Tree[r.Next(4)],
                         map.tiles[i,j] == 0 ? Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()) : Color.DarkGreen,
                         Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
+                    grid.SetGlyph(i, j, 10, Color.Black.SetAlpha(128));
+                }
+            }
         }
 
         public void CenterViewOn(MapActor actor)
@@ -93,9 +113,12 @@ namespace Client.Consoles
                 .WithX(centered.X / FontSize.X)
                 .WithY(centered.Y / FontSize.Y);
 
-            _tilemapRenderer.ViewportPixelOffset = new Point(centered.X % FontSize.X, centered.Y % FontSize.Y);
-            _tilemapRenderer.ToEdgeX = BufferWidth - 1 - Surface.View.MaxExtentX;
-            _tilemapRenderer.ToEdgeY = BufferHeight - 1 - Surface.View.MaxExtentY;
+            _gridRenderer.ViewportPixelOffset = _tilemapRenderer.ViewportPixelOffset = 
+                new Point(centered.X % FontSize.X, centered.Y % FontSize.Y);
+            _gridRenderer.ToEdgeX = _tilemapRenderer.ToEdgeX = 
+                BufferWidth - 1 - Surface.View.MaxExtentX;
+            _gridRenderer.ToEdgeY = _tilemapRenderer.ToEdgeY = 
+                BufferHeight - 1 - Surface.View.MaxExtentY;
         }
 
         public override void Draw(System.TimeSpan timeElapsed)
