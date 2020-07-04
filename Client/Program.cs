@@ -42,6 +42,7 @@ namespace Client
             Console.WriteLine("Initializing game");
 
             SadConsole.GameHost.Instance.LoadFont("Resources/tiles.font");
+            SadConsole.GameHost.Instance.LoadFont("Resources/facing.font");
 
             TopLevelUI = new StateManager(new State.TitleScreen());
             TopLevelUI.RegisterResizeHandler();

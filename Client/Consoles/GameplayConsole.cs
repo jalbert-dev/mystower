@@ -58,6 +58,8 @@ namespace Client.Consoles
         public ActorSet MapActors { get; } = new ActorSet();
 
         public bool ShouldReturnToTitle { get; private set; } = false;
+
+        private MapActor? CurrentPC => waitingActor.HasValue ? MapActors.Lookup(waitingActor.Value) : null;
         
         private GameplayMessageHandler msgHandler;
         
@@ -127,7 +129,7 @@ namespace Client.Consoles
                 IAction? userAction = null;
                 if (!Choreographer.IsBusy && keyState != null)
                 {
-                    userAction = TrySelectAction(keyState, waitingActor, MapActors);
+                    userAction = TrySelectAction(keyState, CurrentPC, MapActors);
                     keyState = null;
                 }
                 
@@ -170,13 +172,8 @@ namespace Client.Consoles
         /// If the given actor is null or the player's input does not correspond
         /// to any game action, returns null.
         /// </summary>
-        private static IAction? TrySelectAction(SadConsole.Input.Keyboard info, DataHandle<Actor>? waitingActor, ActorSet actors)
+        private static IAction? TrySelectAction(SadConsole.Input.Keyboard info, MapActor? pc, ActorSet actors)
         {
-            if (!waitingActor.HasValue)
-                return null;
-            var pcHandle = waitingActor.Value;
-            var pc = actors.Lookup(pcHandle);
-
             int dx = 0, dy = 0;
             if (info.IsKeyDown(Keys.Left)) dx -= 1;
             if (info.IsKeyDown(Keys.Right)) dx += 1;
@@ -226,10 +223,19 @@ namespace Client.Consoles
             }
         }
 
+        public void SetShowGrid(bool value)
+        {
+            foreach (var actor in MapActors.Actors)
+                actor.ShowFacingMarker = value;
+        }
+
         public override bool ProcessKeyboard(SadConsole.Input.Keyboard info)
         {
             CheckNonGameplayHotkeys(info);
             keyState = info;
+
+            SetShowGrid(ManualFacing(info));
+
             return false;
         }
 

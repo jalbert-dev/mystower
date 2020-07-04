@@ -14,6 +14,10 @@ namespace Client
         public DataHandle<Actor> Actor { get; }
         public SadConsole.Console ParentTileMap { get; }
         public Vec2i Facing { get; set; }
+        public bool ShowFacingMarker { get => facingMarker.IsVisible; set => facingMarker.IsVisible = value; }
+
+        private Entity facingMarker;
+
 
         public MapActor(SadConsole.Console parent, DataHandle<Actor> actor) : base(1,1)
         {
@@ -26,6 +30,20 @@ namespace Client
             Animation.FontSize = parent.FontSize;
             
             Animation.UsePixelPositioning = true;
+
+
+            var facingFont = SadConsole.GameHost.Instance.Fonts["Directionals"];
+            facingMarker = new Entity(1, 1, facingFont, facingFont.GetFontSize(SadConsole.Font.Sizes.Four));
+
+            facingMarker.Animation.Surface.Cells[0] = new SadConsole.ColoredGlyph
+            {
+                Foreground = Color.Yellow,
+                Background = Color.Transparent,
+                Glyph = 2,
+            };
+            facingMarker.Animation.UsePixelPositioning = true;
+            Children.Add(facingMarker);
+            facingMarker.Parent = this;
         }
 
         public void Sync(GameServer server)
@@ -40,5 +58,28 @@ namespace Client
                     .SurfaceLocationToPixel(ParentTileMap.FontSize.X, ParentTileMap.FontSize.Y);
                 Facing = actor.facing;
             });
+
+        public override void Update(System.TimeSpan delta)
+        {
+            base.Update(delta);
+        }
+
+        public override void Draw(System.TimeSpan delta)
+        {
+            facingMarker.Animation.Surface.Cells[0].Glyph = Facing switch
+            {
+                (-1, 0) => 2,
+                (0, -1) => 3,
+                (1, 0) => 4,
+                (0, 1) => 5,
+                (-1, 1) => 6,
+                (-1, -1) => 7,
+                (1, -1) => 8,
+                (1, 1) => 9,
+                _ => 0
+            };
+            facingMarker.Animation.IsDirty = true;
+            base.Draw(delta);
+        }
     }
 }
