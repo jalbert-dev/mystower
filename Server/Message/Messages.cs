@@ -46,6 +46,20 @@ namespace Server.Message
         public void Dispatch(IGameClient c) => c.HandleMessage(this);
     }
 
+    public class EntityFaced : IGameMessage
+    {
+        public DataHandle<Actor> Actor { get; }
+        public Vec2i NewFacingDir { get; }
+
+        internal EntityFaced(Actor actor, Vec2i facingDir)
+        {
+            Actor = actor.ToDataHandle();
+            NewFacingDir = facingDir;
+        }
+
+        public void Dispatch(IGameClient c) => c.HandleMessage(this);
+    }
+
     public class MapChanged : IGameMessage
     {
         public DataHandle<MapData> NewMapData { get; }

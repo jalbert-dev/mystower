@@ -6,6 +6,8 @@ namespace Server.Data
 {
     public struct Vec2i : IEquatable<Vec2i>
     {
+        public Vec2i(int x, int y) => (this.x, this.y) = (x, y);
+
         public int x;
         public int y;
 

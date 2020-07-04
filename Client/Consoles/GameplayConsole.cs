@@ -180,8 +180,11 @@ namespace Client.Consoles
 
             if (dx != 0 || dy != 0)
             {
+                if (info.IsKeyDown(Keys.LeftControl) || info.IsKeyDown(Keys.RightControl))
+                    return new Actions.Face(dx, dy);
                 // try movement
-                return new Actions.Move(dx, dy);
+                else
+                    return new Actions.Move(dx, dy);
             }
 
             if (info.IsKeyPressed(Keys.Space))

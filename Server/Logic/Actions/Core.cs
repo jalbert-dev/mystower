@@ -32,11 +32,28 @@ namespace Server.Logic
                 if (Map.CanMoveInto(gs.map, gs.actors, dstX, dstY))
                 {
                     client.EmitMessage(new Message.EntityMoved(actor, actor.position.x, actor.position.y, dx, dy));
-
                     (actor.position.x, actor.position.y) = (dstX, dstY);
+
+                    (actor.facing.x, actor.facing.y) = (dx, dy);
+                    client.EmitMessage(new Message.EntityFaced(actor, actor.facing));
 
                     return 20;
                 }
+                return 0;
+            }
+        }
+
+        public class Face : IAction
+        {
+            public int dx { get; }
+            public int dy { get; }
+
+            public Face(int dx, int dy) => (this.dx, this.dy) = (dx, dy);
+
+            public int Execute(IClientProxy client, GameState gs, Actor actor)
+            {
+                (actor.facing.x, actor.facing.y) = (dx, dy);
+                client.EmitMessage(new Message.EntityFaced(actor, new Vec2i(dx, dy)));
                 return 0;
             }
         }

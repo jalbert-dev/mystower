@@ -6,6 +6,8 @@ namespace Server.Data
     public class Actor
     {
         public Vec2i position;
+        public Vec2i facing = new Vec2i(0, 1);
+
         public string aiType = "";
         public int timeUntilAct;
 

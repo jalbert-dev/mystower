@@ -28,6 +28,13 @@ namespace Client
                     Choreographer.Ordering.Simultaneous);
         }
 
+        public void HandleMessage(EntityFaced msg)
+        {
+            var mapActor = Client.MapActors.Lookup(msg.Actor);
+            if (mapActor != null)
+                mapActor.Facing = msg.NewFacingDir;
+        }
+
         public void HandleMessage(MapChanged msg)
         {
             Client.Server.QueryData(msg.NewMapData, Client.TileMap.RebuildTileMap);

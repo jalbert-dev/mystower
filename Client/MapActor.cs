@@ -13,6 +13,7 @@ namespace Client
     {
         public DataHandle<Actor> Actor { get; }
         public SadConsole.Console ParentTileMap { get; }
+        public Vec2i Facing { get; set; }
 
         public MapActor(SadConsole.Console parent, GameServer server, DataHandle<Actor> actor) : base(1,1)
         {
@@ -33,6 +34,7 @@ namespace Client
                 };
                 Position = new Point(actor.position.x, actor.position.y)
                     .SurfaceLocationToPixel(ParentTileMap.FontSize.X, ParentTileMap.FontSize.Y);
+                Facing = actor.facing;
             });
             
             Animation.UsePixelPositioning = true;

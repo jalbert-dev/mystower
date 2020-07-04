@@ -30,6 +30,10 @@ namespace Server
         /// to another.
         /// </summary>
         void HandleMessage(Message.EntityMoved msg);
+        /// <summary>
+        /// Invoked when an entity known to the client changes its facing direction.
+        /// </summary>
+        void HandleMessage(Message.EntityFaced msg);
         
         /// <summary>
         /// Invoked when the server sends new map data to the client.
