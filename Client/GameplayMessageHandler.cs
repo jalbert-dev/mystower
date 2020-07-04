@@ -34,7 +34,12 @@ namespace Client
         {
             var mapActor = Client.MapActors.Lookup(msg.Actor);
             if (mapActor != null)
-                mapActor.Facing = msg.NewFacingDir;
+            {
+                Client.Choreographer.AddMotion(
+                    mapActor, 
+                    Motions.SetFacing(mapActor, msg.NewFacingDir),
+                    Choreographer.Ordering.Simultaneous);
+            }
         }
 
         public void HandleMessage(MapChanged msg)

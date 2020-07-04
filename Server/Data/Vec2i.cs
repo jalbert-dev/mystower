@@ -23,5 +23,7 @@ namespace Server.Data
 
         public void Deconstruct(out int ox, out int oy) 
             => (ox, oy) = (x, y);
+        public static implicit operator Vec2i((int, int) xy)
+            => new Vec2i(xy.Item1, xy.Item2);
     }
 }

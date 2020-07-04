@@ -8,6 +8,12 @@ namespace Client
 {
     public static partial class Motions
     {
+        public static IEnumerable SetFacing(MapActor actor, Server.Data.Vec2i facing)
+        {
+            actor.Facing = facing;
+            yield break;
+        }
+
         public static IEnumerable Wiggle(MapActor actor, int duration, int speed, int amplitude)
         {
             Point offset = default(Point);
