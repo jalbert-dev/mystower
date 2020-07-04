@@ -32,9 +32,9 @@ namespace Server.Logic
                 if (Map.CanMoveInto(gs.map, gs.actors, dstX, dstY))
                 {
                     (actor.facing.x, actor.facing.y) = (dx, dy);
-                    client.EmitMessage(new Message.EntityFaced(actor, actor.facing));
+                    client.EmitMessage(new Message.ActorFaced(actor, actor.facing));
 
-                    client.EmitMessage(new Message.EntityMoved(actor, actor.position.x, actor.position.y, dx, dy));
+                    client.EmitMessage(new Message.ActorMoved(actor, actor.position.x, actor.position.y, dx, dy));
                     (actor.position.x, actor.position.y) = (dstX, dstY);
 
                     return 20;
@@ -53,7 +53,7 @@ namespace Server.Logic
             public int Execute(IClientProxy client, GameState gs, Actor actor)
             {
                 (actor.facing.x, actor.facing.y) = (dx, dy);
-                client.EmitMessage(new Message.EntityFaced(actor, new Vec2i(dx, dy)));
+                client.EmitMessage(new Message.ActorFaced(actor, new Vec2i(dx, dy)));
                 return 0;
             }
         }
@@ -80,7 +80,7 @@ namespace Server.Logic
                 });
 
                 // Emit AttackResult to clients
-                client.EmitMessage(new Message.EntityAttacked(actor, results));
+                client.EmitMessage(new Message.ActorAttacked(actor, results));
 
                 return 50;
             }

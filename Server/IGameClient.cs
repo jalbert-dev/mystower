@@ -16,24 +16,24 @@ namespace Server
     public interface IGameClient
     {
         /// <summary>
-        /// Invoked when an entity that should be known to the client appears,
+        /// Invoked when an actor that should be known to the client appears,
         /// whether due to spawning or for some other reason.
         /// </summary>
-        void HandleMessage(Message.EntityAppeared msg);
+        void HandleMessage(Message.ActorAppeared msg);
         /// <summary>
-        /// Invoked when an entity known to the client disappears,
+        /// Invoked when an actor known to the client disappears,
         /// whether due to death or for some other reason.
         /// </summary>
-        void HandleMessage(Message.EntityVanished msg);
+        void HandleMessage(Message.ActorVanished msg);
         /// <summary>
-        /// Invoked when an entity known to the client moves from one tile
+        /// Invoked when an actor known to the client moves from one tile
         /// to another.
         /// </summary>
-        void HandleMessage(Message.EntityMoved msg);
+        void HandleMessage(Message.ActorMoved msg);
         /// <summary>
-        /// Invoked when an entity known to the client changes its facing direction.
+        /// Invoked when an actor known to the client changes its facing direction.
         /// </summary>
-        void HandleMessage(Message.EntityFaced msg);
+        void HandleMessage(Message.ActorFaced msg);
         
         /// <summary>
         /// Invoked when the server sends new map data to the client.
@@ -50,6 +50,6 @@ namespace Server
         /// Invoked when the server wants the client to display the results of
         /// an actor's attack.
         /// </summary>
-        void HandleMessage(Message.EntityAttacked msg);
+        void HandleMessage(Message.ActorAttacked msg);
     }
 }

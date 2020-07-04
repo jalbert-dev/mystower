@@ -8,19 +8,19 @@ namespace Client
         Consoles.Gameplay Client { get; }
         public GameplayMessageHandler(Consoles.Gameplay client) => this.Client = client;
 
-        public void HandleMessage(EntityAppeared msg)
+        public void HandleMessage(ActorAppeared msg)
         {
             var a = new MapActor(Client.TileMap, msg.Actor);
             a.Sync(Client.Server);
             Client.MapActors.Add(a);
         }
 
-        public void HandleMessage(EntityVanished msg)
+        public void HandleMessage(ActorVanished msg)
         {
             Client.MapActors.Remove(msg.Actor);
         }
 
-        public void HandleMessage(EntityMoved msg)
+        public void HandleMessage(ActorMoved msg)
         {
             var vis = Client.MapActors.Lookup(msg.Actor);
             if (vis != null)
@@ -30,7 +30,7 @@ namespace Client
                     Choreographer.Ordering.Simultaneous);
         }
 
-        public void HandleMessage(EntityFaced msg)
+        public void HandleMessage(ActorFaced msg)
         {
             var mapActor = Client.MapActors.Lookup(msg.Actor);
             if (mapActor != null)
@@ -52,7 +52,7 @@ namespace Client
             Client.MessageLog.AddMessage(msg.MessageId);
         }
 
-        public void HandleMessage(EntityAttacked msg)
+        public void HandleMessage(ActorAttacked msg)
         {
             var attacker = Client.MapActors.Lookup(msg.Actor);
             if (attacker != null)

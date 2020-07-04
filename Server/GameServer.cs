@@ -192,7 +192,7 @@ namespace Server
         /// Performs a single step of game logic on given server, firing callbacks
         /// to clients when appropriate.
         /// 
-        /// If no entities exist, does nothing.
+        /// If no actors exist, does nothing.
         /// 
         /// Returns a Result containing an optional actor that must receive orders
         /// before processing can continue.
@@ -217,7 +217,7 @@ namespace Server
         {
             yield return new Message.MapChanged(gameState.map);
             foreach (var actor in gameState.actors)
-                yield return new Message.EntityAppeared(actor);
+                yield return new Message.ActorAppeared(actor);
         }
 
         /// <summary>

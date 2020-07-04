@@ -4,11 +4,11 @@ using Server.Data;
 
 namespace Server.Message
 {
-    public class EntityAppeared : IGameMessage
+    public class ActorAppeared : IGameMessage
     {
         public DataHandle<Actor> Actor { get; }
 
-        internal EntityAppeared(Actor actor)
+        internal ActorAppeared(Actor actor)
         {
             Actor = actor.ToDataHandle();
         }
@@ -16,11 +16,11 @@ namespace Server.Message
         public void Dispatch(IGameClient c) => c.HandleMessage(this);
     }
 
-    public class EntityVanished : IGameMessage
+    public class ActorVanished : IGameMessage
     {
         public DataHandle<Actor> Actor { get; }
 
-        internal EntityVanished(Actor actor)
+        internal ActorVanished(Actor actor)
         {
             Actor = actor.ToDataHandle();
         }
@@ -28,13 +28,13 @@ namespace Server.Message
         public void Dispatch(IGameClient c) => c.HandleMessage(this);
     }
 
-    public class EntityMoved : IGameMessage
+    public class ActorMoved : IGameMessage
     {
         public DataHandle<Actor> Actor { get; }
         public Vec2i SourceTile;
         public Vec2i DestTile;
 
-        internal EntityMoved(Actor actor, int sx, int sy, int dx, int dy)
+        internal ActorMoved(Actor actor, int sx, int sy, int dx, int dy)
         {
             Actor = actor.ToDataHandle();
             SourceTile.x = sx;
@@ -46,12 +46,12 @@ namespace Server.Message
         public void Dispatch(IGameClient c) => c.HandleMessage(this);
     }
 
-    public class EntityFaced : IGameMessage
+    public class ActorFaced : IGameMessage
     {
         public DataHandle<Actor> Actor { get; }
         public Vec2i NewFacingDir { get; }
 
-        internal EntityFaced(Actor actor, Vec2i facingDir)
+        internal ActorFaced(Actor actor, Vec2i facingDir)
         {
             Actor = actor.ToDataHandle();
             NewFacingDir = facingDir;
@@ -95,13 +95,13 @@ namespace Server.Message
             DamageDealt = 0;
         }
     }
-    public class EntityAttacked : IGameMessage
+    public class ActorAttacked : IGameMessage
     {
 
         public DataHandle<Actor> Actor { get; }
         public AttackResult[] Results { get; }
 
-        internal EntityAttacked(Data.Actor actor, IEnumerable<AttackResult> results)
+        internal ActorAttacked(Data.Actor actor, IEnumerable<AttackResult> results)
         {
             Actor = actor.ToDataHandle();
             Results = results.ToArray();

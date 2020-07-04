@@ -7,7 +7,7 @@ namespace Server.Logic
 {
     public static partial class AIType
     {
-        /// AI consists of a stateless function that takes a game state and entity,
+        /// AI consists of a stateless function that takes a game state and actor,
         /// and returns an optional action to take. (If no action taken, delegates to client.)
         public delegate IAction? ActionSelector(GameState gs, Actor actor);
 
