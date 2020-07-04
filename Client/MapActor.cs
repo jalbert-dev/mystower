@@ -15,7 +15,7 @@ namespace Client
         public SadConsole.Console ParentTileMap { get; }
         public Vec2i Facing { get; set; }
 
-        public MapActor(SadConsole.Console parent, GameServer server, DataHandle<Actor> actor) : base(1,1)
+        public MapActor(SadConsole.Console parent, DataHandle<Actor> actor) : base(1,1)
         {
             parent.Children.Add(this);
             this.Parent = parent;
@@ -24,8 +24,12 @@ namespace Client
             this.Actor = actor;
             Animation.Font = parent.Font;
             Animation.FontSize = parent.FontSize;
+            
+            Animation.UsePixelPositioning = true;
+        }
 
-            server.QueryData(Actor, actor => {
+        public void Sync(GameServer server)
+            => server.QueryData(Actor, actor => {
                 Animation.Surface.Cells[0] = new SadConsole.ColoredGlyph
                 {
                     Foreground = Color.White,
@@ -36,8 +40,5 @@ namespace Client
                     .SurfaceLocationToPixel(ParentTileMap.FontSize.X, ParentTileMap.FontSize.Y);
                 Facing = actor.facing;
             });
-            
-            Animation.UsePixelPositioning = true;
-        }
     }
 }

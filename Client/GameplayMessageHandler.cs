@@ -10,7 +10,9 @@ namespace Client
 
         public void HandleMessage(EntityAppeared msg)
         {
-            Client.MapActors.Add(new MapActor(Client.TileMap, Client.Server, msg.Actor));
+            var a = new MapActor(Client.TileMap, msg.Actor);
+            a.Sync(Client.Server);
+            Client.MapActors.Add(a);
         }
 
         public void HandleMessage(EntityVanished msg)
