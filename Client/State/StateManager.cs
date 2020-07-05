@@ -8,13 +8,27 @@ namespace Client
         void OnWindowResize(int width, int height);
     }
 
+    public interface IExecutableState : IAbstractState
+    {
+        void OnExec();
+    }
+
+    public class GlobalScreenFSM : Util.BaseStateMachine<IExecutableState>
+    {
+        public StateManager ScreenManager { get; }
+        public GlobalScreenFSM(StateManager screenManager) => ScreenManager = screenManager;
+
+        public void Exec() => Do(x => x.OnExec());
+    }
+
     public class StateManager : SadConsole.ScreenObject
     {
-        StateMachine<StateManager> Machine;
+        GlobalScreenFSM Machine;
 
-        public StateManager(IState<StateManager> startState)
+        public StateManager(Func<GlobalScreenFSM, IExecutableState> startStateProducer)
         {
-            Machine = new StateMachine<StateManager>(startState);
+            Machine = new GlobalScreenFSM(this);
+            Machine.ChangeState(startStateProducer(Machine));
         }
 
         private void OnResize(object? sender, EventArgs args)
@@ -44,7 +58,7 @@ namespace Client
                 SadConsole.Game.Instance.MonoGameInstance.ResetRendering();
             }
 
-            Machine.Exec(this);
+            Machine.Exec();
             base.Update(delta);
         }
     }

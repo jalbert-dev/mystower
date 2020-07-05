@@ -7,7 +7,7 @@ using Util;
 
 namespace Client.State
 {
-    public class TitleScreen : SadConsole.UI.ControlsConsole, IState<StateManager>, IResizeHandler
+    public class TitleScreen : SadConsole.UI.ControlsConsole, IExecutableState, IResizeHandler
     {
         public SadConsole.UI.Controls.Button btnNewGame = new SadConsole.UI.Controls.Button(20);
         public SadConsole.UI.Controls.Button btnLoadGame = new SadConsole.UI.Controls.Button(20);
@@ -18,10 +18,14 @@ namespace Client.State
         bool startNewGame = false;
         bool loadGame = false;
 
+        GlobalScreenFSM StateManager { get; }
+
         List<SadConsole.UI.Controls.Button> focusOrder;
         int focused = 0;
-        public TitleScreen() : base(1, 1) 
+        public TitleScreen(GlobalScreenFSM fsm) : base(1, 1) 
         {
+            StateManager = fsm;
+
             btnNewGame.Text = "New Game";
             btnLoadGame.Text = "Load Game";
             btnExit.Text = "Exit";
@@ -95,26 +99,23 @@ namespace Client.State
             return false;
         }
 
-        public IState<StateManager>? Exec(StateManager obj)
+        public void OnExec()
         {
             if (startNewGame)
-                return new State.Gameplay(Width, Height, Server.GameServer.NewGame());
-            if (loadGame)
-                return new State.Gameplay(Width, Height, Server.GameServer.FromSaveGame(File.ReadAllText("Saves/save.sav")));
-            return null;
+                StateManager.ChangeState(new Gameplay(StateManager, Server.GameServer.NewGame()));
+            else if (loadGame)
+                StateManager.ChangeState(new Gameplay(StateManager, Server.GameServer.FromSaveGame(File.ReadAllText("Saves/save.sav"))));
         }
 
-        public IState<StateManager>? OnEnter(StateManager obj)
+        public void OnEnter()
         {
-            obj.Children.Add(this);
+            StateManager.ScreenManager.Children.Add(this);
             IsFocused = true;
-            return null;
         }
 
-        public IState<StateManager>? OnExit(StateManager obj)
+        public void OnExit()
         {
-            obj.Children.Remove(this);
-            return null;
+            StateManager.ScreenManager.Children.Remove(this);
         }
     }
 }

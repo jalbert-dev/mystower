@@ -3,38 +3,30 @@ using Util;
 
 namespace Client.State
 {
-    public class Gameplay : IState<StateManager>
+    public class Gameplay : BaseState<GlobalScreenFSM>, IExecutableState
     {
         public Consoles.Gameplay GameplayConsole { get; }
 
-        private int Width { get; }
-        private int Height { get; }
-
-        public Gameplay(int w, int h, GameServer s)
+        public Gameplay(GlobalScreenFSM fsm, GameServer s) : base(fsm)
         {
             GameplayConsole = new Consoles.Gameplay(s);
-            Width = w;
-            Height = h;
         }
 
-        public IState<StateManager>? OnEnter(StateManager obj)
-        {
-            obj.Children.Add(GameplayConsole);
-            GameplayConsole.IsFocused = true;
-            return null;
-        }
-
-        public IState<StateManager>? Exec(StateManager obj)
+        public void OnExec()
         {
             if (GameplayConsole.ShouldReturnToTitle)
-                return new State.TitleScreen();
-            return null;
+                StateMachine.ChangeState(new TitleScreen(StateMachine));
         }
 
-        public IState<StateManager>? OnExit(StateManager obj)
+        public override void OnEnter()
         {
-            obj.Children.Remove(GameplayConsole);
-            return null;
+            StateMachine.ScreenManager.Children.Add(GameplayConsole);
+            GameplayConsole.IsFocused = true;
+        }
+
+        public override void OnExit()
+        {
+            StateMachine.ScreenManager.Children.Remove(GameplayConsole);
         }
     }
 }

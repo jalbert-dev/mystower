@@ -1,44 +1,50 @@
+using System;
+
 namespace Util
 {
-    public interface IState<T>
+    public interface IAbstractState
     {
-        IState<T>? OnEnter(T obj);
-        IState<T>? Exec(T obj);
-        IState<T>? OnExit(T obj);
+        void OnEnter();
+        void OnExit();
     }
 
-    public class StateMachine<T>
+    public abstract class BaseState<StateMachineType> : IAbstractState
     {
-        IState<T> current;
-        bool needInit = true;
+        protected StateMachineType StateMachine { get; }
+        public BaseState(StateMachineType host) => StateMachine = host;
 
-        public StateMachine(IState<T> startState)
+        public virtual void OnEnter() { }
+        public virtual void OnExit() { }
+    }
+
+    public class BaseStateMachine<StateInterface> where StateInterface : class, IAbstractState
+    {
+        StateInterface? current;
+
+        protected void Do(Action<StateInterface> action) 
         {
-            this.current = startState;
+            if (current != null)
+                action(current);
         }
 
-        private IState<T> ResolveTransition(T host, IState<T>? previous, IState<T>? newState)
+        private void ProcessPotentialRecursiveState(Action<StateInterface> code)
         {
-            if (previous == null && newState == null)
-                throw new System.Exception("Attempted to resolve transition with previous and new states null");
-
-            if (newState == null)
-                return previous!;
-
-            var interrupt = previous?.OnExit(host);
-            newState = interrupt != null ? interrupt : newState;
-            return ResolveTransition(host, newState, newState.OnEnter(host));
-        }
-
-        public void Exec(T host)
-        {
-            if (needInit)
+            if (current != null)
             {
-                needInit = false;
-                current = ResolveTransition(host, null, current);
+                var oldState = current;
+                code(current);
+                while (oldState != current)
+                {
+                    oldState = current;
+                    current.OnEnter();
+                }
             }
-            
-            current = ResolveTransition(host, current, current?.Exec(host));
+        }
+        public void ChangeState(StateInterface newState)
+        {
+            ProcessPotentialRecursiveState(current => current.OnExit());
+            current = newState;
+            ProcessPotentialRecursiveState(current => current.OnEnter());
         }
     }
 }
