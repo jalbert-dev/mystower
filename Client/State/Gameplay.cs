@@ -7,15 +7,7 @@ namespace Client.State
     {
         public Consoles.Gameplay GameplayConsole { get; }
 
-        private int Width { get; }
-        private int Height { get; }
-
-        public Gameplay(int w, int h, GameServer s)
-        {
-            GameplayConsole = new Consoles.Gameplay(s);
-            Width = w;
-            Height = h;
-        }
+        public Gameplay(GameServer s) => GameplayConsole = new Consoles.Gameplay(s);
 
         public IState<StateManager>? OnEnter(StateManager obj)
         {

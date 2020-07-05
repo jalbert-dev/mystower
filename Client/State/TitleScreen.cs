@@ -98,9 +98,9 @@ namespace Client.State
         public IState<StateManager>? Exec(StateManager obj)
         {
             if (startNewGame)
-                return new State.Gameplay(Width, Height, Server.GameServer.NewGame());
+                return new State.Gameplay(Server.GameServer.NewGame());
             if (loadGame)
-                return new State.Gameplay(Width, Height, Server.GameServer.FromSaveGame(File.ReadAllText("Saves/save.sav")));
+                return new State.Gameplay(Server.GameServer.FromSaveGame(File.ReadAllText("Saves/save.sav")));
             return null;
         }
 
