@@ -248,7 +248,7 @@ namespace Client.Consoles
                 actor.PositionOffset = default(Point);
             }
 
-            Choreographer.PrepareDraw(timeElapsed);
+            Choreographer.Update(timeElapsed);
 
             // capture the first player-controlled actor as a fallback
             // in the event that we don't have a waitingActor to use as a 

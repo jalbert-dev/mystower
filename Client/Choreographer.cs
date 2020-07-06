@@ -98,9 +98,9 @@ namespace Client
         /// </summary>
         public bool IsBusy => steps.Count != 0;
 
-        public void PrepareDraw(TimeSpan timeElapsed)
+        public void Update(TimeSpan timeElapsed)
         {
-            var currentStep = steps.ElementAtOrDefault(0);
+            var currentStep = steps.FirstOrDefault();
 
             if (currentStep != null)
             {
@@ -136,7 +136,6 @@ namespace Client
                 // after which we pad the end with an extra blank step
                 // to avoid new motions from adding to the exclusive step
 
-
                 var soloStep = QueueNewStep();
                 soloStep.QueueMotion(target, coroutineProducer(soloStep));
                 QueueNewStep();
@@ -145,6 +144,7 @@ namespace Client
             {
                 // simultaneous motions are put into the last step in the queue.
                 // if no steps exist, we need to create one
+
                 var lastStep = steps.LastOrDefault();
                 if (lastStep != null)
                 {

@@ -5,12 +5,12 @@ using FluentAssertions;
 using FsCheck;
 using FsCheck.Xunit;
 
-using static Tests.Server.FunctionalTests.Helpers;
+using static Tests.Util.FunctionalTests.Helpers;
 
 // Unfortunately Result conflicts with FsCheck.Result!
 using Res = Util.Functional.Result;
 
-namespace Tests.Server.FunctionalTests
+namespace Tests.Util.FunctionalTests
 {
     class TestErr : IError
     {
@@ -20,7 +20,7 @@ namespace Tests.Server.FunctionalTests
     static class Helpers
     {
         public static Res.GenericError err(string msg) => Res.Error(new TestErr { value = msg });
-        public static Util.Functional.Result<T> err<T>(string msg) => err(msg);
+        public static global::Util.Functional.Result<T> err<T>(string msg) => err(msg);
     }
 
     public class OptionTests
