@@ -192,10 +192,7 @@ namespace Client.Consoles
 
             if (dx != 0 || dy != 0)
             {
-                // we shouldn't move in a direction we aren't facing, so if the PC
-                // isn't already facing the input direction, emit a set-facing
-                // action instead of a move
-                if (ManualFacing(info) || (pc != null && pc.Facing != new Vec2i(dx, dy)))
+                if (ManualFacing(info))
                     return new Actions.Face(dx, dy);
                 else
                     return new Actions.Move(dx, dy);
