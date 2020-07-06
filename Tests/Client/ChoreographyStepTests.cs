@@ -126,8 +126,8 @@ namespace Tests.Client
         [Fact] public void WorkCanAddOtherWorkDuringExecution()
         {
             var actor = new TestActor();
-            Step.QueueMotion(actor, (actor, step) => YieldInstantly(() => {
-                step.QueueMotion(actor, YieldInstantly(() => actor.position = 7));
+            Step.QueueMotion(actor, YieldInstantly(() => {
+                Step.QueueMotion(actor, YieldInstantly(() => actor.position = 7));
             }));
             Step.Update();
             Step.Update();
@@ -139,7 +139,7 @@ namespace Tests.Client
         [Fact] public void WorkCanClearWorkQueueDuringExecution()
         {
             var actor = new TestActor();
-            Step.QueueMotion(actor, (actor, step) => YieldInstantly(() => Step.Clear()));
+            Step.QueueMotion(actor, YieldInstantly(() => Step.Clear()));
             Step.QueueMotion(actor, YieldInstantly(() => actor.position = 20));
 
             FluentActions.Invoking(() => Step.Update()).Should().NotThrow(

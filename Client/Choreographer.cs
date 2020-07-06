@@ -11,7 +11,7 @@ namespace Client
         private const int INITIAL_MOTION_LIST_LEN = 4;
 
         Dictionary<T, List<Coroutine>> motions = new Dictionary<T, List<Coroutine>>();
-        List<(T, Func<T, ChoreographyStep<T>, IEnumerable>)> deferred = new List<(T, Func<T, ChoreographyStep<T>, IEnumerable>)>();
+        List<(T, IEnumerable)> deferred = new List<(T, IEnumerable)>();
 
         bool deferQueuing = false;
 
@@ -24,23 +24,20 @@ namespace Client
             motions.Clear();
         }
 
-        public void QueueMotion(T target, Func<T, ChoreographyStep<T>, IEnumerable> coroutineProducer)
+        public void QueueMotion(T target, IEnumerable coroutine)
         {
             if (deferQueuing)
             {
-                deferred.Add( (target, coroutineProducer) );
+                deferred.Add( (target, coroutine) );
             }
             else
             {
                 motions.TryGetValue(target, out var motionList);
                 if (motionList == null)
                     motions.Add(target, new List<Coroutine>(INITIAL_MOTION_LIST_LEN));
-                motions[target].Add(new Coroutine(coroutineProducer(target, this)));
+                motions[target].Add(new Coroutine(coroutine));
             }
         }
-
-        public void QueueMotion(T target, IEnumerable coroutine)
-            => QueueMotion(target, (_, __) => coroutine);
 
         public void Update()
         {
@@ -131,7 +128,7 @@ namespace Client
             return steps.Last();
         }
 
-        public void AddMotion(T target, Func<T, ChoreographyStep<T>, IEnumerable> coroutineProducer, ChoreographyOrder ordering)
+        public void AddMotion(T target, Func<ChoreographyStep<T>, IEnumerable> coroutineProducer, ChoreographyOrder ordering)
         {
             if (ordering == ChoreographyOrder.Solo)
             {
@@ -139,7 +136,9 @@ namespace Client
                 // after which we pad the end with an extra blank step
                 // to avoid new motions from adding to the exclusive step
 
-                QueueNewStep().QueueMotion(target, coroutineProducer);
+
+                var soloStep = QueueNewStep();
+                soloStep.QueueMotion(target, coroutineProducer(soloStep));
                 QueueNewStep();
             }
             else if (ordering == ChoreographyOrder.Simultaneous)
@@ -149,19 +148,17 @@ namespace Client
                 var lastStep = steps.LastOrDefault();
                 if (lastStep != null)
                 {
-                    lastStep.QueueMotion(target, coroutineProducer);
+                    lastStep.QueueMotion(target, coroutineProducer(lastStep));
                 }
                 else
                 {
-                    QueueNewStep().QueueMotion(target, coroutineProducer);
+                    var newStep = QueueNewStep();
+                    newStep.QueueMotion(target, coroutineProducer(newStep));
                 }
             }
         }
 
-        public void AddMotion(T target, Func<T, IEnumerable> coroutineProducer, ChoreographyOrder ordering)
-            => AddMotion(target, (actor, _) => coroutineProducer(actor), ordering);
-
         public void AddMotion(T target, IEnumerable coroutine, ChoreographyOrder ordering)
-            => AddMotion(target, (_, __) => coroutine, ordering);
+            => AddMotion(target, _ => coroutine, ordering);
     }
 }
