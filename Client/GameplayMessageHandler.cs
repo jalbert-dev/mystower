@@ -27,7 +27,7 @@ namespace Client
                 Client.Choreographer.AddMotion(
                     vis,
                     Motions.LerpMove(vis, msg.SourceTile, msg.DestTile, 10),
-                    Choreographer.Ordering.Simultaneous);
+                    ChoreographyOrder.Simultaneous);
         }
 
         public void HandleMessage(ActorFaced msg)
@@ -38,7 +38,7 @@ namespace Client
                 Client.Choreographer.AddMotion(
                     mapActor, 
                     Motions.SetFacing(mapActor, msg.NewFacingDir),
-                    Choreographer.Ordering.Simultaneous);
+                    ChoreographyOrder.Simultaneous);
             }
         }
 
@@ -69,7 +69,7 @@ namespace Client
                                 Client.MessageLog.AddMessage($"{a.DamageDealt} damage!");
                             }
                         }),
-                    Choreographer.Ordering.Solo);
+                    ChoreographyOrder.Solo);
             }
             foreach (var a in msg.Results)
             {

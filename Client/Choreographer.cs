@@ -6,12 +6,12 @@ using System.Linq;
 
 namespace Client
 {
-    public class ChoreographyStep
+    public class ChoreographyStep<T> where T : class
     {
         private const int INITIAL_MOTION_LIST_LEN = 4;
 
-        Dictionary<MapActor, List<Coroutine>> motions = new Dictionary<MapActor, List<Coroutine>>();
-        List<(MapActor, Func<MapActor, ChoreographyStep, IEnumerable>)> deferred = new List<(MapActor, Func<MapActor, ChoreographyStep, IEnumerable>)>();
+        Dictionary<T, List<Coroutine>> motions = new Dictionary<T, List<Coroutine>>();
+        List<(T, Func<T, ChoreographyStep<T>, IEnumerable>)> deferred = new List<(T, Func<T, ChoreographyStep<T>, IEnumerable>)>();
 
         bool deferQueuing = false;
 
@@ -19,7 +19,7 @@ namespace Client
 
         public void Clear() => motions.Clear();
 
-        public void QueueMotion(MapActor target, Func<MapActor, ChoreographyStep, IEnumerable> coroutineProducer)
+        public void QueueMotion(T target, Func<T, ChoreographyStep<T>, IEnumerable> coroutineProducer)
         {
             if (deferQueuing)
             {
@@ -34,7 +34,7 @@ namespace Client
             }
         }
 
-        public void QueueMotion(MapActor target, IEnumerable coroutine)
+        public void QueueMotion(T target, IEnumerable coroutine)
             => QueueMotion(target, (_, __) => coroutine);
 
         public void Update()
@@ -63,13 +63,26 @@ namespace Client
         }
     }
 
+    public enum ChoreographyOrder
+    {
+        /// <summary>
+        /// Solo motions are placed into their own exclusive choreography step
+        /// at the end of the step queue.
+        /// </summary>
+        Solo,
+        /// <summary>
+        /// Simultaneous motions are appended to the step at the end of the step queue.
+        /// </summary>
+        Simultaneous,
+    }
+
     /// <summary>
     /// A Choreographer coordinates the motion of multiple MapActors.
     /// Individual motions are expressed by IActorMotion instances.
     /// </summary>
-    public class Choreographer
+    public class Choreographer<T> where T : class
     {
-        List<ChoreographyStep> steps = new List<ChoreographyStep>(16);
+        List<ChoreographyStep<T>> steps = new List<ChoreographyStep<T>>(16);
 
         /// <summary>
         /// Returns whether the choreographer has motions to execute.
@@ -90,20 +103,7 @@ namespace Client
             }
         }
 
-        public enum Ordering
-        {
-            /// <summary>
-            /// Solo motions are placed into their own exclusive choreography step
-            /// at the end of the step queue.
-            /// </summary>
-            Solo,
-            /// <summary>
-            /// Simultaneous motions are appended to the step at the end of the step queue.
-            /// </summary>
-            Simultaneous,
-        }
-
-        ChoreographyStep QueueNewStep()
+        ChoreographyStep<T> QueueNewStep()
         {
             var lastStep = steps.LastOrDefault();
             // if there exists an empty step at the end of the queue, there's
@@ -115,13 +115,13 @@ namespace Client
             }
 
             // otherwise make and return a new step
-            steps.Add(new ChoreographyStep());
+            steps.Add(new ChoreographyStep<T>());
             return steps.Last();
         }
 
-        public void AddMotion(MapActor target, Func<MapActor, ChoreographyStep, IEnumerable> coroutineProducer, Ordering ordering)
+        public void AddMotion(T target, Func<T, ChoreographyStep<T>, IEnumerable> coroutineProducer, ChoreographyOrder ordering)
         {
-            if (ordering == Ordering.Solo)
+            if (ordering == ChoreographyOrder.Solo)
             {
                 // solo motions force creation of an exclusive step,
                 // after which we pad the end with an extra blank step
@@ -130,7 +130,7 @@ namespace Client
                 QueueNewStep().QueueMotion(target, coroutineProducer);
                 QueueNewStep();
             }
-            else if (ordering == Ordering.Simultaneous)
+            else if (ordering == ChoreographyOrder.Simultaneous)
             {
                 // simultaneous motions are put into the last step in the queue.
                 // if no steps exist, we need to create one
@@ -146,10 +146,10 @@ namespace Client
             }
         }
 
-        public void AddMotion(MapActor target, Func<MapActor, IEnumerable> coroutineProducer, Ordering ordering)
+        public void AddMotion(T target, Func<T, IEnumerable> coroutineProducer, ChoreographyOrder ordering)
             => AddMotion(target, (actor, _) => coroutineProducer(actor), ordering);
 
-        public void AddMotion(MapActor target, IEnumerable coroutine, Ordering ordering)
+        public void AddMotion(T target, IEnumerable coroutine, ChoreographyOrder ordering)
             => AddMotion(target, (_, __) => coroutine, ordering);
     }
 }

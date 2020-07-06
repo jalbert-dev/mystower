@@ -2,7 +2,6 @@ using System.IO;
 using Server.Data;
 using Xunit;
 using FluentAssertions;
-using Newtonsoft.Json;
 using Server;
 
 namespace Tests.Server

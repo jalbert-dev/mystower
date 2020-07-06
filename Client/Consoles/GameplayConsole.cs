@@ -52,7 +52,7 @@ namespace Client.Consoles
         public Consoles.DebugStats DebugStatsDisplay = new Consoles.DebugStats();
 
         public GameServer Server { get; }
-        public Choreographer Choreographer { get; } = new Choreographer();
+        public Choreographer<MapActor> Choreographer { get; } = new Choreographer<MapActor>();
         public Util.CoroutineContainer Coroutines { get; } = new Util.CoroutineContainer();
 
         public ActorSet MapActors { get; } = new ActorSet();

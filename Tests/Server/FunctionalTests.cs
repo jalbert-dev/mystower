@@ -14,7 +14,7 @@ namespace Tests.Server.FunctionalTests
 {
     class TestErr : IError
     {
-        public string value;
+        public string value = "";
         public string Message => value;
     }
     static class Helpers
@@ -33,7 +33,7 @@ namespace Tests.Server.FunctionalTests
 
         [Fact] public void NullValueIsNotNone()
         {
-            Option<object> opt = Option.Some<object>(null);
+            Option<object?> opt = Option.Some<object?>(null);
             opt.IsNone.Should().Be(false);
             opt.Value.Should().BeNull();
         }
@@ -214,7 +214,7 @@ namespace Tests.Server.FunctionalTests
         
         [Fact] public void ResultWithNullValueIsNotError()
         {
-            Result<object> result = Res.Ok<object>(null);
+            Result<object?> result = Res.Ok<object?>(null);
             result.IsSuccess.Should().BeTrue();
         }
 
