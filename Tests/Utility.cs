@@ -1,9 +1,7 @@
 using System;
-using System.Collections;
-using System.Linq;
 using Newtonsoft.Json;
 
-namespace Server.Tests
+namespace Tests
 {
     public static class Utility
     {

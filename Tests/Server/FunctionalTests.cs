@@ -1,17 +1,16 @@
 using System;
-using Util;
 using Util.Functional;
 using Xunit;
 using FluentAssertions;
 using FsCheck;
 using FsCheck.Xunit;
 
-using static Server.Tests.FunctionalTests.Helpers;
+using static Tests.Server.FunctionalTests.Helpers;
 
 // Unfortunately Result conflicts with FsCheck.Result!
 using Res = Util.Functional.Result;
 
-namespace Server.Tests.FunctionalTests
+namespace Tests.Server.FunctionalTests
 {
     class TestErr : IError
     {

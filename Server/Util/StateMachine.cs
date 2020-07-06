@@ -17,7 +17,7 @@ namespace Util
             this.current = startState;
         }
 
-        private IState<T> ResolveTransition(T host, IState<T>? previous, IState<T>? newState)
+        private static IState<T> ResolveTransition(T host, IState<T>? previous, IState<T>? newState)
         {
             if (previous == null && newState == null)
                 throw new System.Exception("Attempted to resolve transition with previous and new states null");

@@ -2,7 +2,7 @@ using System.Linq;
 using FsCheck;
 using Server.Data;
 
-namespace Server.Tests.Generators
+namespace Tests.Server.Generators
 {
     public partial class ActorGen
     {

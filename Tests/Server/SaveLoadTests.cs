@@ -3,8 +3,9 @@ using Server.Data;
 using Xunit;
 using FluentAssertions;
 using Newtonsoft.Json;
+using Server;
 
-namespace Server.Tests
+namespace Tests.Server
 {
     public class SaveLoadTests
     {

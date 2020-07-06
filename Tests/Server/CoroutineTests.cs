@@ -6,7 +6,7 @@ using System.Collections;
 using FsCheck.Xunit;
 using FsCheck;
 
-namespace Server.Tests
+namespace Tests.Server
 {
     public class CoroutineTests
     {

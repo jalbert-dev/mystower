@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Collections.Generic;
 using FluentAssertions;
@@ -6,10 +5,10 @@ using FsCheck;
 using FsCheck.Xunit;
 using Server.Data;
 using Server.Logic;
-using Server.Tests.Generators;
+using Tests.Server.Generators;
 using Xunit;
 
-namespace Server.Tests.TurnControllerTests
+namespace Tests.Server.TurnControllerTests
 {
     public class GetNextToAct
     {
