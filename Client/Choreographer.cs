@@ -17,7 +17,12 @@ namespace Client
 
         public bool IsDone => motions.Values.All(x => x.Count == 0);
 
-        public void Clear() => motions.Clear();
+        public void Clear()
+        {
+            foreach (var motionList in motions.Values)
+                motionList.Clear();
+            motions.Clear();
+        }
 
         public void QueueMotion(T target, Func<T, ChoreographyStep<T>, IEnumerable> coroutineProducer)
         {
@@ -43,11 +48,18 @@ namespace Client
             foreach (var motionList in motions.Values)
             {
                 var frontMotion = motionList.FirstOrDefault();
-                if (frontMotion != null)
+                while (frontMotion != null)
                 {
                     frontMotion.Step();
-                    if (frontMotion.IsDone)
+                    if (frontMotion.IsDone && motionList.Count > 0)
+                    {
                         motionList.RemoveAt(0);
+                        frontMotion = motionList.FirstOrDefault();
+                    }
+                    else
+                    {
+                        frontMotion = null;
+                    }
                 }
             }
             deferQueuing = false;

@@ -139,7 +139,7 @@ namespace Tests.Client
         [Fact] public void WorkCanClearWorkQueueDuringExecution()
         {
             var actor = new TestActor();
-            Step.QueueMotion(actor, (actor, step) => YieldInstantly(() => step.Clear()));
+            Step.QueueMotion(actor, (actor, step) => YieldInstantly(() => Step.Clear()));
             Step.QueueMotion(actor, YieldInstantly(() => actor.position = 20));
 
             FluentActions.Invoking(() => Step.Update()).Should().NotThrow(
