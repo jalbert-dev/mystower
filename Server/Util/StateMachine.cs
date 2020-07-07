@@ -7,10 +7,20 @@ namespace Util
         IState<T>? OnExit(T obj);
     }
 
+    public abstract class State<T> : IState<T>
+    {
+        public virtual IState<T>? OnEnter(T obj) => null;
+        public virtual IState<T>? Exec(T obj) => null;
+        public virtual IState<T>? OnExit(T obj) => null;
+    }
+
     public class StateMachine<T>
     {
         IState<T> current;
         bool needInit = true;
+
+        public bool IsInState(System.Type type) => current.GetType() == type;
+        public bool IsInState<U>() => IsInState(typeof(U));
 
         public StateMachine(IState<T> startState)
         {
