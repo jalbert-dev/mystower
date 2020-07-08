@@ -27,12 +27,15 @@ namespace Server.Logic
 
             public int Execute(IClientProxy client, GameState gs, Actor actor)
             {
+                // should always set facing regardless of move success
+                (actor.facing.x, actor.facing.y) = (dx, dy);
+                client.EmitMessage(new Message.ActorFaced(actor, actor.facing));
+
                 var dstX = actor.position.x + dx;
                 var dstY = actor.position.y + dy;
+
                 if (Map.CanMoveInto(gs.map, gs.actors, dstX, dstY))
                 {
-                    (actor.facing.x, actor.facing.y) = (dx, dy);
-                    client.EmitMessage(new Message.ActorFaced(actor, actor.facing));
 
                     client.EmitMessage(new Message.ActorMoved(actor, actor.position.x, actor.position.y, dx, dy));
                     (actor.position.x, actor.position.y) = (dstX, dstY);
