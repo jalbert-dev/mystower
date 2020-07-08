@@ -55,5 +55,13 @@ namespace Client
                 yield return null;
             }
         }
+
+        public static IEnumerable Death(Consoles.MessageLog msg, MapActor actor, Action whenDone)
+        {
+            msg.AddMessage("Actor is defeated!");
+            for (int i = 0; i < 10; i++)
+                yield return null;
+            whenDone();
+        }
     }
 }

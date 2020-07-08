@@ -16,11 +16,11 @@ namespace Server.Message
         public void Dispatch(IGameClient c) => c.HandleMessage(this);
     }
 
-    public class ActorVanished : IGameMessage
+    public class ActorDead : IGameMessage
     {
         public DataHandle<Actor> Actor { get; }
 
-        internal ActorVanished(Actor actor)
+        internal ActorDead(Actor actor)
         {
             Actor = actor.ToDataHandle();
         }

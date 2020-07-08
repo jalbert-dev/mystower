@@ -77,14 +77,24 @@ namespace Server.Logic
                     a.position.y == actor.position.y + actor.facing.y);
 
                 // Calculate + deal damage to each actor and store result in AttackResults
-                var results = targets.Select(target => new Message.AttackResult(target) 
-                { 
-                    DamageDealt=3,
+                var results = targets.Select(target => {
+                    var dmg = DamageHandling.CalcDamage(actor, target);
+                    target.status.hp = Math.Max(0, target.status.hp - dmg);
+
+                    return new Message.AttackResult(target) 
+                    { 
+                        DamageDealt=dmg,
+                    };
                 });
 
                 // Emit AttackResult to clients
                 client.EmitMessage(new Message.ActorAttacked(actor, results));
 
+                foreach (var deadActor in DamageHandling.GetDeadActors(targets).ToList())
+                {
+                    client.EmitMessage(new Message.ActorDead(deadActor));
+                    gs.actors.Remove(deadActor);
+                }
                 return 50;
             }
         }

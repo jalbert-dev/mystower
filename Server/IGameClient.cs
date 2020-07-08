@@ -24,7 +24,7 @@ namespace Server
         /// Invoked when an actor known to the client disappears,
         /// whether due to death or for some other reason.
         /// </summary>
-        void HandleMessage(Message.ActorVanished msg);
+        void HandleMessage(Message.ActorDead msg);
         /// <summary>
         /// Invoked when an actor known to the client moves from one tile
         /// to another.

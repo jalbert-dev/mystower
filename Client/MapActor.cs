@@ -21,7 +21,6 @@ namespace Client
 
         public MapActor(SadConsole.Console parent, DataHandle<Actor> actor) : base(1,1)
         {
-            parent.Children.Add(this);
             this.Parent = parent;
             ParentTileMap = parent;
 

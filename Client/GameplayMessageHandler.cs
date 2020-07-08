@@ -15,9 +15,14 @@ namespace Client
             Client.MapActors.Add(a);
         }
 
-        public void HandleMessage(ActorVanished msg)
+        public void HandleMessage(ActorDead msg)
         {
-            Client.MapActors.Remove(msg.Actor);
+            var mapActor = Client.MapActors.Lookup(msg.Actor);
+            if (mapActor != null)
+                Client.Choreographer.AddMotion(
+                    mapActor,
+                    Motions.Death(Client.MessageLog, mapActor, () => Client.MapActors.Remove(msg.Actor)),
+                    ChoreographyOrder.Solo);
         }
 
         public void HandleMessage(ActorMoved msg)

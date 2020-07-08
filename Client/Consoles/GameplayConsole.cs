@@ -38,13 +38,15 @@ namespace Client.Consoles
             {
                 if (mapActors.Any(x => x.Actor.HandleEquals(mapActor.Actor)))
                     return;
+                OnAddActor?.Invoke(mapActor);
                 mapActors.Add(mapActor);
             }
 
             public MapActor? this[DataHandle<Actor> index] => Lookup(index);
 
-            public delegate void ActorRemovalHandler(MapActor actor);
-            public event ActorRemovalHandler? OnRemoveActor;
+            public delegate void ActorSetHandler(MapActor actor);
+            public event ActorSetHandler? OnRemoveActor;
+            public event ActorSetHandler? OnAddActor;
         }
 
         public Consoles.TileMap TileMap { get; }
@@ -85,10 +87,15 @@ namespace Client.Consoles
 
             Coroutines.Add(SimulationLoop(false));
 
+            MapActors.OnAddActor += (a) => 
+            {
+                TileMap.Children.Add(a);
+            };
             MapActors.OnRemoveActor += (a) =>
             {
                 if (fallbackCameraFocusActor == a)
                     fallbackCameraFocusActor = null;
+                TileMap.Children.Remove(a);
             };
 
             HandleMessages(Server.GetClientInitMessages());
