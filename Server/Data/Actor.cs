@@ -18,7 +18,7 @@ namespace Server.Data
         // TODO!: Move into Archetype data structure!
         public StatBlock baseStatus;
 
-        public override string ToString() => this.ToJsonString();
+        public override string ToString() => this.ToPrettyJson();
     }
 
     public struct StatBlock

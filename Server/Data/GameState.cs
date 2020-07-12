@@ -9,6 +9,6 @@ namespace Server.Data
         public List<Actor> actors = new List<Actor>();
         public MapData map = new MapData();
 
-        public override string ToString() => this.ToJsonString();
+        public override string ToString() => this.ToPrettyJson();
     }
 }

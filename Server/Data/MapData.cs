@@ -13,6 +13,6 @@ namespace Server.Data
         public int Width => tiles.GetLength(0);
         public int Height => tiles.GetLength(1);
 
-        public override string ToString() => this.ToJsonString();
+        public override string ToString() => this.ToPrettyJson();
     }
 }
