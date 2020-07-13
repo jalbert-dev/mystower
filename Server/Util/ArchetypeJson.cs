@@ -138,30 +138,36 @@ namespace Util
             return Result.Ok<(string?, JObject?)>( (null, null) );
         }
 
-        private static Result<JToken> FindInArchetypes(JObject rootNode, string id, JObject node, string propName, List<string> visitedNodes)
+        private static IError? GetArchetypeHierarchy(JObject rootNode, string nodeId, JObject node, List<JObject> hierarchy)
         {
-            visitedNodes.Add(id);
+            hierarchy.Add(node);
 
-            node.TryGetValue(propName, out var valueToken);
-            if (valueToken == null)
+            var archNodeResult = GetArchetypeNode(rootNode, nodeId, node);
+            if (!archNodeResult.IsSuccess)
+                return archNodeResult.Err;
+            var (archId, archNode) = archNodeResult.Value;
+
+            if (archNode != null)
             {
-                var archNodeResult = GetArchetypeNode(rootNode, id, node);
-                if (!archNodeResult.IsSuccess)
-                    return Result.Error(archNodeResult.Err);
-                var (archId, archNode) = archNodeResult.Value;
+                if (hierarchy.Contains(archNode))
+                    return new Error.ArchetypeCycleDetected(nodeId);
 
-                // if no archetype, the property being searched for is not present in the hierarchy
-                if (archNode == null)
-                    return Result.Error(new Error.FieldNotFound(id, propName));
-
-                // if we've already visited the archetype in question, we've hit a cycle
-                if (visitedNodes.Contains(archId!))
-                    return Result.Error(new Error.ArchetypeCycleDetected(id));
-
-                // recursively find in archetype node
-                return FindInArchetypes(rootNode, archId!, archNode, propName, visitedNodes);
+                var err = GetArchetypeHierarchy(rootNode, archId!, archNode, hierarchy);
+                if (err != null)
+                    return err;
             }
-            return Result.Ok(valueToken);
+            return null;
+        }
+
+        private static Result<JToken> FindInArchetypes(string leafName, List<JObject> archetypes, string propName)
+        {
+            foreach(var obj in archetypes)
+            {
+                obj.TryGetValue(propName, out var valueToken);
+                if (valueToken != null)
+                    return Result.Ok(valueToken);
+            }
+            return Result.Error(new Error.FieldNotFound(leafName, propName));
         }
 
         private static IError? LoadObjectFrom<T>(JObject rootNode, string id, JToken token, Dictionary<string, T> db) where T : new()
@@ -170,10 +176,15 @@ namespace Util
             if (obj == null)
                 return new Error.NodeNotJsonObject(id);
 
+            var hierarchy = new List<JObject>(4);
+            var err = GetArchetypeHierarchy(rootNode, id, obj, hierarchy);
+            if (err != null)
+                return err;
+
             var newObj = db[id] = new T();
             foreach (var field in typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public))
             {
-                var valueTokenResult = FindInArchetypes(rootNode, id, obj, field.Name, new List<string>());
+                var valueTokenResult = FindInArchetypes(id, hierarchy, field.Name);
 
                 if (!valueTokenResult.IsSuccess)
                     return valueTokenResult.Err;
