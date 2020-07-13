@@ -221,6 +221,34 @@ namespace Tests.Util
             result.IsSuccess.Should().BeFalse();
             result.Err.Should().BeOfType<U.Error.ArchetypeCycleDetected>();
         }
+
+        [Fact] public void ArchetypeMustBeString()
+        {
+            var input = @"{
+                ""item"": {
+                    ""_archetype"": [1,2,3]
+                }
+            }";
+
+            var result = ArchetypeJson.Read<TestStruct>(input);
+
+            result.IsSuccess.Should().BeFalse();
+            result.Err.Should().BeOfType<U.Error.JsonParseFailed>();
+        }
+
+        [Fact] public void ArchetypeNodeMustBeObject()
+        {
+            var input = @"{
+                ""__a"": 4,
+                ""item"": {
+                    ""_archetype"": ""__a""
+                }
+            }";
+
+            var result = ArchetypeJson.Read<TestStruct>(input);
+            result.IsSuccess.Should().BeFalse();
+            result.Err.Should().BeOfType<U.Error.NodeNotJsonObject>();
+        }
         
         [Fact] public void CycleIsParseFailureEvenIfAllFieldsSpecified()
         {
@@ -359,7 +387,7 @@ namespace Tests.Util
             var result = ArchetypeJson.Read<TestStruct>(input);
 
             result.IsSuccess.Should().BeFalse();
-            result.Err.Should().BeOfType<U.Error.RootNotJsonObject>();
+            result.Err.Should().BeOfType<U.Error.JsonParseFailed>();
         }
     }
 }

@@ -55,6 +55,8 @@ namespace Util.Error
         readonly string fieldName;
         public FieldNotFound(string key, FieldInfo field) : base(key)
             => (objKey, fieldName) = (key, field.Name);
+        public FieldNotFound(string key, string field) : base(key)
+            => (objKey, fieldName) = (key, field);
         public override string InnerMessage => $"Field '{fieldName}' not found in '{objKey}' or any parent archetype.";
     }
 
@@ -103,9 +105,90 @@ namespace Util
         private static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> self, out TKey key, out TValue value)
             => (key, value) = (self.Key, self.Value);
 
+        private static Result<(string?, JObject?)> GetArchetypeNode(JObject rootNode, string nodeId, JObject node)
+        {
+            // find _archetype property and if exists find archetype object by that key 
+            if (node.TryGetValue("_archetype", out var archetypeToken))
+            {
+                // note that we can't just load the archetype object into the database
+                // recursively because archetypes are not required to have all
+                // fields populated.
+
+                var archetypeId = archetypeToken.ToObject<string>()!;
+
+                // get the JSON node corresponding to the archetype object
+                if (!rootNode.TryGetValue(archetypeId, out var archetypeNodeToken))
+                    return Result.Error(new Error.ArchetypeNotFound(nodeId, archetypeId));
+                var result = archetypeNodeToken as JObject;
+                if (result == null)
+                    return Result.Error(new Error.NodeNotJsonObject(archetypeId));
+                
+                return Result.Ok<(string?, JObject?)>( (archetypeId, result) );
+            }
+            return Result.Ok<(string?, JObject?)>( (null, null) );
+        }
+
+        private static Result<JToken> FindInArchetypes(JObject rootNode, string id, JObject node, string propName)
+        {
+            node.TryGetValue(propName, out var valueToken);
+            if (valueToken == null)
+            {
+                var archNodeResult = GetArchetypeNode(rootNode, id, node);
+                if (!archNodeResult.IsSuccess)
+                    return Result.Error(archNodeResult.Err);
+                var (archId, archNode) = archNodeResult.Value;
+
+                // if no archetype, the property being searched for is not present in the hierarchy
+                if (archNode == null)
+                    return Result.Error(new Error.FieldNotFound(id, propName));
+
+                // recursively find in archetype node
+                return FindInArchetypes(rootNode, archId, archNode, propName);
+            }
+            return Result.Ok(valueToken);
+        }
+
+        private static IError? LoadObjectFrom<T>(JObject rootNode, string id, JToken token, Dictionary<string, T> db) where T : new()
+        {
+            var obj = token as JObject;
+            if (obj == null)
+                return new Error.NodeNotJsonObject(id);
+
+            var newObj = db[id] = new T();
+            foreach (var field in typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public))
+            {
+                var valueTokenResult = FindInArchetypes(rootNode, id, obj, field.Name);
+
+                if (!valueTokenResult.IsSuccess)
+                    return valueTokenResult.Err;
+
+                var valueObj = valueTokenResult.Value.ToObject(field.FieldType);
+                System.Console.WriteLine($"{typeof(T).Name}.{field.Name} <- {valueObj}");
+                field.SetValue(newObj, valueObj);
+            }
+            return null;
+        }
+
         public static Result<Dictionary<string, T>> Read<T>(string str) where T : new()
         {
-            return Result.Error(null);
+            try
+            {
+                var root = JObject.Parse(str);
+
+                var db = new Dictionary<string, T>(root.Children().Count());
+
+                foreach (var (id, tok) in root)
+                {
+                    var err = LoadObjectFrom<T>(root, id, tok!, db);
+                    if (err != null)
+                        return Result.Error(err);
+                }
+                return Result.Ok(db);
+            }
+            catch (JsonException ex)
+            {
+                return Result.Error(new Error.JsonParseFailed(ex));
+            }
         }
     }
 }
