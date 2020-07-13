@@ -73,6 +73,12 @@ namespace Util.Error
         public override string InnerMessage => "Dictionary value must be an object.";
     }
 
+    public class ArchetypeFieldNotString : ObjectValidationError
+    {
+        public ArchetypeFieldNotString(string objKey) : base(objKey) { }
+        public override string InnerMessage => "Archetype ID must be a string!";
+    }
+
     public class RootNotJsonObject : IError
     {
         public string Message => "Root JSON node must be an object!";
@@ -114,6 +120,9 @@ namespace Util
                 // recursively because archetypes are not required to have all
                 // fields populated.
 
+                if (archetypeToken.Type != JTokenType.String)
+                    return Result.Error(new Error.ArchetypeFieldNotString(nodeId));
+
                 var archetypeId = archetypeToken.ToObject<string>()!;
 
                 // get the JSON node corresponding to the archetype object
@@ -143,7 +152,7 @@ namespace Util
                     return Result.Error(new Error.FieldNotFound(id, propName));
 
                 // recursively find in archetype node
-                return FindInArchetypes(rootNode, archId, archNode, propName);
+                return FindInArchetypes(rootNode, archId!, archNode, propName);
             }
             return Result.Ok(valueToken);
         }
@@ -179,6 +188,12 @@ namespace Util
 
                 foreach (var (id, tok) in root)
                 {
+                    // object with id starting with "__" are only for being
+                    // archetypes of other objects, so we aren't guaranteed to
+                    // be able to load them (nor should we)
+                    if (id.StartsWith("__"))
+                        continue;
+
                     var err = LoadObjectFrom<T>(root, id, tok!, db);
                     if (err != null)
                         return Result.Error(err);

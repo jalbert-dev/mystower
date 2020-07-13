@@ -222,7 +222,7 @@ namespace Tests.Util
             result.Err.Should().BeOfType<U.Error.ArchetypeCycleDetected>();
         }
 
-        [Fact] public void ArchetypeMustBeString()
+        [Fact] public void ArchetypeFieldMustBeString()
         {
             var input = @"{
                 ""item"": {
@@ -233,7 +233,7 @@ namespace Tests.Util
             var result = ArchetypeJson.Read<TestStruct>(input);
 
             result.IsSuccess.Should().BeFalse();
-            result.Err.Should().BeOfType<U.Error.JsonParseFailed>();
+            result.Err.Should().BeOfType<U.Error.ArchetypeFieldNotString>();
         }
 
         [Fact] public void ArchetypeNodeMustBeObject()
@@ -299,7 +299,7 @@ namespace Tests.Util
             var result = ArchetypeJson.Read<TestStruct>(input);
 
             result.IsSuccess.Should().BeTrue();
-            result.Value.Should().BeEquivalentTo(expected);
+            result.Value["item"].Should().BeEquivalentTo(expected);
         }
 
         [Fact] public void DoubleUnderscorePrefixedIdIsTemplateAndNotInFinalResult()
