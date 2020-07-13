@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System;
+using System.Text.RegularExpressions;
 
 namespace Util.Error
 {
@@ -137,8 +138,10 @@ namespace Util
             return Result.Ok<(string?, JObject?)>( (null, null) );
         }
 
-        private static Result<JToken> FindInArchetypes(JObject rootNode, string id, JObject node, string propName)
+        private static Result<JToken> FindInArchetypes(JObject rootNode, string id, JObject node, string propName, List<string> visitedNodes)
         {
+            visitedNodes.Add(id);
+
             node.TryGetValue(propName, out var valueToken);
             if (valueToken == null)
             {
@@ -151,8 +154,12 @@ namespace Util
                 if (archNode == null)
                     return Result.Error(new Error.FieldNotFound(id, propName));
 
+                // if we've already visited the archetype in question, we've hit a cycle
+                if (visitedNodes.Contains(archId!))
+                    return Result.Error(new Error.ArchetypeCycleDetected(id));
+
                 // recursively find in archetype node
-                return FindInArchetypes(rootNode, archId!, archNode, propName);
+                return FindInArchetypes(rootNode, archId!, archNode, propName, visitedNodes);
             }
             return Result.Ok(valueToken);
         }
@@ -166,7 +173,7 @@ namespace Util
             var newObj = db[id] = new T();
             foreach (var field in typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public))
             {
-                var valueTokenResult = FindInArchetypes(rootNode, id, obj, field.Name);
+                var valueTokenResult = FindInArchetypes(rootNode, id, obj, field.Name, new List<string>());
 
                 if (!valueTokenResult.IsSuccess)
                     return valueTokenResult.Err;
@@ -180,6 +187,9 @@ namespace Util
 
         public static Result<Dictionary<string, T>> Read<T>(string str) where T : new()
         {
+            // first strip out any comments
+            str = Regex.Replace(str, @"^\s*#.*$", "", RegexOptions.Multiline);
+
             try
             {
                 var root = JObject.Parse(str);

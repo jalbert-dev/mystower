@@ -261,7 +261,7 @@ namespace Tests.Util
                     ""_archetype"": ""__a""
                 },
                 ""item"": {
-                    ""_archetype"": ""__b""
+                    ""_archetype"": ""__b"",
 
                     ""a"": 3,
                     ""b"": ""text"",
