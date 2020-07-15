@@ -91,7 +91,7 @@ namespace CodeGen
                 .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
                 .WithParameterList(ParameterList(SingletonSeparatedList<ParameterSyntax>(
                     Parameter(Identifier("other"))
-                    .WithType(NullableType(IdentifierName(cls.Identifier))))))
+                    .WithType(IdentifierName(cls.Identifier)))))
                 .WithBody(
                     Block(
                         ParseStatement($@"if (object.ReferenceEquals(other, null)) return false;"),
@@ -140,7 +140,14 @@ namespace CodeGen
             ");
         }
 
-        public Task<SyntaxList<MemberDeclarationSyntax>> GenerateAsync(TransformationContext context, IProgress<Diagnostic> progress, CancellationToken cancellationToken)
+        private static async Task<bool> AnyAttributeByName(ITypeSymbol type, TransformationContext context, string name)
+        {
+            var declaring = await Task.WhenAll(type.DeclaringSyntaxReferences.Select(x => x.GetSyntaxAsync()));
+            var attrs = declaring.SelectMany(x => context.SemanticModel.GetDeclaredSymbol(x).GetAttributes());
+            return attrs.Any(x => $"{x.AttributeClass.ContainingNamespace}.{x.AttributeClass.Name}" == name);
+        }
+
+        public async Task<SyntaxList<MemberDeclarationSyntax>> GenerateAsync(TransformationContext context, IProgress<Diagnostic> progress, CancellationToken cancellationToken)
         {
             var classType = (ClassDeclarationSyntax)context.ProcessingNode;
 
@@ -196,7 +203,8 @@ namespace CodeGen
                     }
 
                     var varSymbol = (IFieldSymbol)context.SemanticModel.GetDeclaredSymbol(v);
-                    if (!varSymbol.Type.AllInterfaces.Any(x => $"{x.ContainingNamespace}.{x.Name}`1" == typeof(IEquatable<>).FullName))
+                    if (!varSymbol.Type.AllInterfaces.Any(x => $"{x.ContainingNamespace}.{x.Name}`1" == typeof(IEquatable<>).FullName) &&
+                        !(await AnyAttributeByName(varSymbol.Type, context, "CodeGen.GameDataNodeAttribute")))
                     {
                         progress.Report(
                             Diagnostic.Create(
@@ -221,8 +229,6 @@ namespace CodeGen
                 .AddMembers(ImplementIEquatable(classType).ToArray())
                 .AddMembers(BuildToStringForRecord(classType).ToArray());
 
-            //if ()
-
             classType = classType
                 .AddBaseListTypes(
                     SimpleBaseType(
@@ -232,7 +238,7 @@ namespace CodeGen
                                 .WithTypeArgumentList(TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
                                     IdentifierName(classType.Identifier)))))));
 
-            return Task.FromResult(SingletonList<MemberDeclarationSyntax>(classType));
+            return (SingletonList<MemberDeclarationSyntax>(classType));
         }
     }
 }
