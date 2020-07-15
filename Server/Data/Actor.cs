@@ -1,38 +1,36 @@
 using System;
 using Util;
 
-using CodeGen;
-
 namespace Server.Data
 {
     /// A serializable structure representing a living actor in the game world.
-    [GameDataNode]
-    public class Actor
+    [CodeGen.GameDataNode]
+    public partial class Actor
     {
-        public Vec2i position;
-        public Vec2i facing = new Vec2i(0, 1);
+        Vec2i position;
+        Vec2i facing;
 
-        public string aiType = "";
-        public int timeUntilAct;
+        string aiType;
+        int timeUntilAct;
 
-        public int level = 1;
-        public ActorStatus status;
+        int level;
+        ActorStatus status;
 
         // TODO!: Move into Archetype data structure!
-        public StatBlock baseStatus;
-
-        public override string ToString() => this.ToPrettyJson();
+        StatBlock baseStatus;
     }
 
-    public struct StatBlock
+    [CodeGen.GameDataNode]
+    public partial class StatBlock
     {
-        public int hp;
-        public int atk;
-        public int def;
+        int hp;
+        int atk;
+        int def;
     }
 
-    public struct ActorStatus
+    [CodeGen.GameDataNode]
+    public partial class ActorStatus
     {
-        public int hp;
+        int hp;
     }
 }

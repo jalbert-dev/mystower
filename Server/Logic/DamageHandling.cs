@@ -9,11 +9,11 @@ namespace Server.Logic
     {
         public static int CalcDamage(Actor attacker, Actor target)
         {
-            var dmg = Math.Max(1, attacker.baseStatus.atk - target.baseStatus.def);
+            var dmg = Math.Max(1, attacker.BaseStatus.Atk - target.BaseStatus.Def);
             return dmg;
         }
 
         public static IEnumerable<Actor> GetDeadActors(IEnumerable<Actor> actors)
-            => actors.Where(x => x.status.hp <= 0);
+            => actors.Where(x => x.Status.Hp <= 0);
     }
 }

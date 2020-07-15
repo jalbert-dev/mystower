@@ -12,7 +12,7 @@ namespace Server.Logic
             => (_, __) => new Actions.Idle();
 
         public static ActionSelector MoveRandomly => (gs, actor) => {
-            if (Map.CanMoveInto(gs.map, gs.actors, actor.position.x + 1, actor.position.y + 1))
+            if (Map.CanMoveInto(gs.Map, gs.Actors, actor.Position.x + 1, actor.Position.y + 1))
                 return new Actions.Move(1, 1);
             else
                 return new Actions.Idle();

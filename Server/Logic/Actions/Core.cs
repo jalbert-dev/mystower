@@ -28,17 +28,17 @@ namespace Server.Logic
             public int Execute(IClientProxy client, GameState gs, Actor actor)
             {
                 // should always set facing regardless of move success
-                (actor.facing.x, actor.facing.y) = (dx, dy);
-                client.EmitMessage(new Message.ActorFaced(actor, actor.facing));
+                actor.Facing = (dx, dy);
+                client.EmitMessage(new Message.ActorFaced(actor, actor.Facing));
 
-                var dstX = actor.position.x + dx;
-                var dstY = actor.position.y + dy;
+                var dstX = actor.Position.x + dx;
+                var dstY = actor.Position.y + dy;
 
-                if (Map.CanMoveInto(gs.map, gs.actors, dstX, dstY))
+                if (Map.CanMoveInto(gs.Map, gs.Actors, dstX, dstY))
                 {
 
-                    client.EmitMessage(new Message.ActorMoved(actor, actor.position.x, actor.position.y, dx, dy));
-                    (actor.position.x, actor.position.y) = (dstX, dstY);
+                    client.EmitMessage(new Message.ActorMoved(actor, actor.Position.x, actor.Position.y, dx, dy));
+                    actor.Position = (dstX, dstY);
 
                     return 20;
                 }
@@ -55,7 +55,7 @@ namespace Server.Logic
 
             public int Execute(IClientProxy client, GameState gs, Actor actor)
             {
-                (actor.facing.x, actor.facing.y) = (dx, dy);
+                actor.Facing = (dx, dy);
                 client.EmitMessage(new Message.ActorFaced(actor, new Vec2i(dx, dy)));
                 return 0;
             }
@@ -71,15 +71,15 @@ namespace Server.Logic
                 // Determine attack targets
 
                 // For now, find actor in facing adjacent tile
-                var targets = gs.actors.Where(a =>
+                var targets = gs.Actors.Where(a =>
                     a != actor &&
-                    a.position.x == actor.position.x + actor.facing.x &&
-                    a.position.y == actor.position.y + actor.facing.y);
+                    a.Position.x == actor.Position.x + actor.Facing.x &&
+                    a.Position.y == actor.Position.y + actor.Facing.y);
 
                 // Calculate + deal damage to each actor and store result in AttackResults
                 var results = targets.Select(target => {
                     var dmg = DamageHandling.CalcDamage(actor, target);
-                    target.status.hp = Math.Max(0, target.status.hp - dmg);
+                    target.Status.Hp = Math.Max(0, target.Status.Hp - dmg);
 
                     return new Message.AttackResult(target) 
                     { 
@@ -93,7 +93,7 @@ namespace Server.Logic
                 foreach (var deadActor in DamageHandling.GetDeadActors(targets).ToList())
                 {
                     client.EmitMessage(new Message.ActorDead(deadActor));
-                    gs.actors.Remove(deadActor);
+                    gs.Actors.Remove(deadActor);
                 }
                 return 50;
             }

@@ -14,10 +14,10 @@ namespace Server.Logic
             int min = int.MaxValue;
             foreach (var actor in actors)
             {
-                if (actor.timeUntilAct < min)
+                if (actor.TimeUntilAct < min)
                 {
                     rv = actor;
-                    min = actor.timeUntilAct;
+                    min = actor.TimeUntilAct;
                 }
             }
             return rv.ToOption();
@@ -25,12 +25,12 @@ namespace Server.Logic
 
         public static void AdvanceTime(Actor actor, int dt)
         {
-            actor.timeUntilAct = Math.Max(0, actor.timeUntilAct - dt);
+            actor.TimeUntilAct = Math.Max(0, actor.TimeUntilAct - dt);
         }
 
         public static void AdvanceTime(GameState gs, int dt)
         {
-            foreach (var actor in gs.actors)
+            foreach (var actor in gs.Actors)
                 AdvanceTime(actor, dt);
         }
     }

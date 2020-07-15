@@ -51,11 +51,11 @@ namespace Client
                 {
                     Foreground = Color.White,
                     Background = Color.Transparent,
-                    Glyph = actor.aiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125,
+                    Glyph = actor.AiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125,
                 };
-                Position = new Point(actor.position.x, actor.position.y)
+                Position = new Point(actor.Position.x, actor.Position.y)
                     .SurfaceLocationToPixel(ParentTileMap.FontSize.X, ParentTileMap.FontSize.Y);
-                Facing = actor.facing;
+                Facing = actor.Facing;
             });
 
         public override void Update(System.TimeSpan delta)

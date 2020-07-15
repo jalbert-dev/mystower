@@ -51,7 +51,7 @@ namespace Client.Consoles
             canvasHeight = h;
         }
 
-        public void RebuildTileMap(MapData map)
+        public void RebuildTileMap(TileMap<byte> map)
         {
             int w = map.Width;
             int h = map.Height;
@@ -70,8 +70,8 @@ namespace Client.Consoles
                 for (int j = 0; j < h; j++)
                 {
                     this.SetGlyph(i, j,
-                        map.tiles[i,j] == 0 ? Grass[r.Next(4)] : Tree[r.Next(4)],
-                        map.tiles[i,j] == 0 ? Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()) : Color.DarkGreen,
+                        map[i,j] == 0 ? Grass[r.Next(4)] : Tree[r.Next(4)],
+                        map[i,j] == 0 ? Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()) : Color.DarkGreen,
                         Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
                     grid.SetGlyph(i, j, 10, Color.Black.SetAlpha(128));
                 }

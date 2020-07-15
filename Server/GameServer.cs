@@ -98,56 +98,44 @@ namespace Server
             gameStateLock = new RWLocked<GameState>(state);
         }
 
-        private static MapData TestMap(int w, int h)
+        private static TileMap<byte> TestMap(int w, int h)
         {
-            var map = new MapData { tiles = new byte[w,h] };
+            var map = new TileMap<byte>(w, h);
 
             for (int x = 0; x < w; x++)
             {
-                map.tiles[x,0] = 1;
-                map.tiles[x,h-1] = 1;
+                map[x,0] = 1;
+                map[x,h-1] = 1;
             }
             for (int y = 0; y < h; y++)
             {
-                map.tiles[0,y] = 1;
+                map[0,y] = 1;
             }
 
             return map;
         }
 
+        public static Actor ConstructActor(string aiType, int x, int y, int ct)
+            => new Actor(
+                new Vec2i(x, y), 
+                new Vec2i(0, 1), 
+                aiType, 
+                ct, 
+                1, 
+                new ActorStatus(10),
+                new StatBlock(10, 5, 2));
+
         public static GameServer NewGame()
-            => new GameServer(
-                new GameState
-                {
-                    actors = new List<Actor>
-                    {
-                        new Actor
+             => new GameServer(
+                    new GameState(
+                        new ValueList<Actor>
                         {
-                            aiType = nameof(AIType.PlayerControlled),
-                            position = new Vec2i { x=5, y=5 },
-                            timeUntilAct = 20
+                            ConstructActor(nameof(AIType.PlayerControlled), 5, 5, 20),
+                            ConstructActor(nameof(AIType.MoveRandomly), 2, 1, 21),
+                            ConstructActor(nameof(AIType.MoveRandomly), 1, 3, 20),
+                            ConstructActor(nameof(AIType.Idle), 4, 8, 10),
                         },
-                        new Actor
-                        {
-                            aiType = nameof(AIType.MoveRandomly),
-                            position = new Vec2i { x=2, y=1 },
-                            timeUntilAct = 21
-                        },
-                        new Actor
-                        {
-                            aiType = nameof(AIType.MoveRandomly),
-                            position = new Vec2i { x=1, y=3 },
-                            timeUntilAct = 20
-                        },
-                        new Actor
-                        {
-                            aiType = nameof(AIType.Idle),
-                            position = new Vec2i { x=4, y=8 },
-                            timeUntilAct = 10
-                        }
-                    },
-                    map = TestMap(100, 50),
-                });
+                        TestMap(100, 50)));
         
         public static GameServer FromSaveGame(string str)
             => new GameServer(GameStateIO.LoadFromString(str));
@@ -184,7 +172,7 @@ namespace Server
                 }
                 else
                 {
-                    actor.timeUntilAct = action.Execute(proxyClient, state, actor);
+                    actor.TimeUntilAct = action.Execute(proxyClient, state, actor);
                     return Option.None;
                 }
             };
@@ -199,24 +187,24 @@ namespace Server
         Result<Option<Actor>> Step(GameState gameState)
         {
             // for now, a step is however long it takes for the next unit to move
-            var maybeActor = TurnController.GetNextToAct(gameState.actors);
+            var maybeActor = TurnController.GetNextToAct(gameState.Actors);
             if (maybeActor.IsNone)
                 return Result.Ok<Option<Actor>>(Option.None);
             
             var actor = maybeActor.Value;
-            TurnController.AdvanceTime(gameState, actor.timeUntilAct);
+            TurnController.AdvanceTime(gameState, actor.TimeUntilAct);
             
             // try to lookup AI type and execute
-            return Logic.AIType.Lookup(actor.aiType)
-                .ErrorIfNone(() => new Errors.InvalidAI(actor.aiType))
+            return Logic.AIType.Lookup(actor.AiType)
+                .ErrorIfNone(() => new Errors.InvalidAI(actor.AiType))
                 .Map(aiFunc => aiFunc(gameState, actor))
                 .Map(ActionExecutor(gameState, actor));
         }
 
         private IEnumerable<IGameMessage> clientInitMessages(GameState gameState)
         {
-            yield return new Message.MapChanged(gameState.map);
-            foreach (var actor in gameState.actors)
+            yield return new Message.MapChanged(gameState.Map);
+            foreach (var actor in gameState.Actors)
                 yield return new Message.ActorAppeared(actor);
         }
 

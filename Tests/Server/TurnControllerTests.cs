@@ -24,7 +24,7 @@ namespace Tests.Server.TurnControllerTests
         {
             List<Actor> actors =
                 new int[] { 30, 20, 50, 33, 110 }
-                .Select(x => new Actor { timeUntilAct=x })
+                .Select(x => new Actor { TimeUntilAct=x })
                 .ToList();
             TurnController.GetNextToAct(actors).Value.Should().BeSameAs(actors[1]);
         }
@@ -33,7 +33,7 @@ namespace Tests.Server.TurnControllerTests
         {
             List<Actor> actors =
                 new int[] { 22, 9, 44, 23, 101, 9 }
-                .Select(x => new Actor { timeUntilAct=x })
+                .Select(x => new Actor { TimeUntilAct=x })
                 .ToList();
             var next = TurnController.GetNextToAct(actors);
             next.Value.Should().Match(
@@ -55,28 +55,28 @@ namespace Tests.Server.TurnControllerTests
         [Property] public Property TimeToActIsAlwaysNonNegativeAfter()
             => Prop.ForAll(ActorGen.Default(), 
                 (actor) =>
-                    Prop.ForAll(Arb.From(Gen.Choose(actor.timeUntilAct - 20, actor.timeUntilAct + 20)),
+                    Prop.ForAll(Arb.From(Gen.Choose(actor.TimeUntilAct - 20, actor.TimeUntilAct + 20)),
                     (dt) => {
                         TurnController.AdvanceTime(actor, dt);
-                        return actor.timeUntilAct >= 0;
+                        return actor.TimeUntilAct >= 0;
                     })
                 );
         
         [Fact] public void AdvancesTimeByTheGivenDt()
         {
-            var actor = new Actor { timeUntilAct=30 };
+            var actor = new Actor { TimeUntilAct=30 };
             TurnController.AdvanceTime(actor, 12);
-            actor.timeUntilAct.Should().Be(18);
+            actor.TimeUntilAct.Should().Be(18);
             TurnController.AdvanceTime(actor, 24);
-            actor.timeUntilAct.Should().Be(0);
+            actor.TimeUntilAct.Should().Be(0);
             TurnController.AdvanceTime(actor, 0);
-            actor.timeUntilAct.Should().Be(0);
+            actor.TimeUntilAct.Should().Be(0);
             TurnController.AdvanceTime(actor, 300);
-            actor.timeUntilAct.Should().Be(0);
+            actor.TimeUntilAct.Should().Be(0);
             TurnController.AdvanceTime(actor, -18);
-            actor.timeUntilAct.Should().Be(18);
+            actor.TimeUntilAct.Should().Be(18);
             TurnController.AdvanceTime(actor, -18);
-            actor.timeUntilAct.Should().Be(36);
+            actor.TimeUntilAct.Should().Be(36);
         }
     }
 }

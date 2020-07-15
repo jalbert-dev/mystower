@@ -4,11 +4,10 @@ using Util;
 namespace Server.Data
 {
     /// A serializable structure representing the game state, including world, actors, etc.
-    public class GameState
+    [CodeGen.GameDataNode]
+    public partial class GameState
     {
-        public List<Actor> actors = new List<Actor>();
-        public MapData map = new MapData();
-
-        public override string ToString() => this.ToPrettyJson();
+        Util.ValueList<Actor> actors;
+        TileMap<byte> map;
     }
 }
