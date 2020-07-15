@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\Util\Util.csproj" />
     <ProjectReference Include="..\Server\Server.csproj" />
   </ItemGroup>
 
