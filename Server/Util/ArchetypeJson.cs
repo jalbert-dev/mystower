@@ -190,7 +190,6 @@ namespace Util
                     return valueTokenResult.Err;
 
                 var valueObj = valueTokenResult.Value.ToObject(field.FieldType);
-                System.Console.WriteLine($"{typeof(T).Name}.{field.Name} <- {valueObj}");
                 field.SetValue(newObj, valueObj);
             }
             return null;

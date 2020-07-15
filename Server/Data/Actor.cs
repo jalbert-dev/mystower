@@ -1,9 +1,12 @@
 using System;
 using Util;
 
+using CodeGen;
+
 namespace Server.Data
 {
     /// A serializable structure representing a living actor in the game world.
+    [GameDataNode]
     public class Actor
     {
         public Vec2i position;
