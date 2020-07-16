@@ -153,6 +153,12 @@ namespace Util.Functional
             public IError error;
         }
 
+        public static Result<Unit> Ok() => Result.Ok(Unit.Instance);
+        public static Result<Unit> Ok(Action action)
+        {
+            action();
+            return Result.Ok(Unit.Instance);
+        }
         public static Result<T> Ok<T>(T value) => Result<T>.Ok(value);
         public static GenericError Error(IError error) => new GenericError { error = error };
     }

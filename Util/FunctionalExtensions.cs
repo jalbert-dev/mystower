@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Util.Functional
 {
@@ -24,5 +25,18 @@ namespace Util.Functional
 
         public static Option<TValue> TryGetValue<TValue, TKey>(this IDictionary<TKey, TValue> self, TKey key)
             => self.TryGetValue(key, out var value) ? Option.Some(value) : Option.None;
+        
+        public static Result<T> ErrorIfNull<T>(this T? item, Func<IError> ifNull) where T : class
+            => item == null ? Result.Error(ifNull()) : Result.Ok(item);
+
+        /// <summary>
+        /// Folds over an enumerable starting with a certain seed, where each step
+        /// in the fold takes the current aggregate and the current enumerable value,
+        /// and returns a Result. An error Result will halt the fold operation.
+        /// </summary>
+        public static Result<TBindType> FoldBind<TFoldType, TBindType>(this IEnumerable<TFoldType> self, TBindType seed, Func<TBindType, TFoldType, Result<TBindType>> f)
+             => self.Aggregate<TFoldType, Result<TBindType>>(
+                    Result.Ok(seed),
+                    (result, fold) => result.Bind(innerValue => f(innerValue, fold)));
     }
 }
