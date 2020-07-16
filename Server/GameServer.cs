@@ -177,6 +177,13 @@ namespace Server
                 }
             };
 
+        Result<Option<Actor>> PerformActorAI(GameState gameState, Actor actor)
+             => Result.Ok(() => TurnController.AdvanceTime(gameState, actor.TimeUntilAct))
+                .Bind(_ => Logic.AIType.Lookup(actor.AiType)
+                    .ErrorIfNone(() => new Errors.InvalidAI(actor.AiType))
+                .Map(aiFunc => aiFunc(gameState, actor))
+                .Map(ActionExecutor(gameState, actor)));
+
         /// Performs a single step of game logic on given server, firing callbacks
         /// to clients when appropriate.
         /// 
@@ -185,21 +192,9 @@ namespace Server
         /// Returns a Result containing an optional actor that must receive orders
         /// before processing can continue.
         Result<Option<Actor>> Step(GameState gameState)
-        {
-            // for now, a step is however long it takes for the next unit to move
-            var maybeActor = TurnController.GetNextToAct(gameState.Actors);
-            if (maybeActor.IsNone)
-                return Result.Ok<Option<Actor>>(Option.None);
-            
-            var actor = maybeActor.Value;
-            TurnController.AdvanceTime(gameState, actor.TimeUntilAct);
-            
-            // try to lookup AI type and execute
-            return Logic.AIType.Lookup(actor.AiType)
-                .ErrorIfNone(() => new Errors.InvalidAI(actor.AiType))
-                .Map(aiFunc => aiFunc(gameState, actor))
-                .Map(ActionExecutor(gameState, actor));
-        }
+             => TurnController.GetNextToAct(gameState.Actors).Match(
+                    none: () => Result.Ok<Option<Actor>>(Option.None),
+                    some: actor => PerformActorAI(gameState, actor));
 
         private IEnumerable<IGameMessage> clientInitMessages(GameState gameState)
         {
