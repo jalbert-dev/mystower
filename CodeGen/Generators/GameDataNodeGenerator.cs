@@ -157,7 +157,7 @@ namespace CodeGen
 
         private static MemberDeclarationSyntax BuildToStringForRecord(ClassDeclarationSyntax cls)
              => ParseMemberDeclaration(@"
-                    public override string ToString() => this.ToPrettyJson();
+                    public override string ToString() => global::Util.Stringify.ToPrettyJson(this);
                 ");
 
         private static async Task<bool> AnyAttributeByName(ITypeSymbol type, Compilation compilation, string name)
@@ -293,16 +293,22 @@ namespace CodeGen
                 .AddBaseListTypes(
                     SimpleBaseType(
                         QualifiedName(
-                            IdentifierName("System"), 
+                            AliasQualifiedName(
+                                IdentifierName(Token(SyntaxKind.GlobalKeyword)),
+                                Token(SyntaxKind.ColonColonToken),   
+                                IdentifierName("System")),
                             GenericName(Identifier("IEquatable"))
                                 .WithTypeArgumentList(TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
                                     IdentifierName(classType.Identifier)))))),
                     SimpleBaseType(
                         QualifiedName(
-                            IdentifierName("Util"),
+                            AliasQualifiedName(
+                                IdentifierName(Token(SyntaxKind.GlobalKeyword)),
+                                Token(SyntaxKind.ColonColonToken),   
+                                IdentifierName("Util")),
                             GenericName(Identifier("IDeepCloneable"))
-                                .WithTypeArgumentList(TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
-                                    IdentifierName(classType.Identifier)))))));
+                            .WithTypeArgumentList(TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
+                                        IdentifierName(classType.Identifier)))))));
             
             return SingletonList<MemberDeclarationSyntax>(classType);
         }
