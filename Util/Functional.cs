@@ -61,6 +61,9 @@ namespace Util.Functional
             => hasValue ? f(value) : Option.None;
         public Option<U> Map<U>(Func<T, U> f)
             => Bind(x => Option.Some(f(x)));
+
+        public U Match<U>(Func<T, U> some, Func<U> none)
+            => hasValue ? some(value) : none();
     }
     
     public interface IError
@@ -122,6 +125,7 @@ namespace Util.Functional
             var self = this;
             return Bind(f).Map(x => g(self.value, x));
         }
+        public Result<U> Cast<U>() => Map(x => (U)Convert.ChangeType(x, typeof(U)));
     }
     #nullable enable
 

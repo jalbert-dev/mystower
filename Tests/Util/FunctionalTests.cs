@@ -120,6 +120,50 @@ namespace Tests.Util.FunctionalTests
                 .Bind(x => Option.Some(x + 6))
                 .IsNone.Should().BeTrue();
         }
+
+        [Fact] public void MatchEvaluatesSomeThunkIfOptionIsSome()
+        {
+            bool someExec = false;
+            bool noneExec = false;
+
+            Option<int>.Some(0)
+                .Match(
+                    some: i => {
+                        someExec = true;
+                        return 5;
+                    },
+                    none: () => {
+                        noneExec = true;
+                        return -5;
+                    }
+                )
+                .Should().Be(5);
+
+            someExec.Should().BeTrue();
+            noneExec.Should().BeFalse();
+        }
+
+        [Fact] public void MatchEvaluatesNoneThunkIfOptionIsNone()
+        {
+            bool someExec = false;
+            bool noneExec = false;
+
+            Option<int>.None()
+                .Match(
+                    some: i => {
+                        someExec = true;
+                        return 5;
+                    },
+                    none: () => {
+                        noneExec = true;
+                        return -5;
+                    }
+                )
+                .Should().Be(-5);
+                
+            someExec.Should().BeFalse();
+            noneExec.Should().BeTrue();
+        }
     }
 
     public class ResultTests

@@ -95,48 +95,43 @@ namespace Util
         public void AddDatabase<T>(Dictionary<string, T> d) => databases[typeof(T)] = d;
 
         public Result<T> Lookup<T>(string key)
-        {
-            if (!databases.TryGetValue(typeof(T), out var dbObj))
-                return Result.Error(new Error.NoDatabaseForType(typeof(T).Name));
-            
-            var db = (Dictionary<string, T>)dbObj;
-            if (!db.TryGetValue(key, out var resultObj))
-                return Result.Error(new Error.KeyNotFoundInDatabase(typeof(T).Name, key));
-
-            return Result.Ok((T)resultObj);
-        }
+             => from Dictionary<string, T> db in databases.TryGetValue(typeof(T)).ErrorIfNone(() => new Error.NoDatabaseForType(typeof(T).Name))
+                from value in db.TryGetValue(key).ErrorIfNone(() => new Error.KeyNotFoundInDatabase(typeof(T).Name, key))
+                select value;
     }
 
     public static class ArchetypeJson
     {
         private static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> self, out TKey key, out TValue value)
             => (key, value) = (self.Key, self.Value);
+        
+        public static Result<T> ErrorIfNotNull<T>(this T? item, Func<IError> ifNull) where T : class
+            => item == null ? Result.Error(ifNull()) : Result.Ok(item);
 
-        private static Result<(string?, JObject?)> GetArchetypeNode(JObject rootNode, string nodeId, JObject node)
-        {
-            // find _archetype property and if exists find archetype object by that key 
-            if (node.TryGetValue("_archetype", out var archetypeToken))
-            {
-                // note that we can't just load the archetype object into the database
-                // recursively because archetypes are not required to have all
-                // fields populated.
-
-                if (archetypeToken.Type != JTokenType.String)
-                    return Result.Error(new Error.ArchetypeFieldNotString(nodeId));
-
-                var archetypeId = archetypeToken.ToObject<string>()!;
-
-                // get the JSON node corresponding to the archetype object
-                if (!rootNode.TryGetValue(archetypeId, out var archetypeNodeToken))
-                    return Result.Error(new Error.ArchetypeNotFound(nodeId, archetypeId));
-                var result = archetypeNodeToken as JObject;
-                if (result == null)
-                    return Result.Error(new Error.NodeNotJsonObject(archetypeId));
-                
-                return Result.Ok<(string?, JObject?)>( (archetypeId, result) );
-            }
-            return Result.Ok<(string?, JObject?)>( (null, null) );
-        }
+        private static Result<Option<(string, JObject)>> GetArchetypeNode(JObject rootNode, string nodeId, JObject node)
+            // note that we can't just load the archetype object into the database
+            // recursively because archetypes are not required to have all
+            // fields populated.
+             => node.TryGetValue("_archetype").Match(
+                    some: archetypeToken => 
+                        Result.Ok(archetypeToken!)
+                            .Bind(token => 
+                                token.Type != JTokenType.String ? Result.Error(new Error.ArchetypeFieldNotString(nodeId)) : Result.Ok(token))
+                            .Map(token => 
+                                token.ToObject<string>()!)
+                            .Bind(id => 
+                                rootNode
+                                .TryGetValue(id)
+                                .Map(n => (id, n!))
+                                .ErrorIfNone(() => new Error.ArchetypeNotFound(nodeId, id)))
+                            .Map(pair => 
+                                (pair.id, pair.Item2 as JObject))
+                            .Bind(pair => 
+                                pair.Item2
+                                .ErrorIfNotNull(() => new Error.NodeNotJsonObject(pair.id))
+                                .Map(obj => Option.Some( (pair.id, obj) ))),
+                    none: () => 
+                        Result.Ok(Option<(string, JObject)>.None()) );
 
         private static IError? GetArchetypeHierarchy(JObject rootNode, string nodeId, JObject node, List<JObject> hierarchy)
         {
@@ -145,17 +140,18 @@ namespace Util
             var archNodeResult = GetArchetypeNode(rootNode, nodeId, node);
             if (!archNodeResult.IsSuccess)
                 return archNodeResult.Err;
-            var (archId, archNode) = archNodeResult.Value;
 
-            if (archNode != null)
-            {
-                if (hierarchy.Contains(archNode))
-                    return new Error.ArchetypeCycleDetected(nodeId);
+            if (archNodeResult.Value.IsNone)
+                return null;
+                
+            var (archId, archNode) = archNodeResult.Value.Value;
+            if (hierarchy.Contains(archNode))
+                return new Error.ArchetypeCycleDetected(nodeId);
 
-                var err = GetArchetypeHierarchy(rootNode, archId!, archNode, hierarchy);
-                if (err != null)
-                    return err;
-            }
+            var err = GetArchetypeHierarchy(rootNode, archId!, archNode, hierarchy);
+            if (err != null)
+                return err;
+
             return null;
         }
 

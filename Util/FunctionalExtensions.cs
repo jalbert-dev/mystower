@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Util.Functional
 {
@@ -20,5 +21,8 @@ namespace Util.Functional
         /// </summary>
         public static Option<T> ToOption<T>(this T? value) where T : class
             => value != null ? Option.Some(value) : Option.None;
+
+        public static Option<TValue> TryGetValue<TValue, TKey>(this IDictionary<TKey, TValue> self, TKey key)
+            => self.TryGetValue(key, out var value) ? Option.Some(value) : Option.None;
     }
 }
