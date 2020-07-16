@@ -259,6 +259,38 @@ namespace Tests.Util.FunctionalTests
             invoked.Should().BeFalse();
             finalResult.Err.Should().BeSameAs(result.Err);
         }
+
+        [Fact] public void LinqQueryOnOkResultProducesOk()
+             => (from x in Res.Ok(2) select x * 2)
+                    .Should().BeEquivalentTo(Res.Ok(4));
+                    
+        [Fact] public void LinqQueryOnErrorResultProducesError()
+             => (from x in err<int>("Error") select x * 2)
+                    .IsSuccess.Should().BeFalse();
+        
+        [Fact] public void LinqCompoundQueryOnOkResultsProducesOk()
+             => (from x in Res.Ok(2)
+                 from y in Res.Ok(3)
+                 from z in Res.Ok(5)
+                 from a in Res.Ok(7)
+                 select x + y + z + a)
+                .Should().BeEquivalentTo(Res.Ok(2 + 3 + 5 + 7));
+        
+        [Fact] public void LinqCompoundQueryProducesErrorAndDoesntRunMapper()
+        { 
+            bool mapperWasExecuted = false;
+            bool mapper(int a, int b, int c, int d) => mapperWasExecuted = true;
+
+            var result = 
+                from x in Res.Ok(2)
+                from y in Res.Ok(5)
+                from z in err<int>("error")
+                from a in Res.Ok(7)
+                select mapper(x, y, z, a);
+
+            result.IsSuccess.Should().BeFalse();
+            mapperWasExecuted.Should().BeFalse();
+        }
     }
 
     public class FunctionalExtensionsTests

@@ -115,6 +115,13 @@ namespace Util.Functional
                 return Result.Error(error);
             }
         }
+
+        public Result<U> Select<U>(Func<TValue, U> f) => Map(f);
+        public Result<V> SelectMany<U, V>(Func<TValue, Result<U>> f, Func<TValue, U, V> g)
+        {
+            var self = this;
+            return Bind(f).Map(x => g(self.value, x));
+        }
     }
     #nullable enable
 
