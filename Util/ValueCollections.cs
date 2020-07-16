@@ -10,7 +10,7 @@ namespace Util
         {
             if (typeof(T) == typeof(string) || typeof(T).IsValueType)
                 return this.ToValueList();
-            else if (typeof(T).IsAssignableFrom(typeof(IDeepCloneable<T>)))
+            else if (typeof(IDeepCloneable<T>).IsAssignableFrom(typeof(T)))
                 return this.Select(x => ((IDeepCloneable<T>)x).DeepClone()).ToValueList();
             throw new Exception($"Attempted to DeepClone ValueList<T> where T == '{typeof(T).FullName}' (not value-type or IDeepCloneable)");
         }

@@ -175,6 +175,8 @@ namespace CodeGen
         {
             var sym = v.GetFieldSymbol(compilation);
 
+            // TODO!: This is an incorrect implementation! Must check for implementation of IEquatable<T>,
+            //        rather than any IEquatable`1!
             return sym.Type.AllInterfaces.Any(x => x.FullName() == typeof(IEquatable<>).FullName) ||
                 (await AnyAttributeByName(sym.Type, compilation, "CodeGen.GameDataNodeAttribute"));
         }
