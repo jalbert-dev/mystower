@@ -6,7 +6,7 @@ namespace Tests.Server.Generators
 {
     public static partial class ActorGen
     {
-        public static Gen<Vec2i> RandomFloorTilePos(TileMap<byte> m)
+        public static Gen<Vec2i> RandomFloorTilePos(TileMap m)
             => Gen.Elements(m.Where(x => x.type == 0).Select(x => new Vec2i(x.x, x.y)));
 
         public static Gen<Vec2i> RandomFacing()
@@ -55,7 +55,7 @@ namespace Tests.Server.Generators
             return a;
         }
 
-        public static Arbitrary<Actor> WithPositionOnMap(this Arbitrary<Actor> arb, TileMap<byte> map)
+        public static Arbitrary<Actor> WithPositionOnMap(this Arbitrary<Actor> arb, TileMap map)
              => Arb.From(
                     from pos in RandomFloorTilePos(map)
                     from actor in arb.Generator

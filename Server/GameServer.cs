@@ -98,9 +98,9 @@ namespace Server
             gameStateLock = new RWLocked<GameState>(state);
         }
 
-        private static TileMap<byte> TestMap(int w, int h)
+        private static TileMap TestMap(int w, int h)
         {
-            var map = new TileMap<byte>(w, h);
+            var map = new TileMap(w, h);
 
             for (int x = 0; x < w; x++)
             {

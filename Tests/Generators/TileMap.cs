@@ -5,16 +5,16 @@ namespace Tests.Server.Generators
 {
     public static partial class TileMapGen
     {
-        private static TileMap<byte> MapWithTiles(int w, int h, byte[,] tiles)
+        private static TileMap MapWithTiles(int w, int h, byte[,] tiles)
         {
-            var m = new TileMap<byte>(w, h);
+            var m = new TileMap(w, h);
             for (int i = 0; i < w; i++)
                 for (int j = 0; j < h; j++)
                     m[i, j] = tiles[i, j];
             return m;
         }
 
-        public static Arbitrary<TileMap<byte>> Default()
+        public static Arbitrary<TileMap> Default()
              => Arb.From(
                     from w in Gen.Choose(1, 100)
                     from h in Gen.Choose(1, 100)

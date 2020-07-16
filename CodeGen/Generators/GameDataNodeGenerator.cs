@@ -11,6 +11,18 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace CodeGen
 {
+    public static class SyntaxNodeExtensions
+    {
+        public static IFieldSymbol GetFieldSymbol(this VariableDeclaratorSyntax v, Compilation compilation)
+            => (IFieldSymbol)compilation.GetSemanticModel(v.SyntaxTree).GetDeclaredSymbol(v);
+    }
+
+    public static class SymbolExtensions
+    {
+        public static string FullName(this ITypeSymbol x)
+            => $"{x.ContainingNamespace}.{x.MetadataName}";
+    }
+
     public class GameDataNodeGenerator : ICodeGenerator
     {
         public GameDataNodeGenerator(AttributeData attributeData) 
@@ -23,14 +35,14 @@ namespace CodeGen
         private static bool HasPublicModifier(SyntaxTokenList tokens)
             => tokens.Any(tok => tok.Kind() == SyntaxKind.PublicKeyword);
 
-        private static IEnumerable<(TypeSyntax, SyntaxToken)> GetFieldVariableDeclarations(ClassDeclarationSyntax cls)
+        private static IEnumerable<(TypeSyntax type, VariableDeclaratorSyntax var)> GetFieldVariableDeclarations(ClassDeclarationSyntax cls)
              => from f in cls.ChildNodes().OfType<FieldDeclarationSyntax>()
                 from v in f.Declaration.Variables
-                select (f.Declaration.Type, v.Identifier);
+                select (f.Declaration.Type, v);
 
         private static IEnumerable<ParameterSyntax> GetFieldsAsParameters(ClassDeclarationSyntax cls)
              => from fv in GetFieldVariableDeclarations(cls)
-                select Parameter(fv.Item2).WithType(fv.Item1);
+                select Parameter(fv.var.Identifier).WithType(fv.type);
 
         private static IEnumerable<ExpressionStatementSyntax> ParameterAssignmentToFields(ClassDeclarationSyntax cls)
             => from fv in GetFieldVariableDeclarations(cls)
@@ -40,8 +52,8 @@ namespace CodeGen
                        MemberAccessExpression(
                            SyntaxKind.SimpleMemberAccessExpression,
                            ThisExpression(),
-                           IdentifierName(fv.Item2)),
-                        IdentifierName(fv.Item2)));
+                           IdentifierName(fv.var.Identifier)),
+                        IdentifierName(fv.var.Identifier)));
 
         private static ConstructorDeclarationSyntax BuildConstructorForRecord(ClassDeclarationSyntax cls)
             => ConstructorDeclaration(cls.Identifier)
@@ -79,9 +91,9 @@ namespace CodeGen
                 .Select(x => x.Identifier);
 
             return GetFieldVariableDeclarations(cls)
-                .Select(fv => (fv.Item1, fv.Item2, FieldToPropName(fv.Item2)))
+                .Select(fv => (fv.Item1, fv.Item2, FieldToPropName(fv.var.Identifier)))
                 .Where(fv => existingProps.All(prop => fv.Item3 != prop.Text))
-                .Select(fv => BuildDefaultAccessorProp(fv.Item1, fv.Item3, fv.Item2));
+                .Select(fv => BuildDefaultAccessorProp(fv.Item1, fv.Item3, fv.Item2.Identifier));
         }
 
         private static MemberDeclarationSyntax GenerateValueEquals(ClassDeclarationSyntax cls)
@@ -98,7 +110,7 @@ namespace CodeGen
                         ParseStatement($@"if (object.ReferenceEquals(this, other)) return true;"),
                         ParseStatement($@"return {string.Join("&&",
                                                     GetFieldVariableDeclarations(cls)
-                                                        .Select(fv => fv.Item2.Text)
+                                                        .Select(fv => fv.var.Identifier.Text)
                                                         .Select(n => $"{n}.Equals(other.{n})")
                                                         .ToArray())};")))
                 .NormalizeWhitespace();
@@ -133,18 +145,52 @@ namespace CodeGen
             ");
         }
 
-        private static IEnumerable<MemberDeclarationSyntax> BuildToStringForRecord(ClassDeclarationSyntax cls)
-        {
-            yield return ParseMemberDeclaration(@"
-                public override string ToString() => this.ToPrettyJson();
-            ");
-        }
+        private static async Task<string> BuildNamedConstructorArg(TypeSyntax type, VariableDeclaratorSyntax var, CSharpCompilation compilation)
+            => $"{var.Identifier}: {var.Identifier}{(await DeclaredDeepCloneable(var, compilation) ? ".DeepClone()" : "")}";
+        
+        private static async Task<MemberDeclarationSyntax> ImplementIDeepCloneable(ClassDeclarationSyntax classType, CSharpCompilation compilation)
+             => ParseMemberDeclaration($@"
+                    public {classType.Identifier} DeepClone()
+                        => new {classType.Identifier}(
+                            {string.Join(",\n", await Task.WhenAll(GetFieldVariableDeclarations(classType).Select(async x => await BuildNamedConstructorArg(x.Item1, x.var, compilation)).ToArray()))});
+                ");
 
-        private static async Task<bool> AnyAttributeByName(ITypeSymbol type, TransformationContext context, string name)
+        private static MemberDeclarationSyntax BuildToStringForRecord(ClassDeclarationSyntax cls)
+             => ParseMemberDeclaration(@"
+                    public override string ToString() => this.ToPrettyJson();
+                ");
+
+        private static async Task<bool> AnyAttributeByName(ITypeSymbol type, Compilation compilation, string name)
         {
             var declaring = await Task.WhenAll(type.DeclaringSyntaxReferences.Select(x => x.GetSyntaxAsync()));
-            var attrs = declaring.SelectMany(x => context.SemanticModel.GetDeclaredSymbol(x).GetAttributes());
+            var attrs = declaring.SelectMany(x => 
+                compilation
+                    .GetSemanticModel(x.SyntaxTree)
+                    .GetDeclaredSymbol(x)
+                    .GetAttributes());
             return attrs.Any(x => $"{x.AttributeClass.ContainingNamespace}.{x.AttributeClass.Name}" == name);
+        }
+
+        private static async Task<bool> DeclaredEquatable(VariableDeclaratorSyntax v, Compilation compilation)
+        {
+            var sym = v.GetFieldSymbol(compilation);
+
+            return sym.Type.AllInterfaces.Any(x => x.FullName() == typeof(IEquatable<>).FullName) ||
+                (await AnyAttributeByName(sym.Type, compilation, "CodeGen.GameDataNodeAttribute"));
+        }
+
+        private static async Task<bool> DeclaredDeepCloneable(VariableDeclaratorSyntax v, Compilation compilation)
+        {
+            var sym = v.GetFieldSymbol(compilation);
+
+            return sym.Type.AllInterfaces.Any(x => x.FullName() == typeof(Util.IDeepCloneable<>).FullName) ||
+                (await AnyAttributeByName(sym.Type, compilation, "CodeGen.GameDataNodeAttribute"));
+        }
+
+        private static async Task<bool> IsDeepCloneable(VariableDeclaratorSyntax v, Compilation compilation)
+        {
+            var sym = v.GetFieldSymbol(compilation);
+            return sym.Type.IsValueType || sym.Type.FullName() == typeof(string).FullName || await DeclaredDeepCloneable(v, compilation);
         }
 
         public async Task<SyntaxList<MemberDeclarationSyntax>> GenerateAsync(TransformationContext context, IProgress<Diagnostic> progress, CancellationToken cancellationToken)
@@ -203,8 +249,7 @@ namespace CodeGen
                     }
 
                     var varSymbol = (IFieldSymbol)context.SemanticModel.GetDeclaredSymbol(v);
-                    if (!varSymbol.Type.AllInterfaces.Any(x => $"{x.ContainingNamespace}.{x.Name}`1" == typeof(IEquatable<>).FullName) &&
-                        !(await AnyAttributeByName(varSymbol.Type, context, "CodeGen.GameDataNodeAttribute")))
+                    if (!await DeclaredEquatable(v, context.Compilation))
                     {
                         progress.Report(
                             Diagnostic.Create(
@@ -212,6 +257,20 @@ namespace CodeGen
                                     "JGAME1004",
                                     "Data class field must be IEquatable",
                                     "Game data field identifier '{0}' must implement IEquatable.",
+                                    "Test.Category",
+                                    DiagnosticSeverity.Error,
+                                    true),
+                                v.Identifier.GetLocation(),
+                                new object[] { v.Identifier.Text }));
+                    }
+                    if (!await IsDeepCloneable(v, context.Compilation))
+                    {
+                        progress.Report(
+                            Diagnostic.Create(
+                                new DiagnosticDescriptor(
+                                    "JGAME1005",
+                                    "Data class field must be IDeepCloneable",
+                                    "Game data field identifier '{0}' must implement IDeepCloneable.",
                                     "Test.Category",
                                     DiagnosticSeverity.Error,
                                     true),
@@ -227,7 +286,8 @@ namespace CodeGen
                 .AddMembers(BuildConstructorForRecord(classType))
                 .AddMembers(BuildPropsForFieldsInRecord(classType).ToArray())
                 .AddMembers(ImplementIEquatable(classType).ToArray())
-                .AddMembers(BuildToStringForRecord(classType).ToArray());
+                .AddMembers(await ImplementIDeepCloneable(classType, context.Compilation))
+                .AddMembers(BuildToStringForRecord(classType));
 
             classType = classType
                 .AddBaseListTypes(
@@ -236,9 +296,15 @@ namespace CodeGen
                             IdentifierName("System"), 
                             GenericName(Identifier("IEquatable"))
                                 .WithTypeArgumentList(TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
+                                    IdentifierName(classType.Identifier)))))),
+                    SimpleBaseType(
+                        QualifiedName(
+                            IdentifierName("Util"),
+                            GenericName(Identifier("IDeepCloneable"))
+                                .WithTypeArgumentList(TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
                                     IdentifierName(classType.Identifier)))))));
-
-            return (SingletonList<MemberDeclarationSyntax>(classType));
+            
+            return SingletonList<MemberDeclarationSyntax>(classType);
         }
     }
 }

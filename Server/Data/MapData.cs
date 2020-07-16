@@ -7,30 +7,30 @@ using System.Linq;
 namespace Server.Data
 {
     [Newtonsoft.Json.JsonObject(Newtonsoft.Json.MemberSerialization.OptIn)]
-    public class TileMap<T> : IEquatable<TileMap<T>>, IEnumerable<(int x, int y, T type)> where T : IEquatable<T>
+    public class TileMap : IEquatable<TileMap>, IEnumerable<(int x, int y, byte type)>, IDeepCloneable<TileMap>
     {
         /// <summary>
         /// A 2D array representing the tiles of the map. Each entry of the array
         /// is a value representing a tile type ID.
         /// </summary>
         [Newtonsoft.Json.JsonProperty]
-        T[,] tiles;
+        byte[,] tiles;
 
         public TileMap(int w, int h)
         {
-            tiles = new T[w,h];
+            tiles = new byte[w,h];
         }
 
         public int Width => tiles.GetLength(0);
         public int Height => tiles.GetLength(1);
 
-        public T this[int x, int y]
+        public byte this[int x, int y]
         {
             get => tiles[x, y];
             set => tiles[x, y] = value;
         }
 
-        public bool Equals(TileMap<T>? other)
+        public bool Equals(TileMap? other)
         {
             if (other == null)
                 return false;
@@ -39,14 +39,14 @@ namespace Server.Data
             return Tiles().SequenceEqual(other.Tiles());
         }
 
-        public IEnumerable<T> Tiles()
+        public IEnumerable<byte> Tiles()
         {
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
                     yield return tiles[i, j];
         }
 
-        public IEnumerator<(int x, int y, T type)> GetEnumerator()
+        public IEnumerator<(int x, int y, byte type)> GetEnumerator()
         {
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
@@ -54,5 +54,12 @@ namespace Server.Data
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public TileMap DeepClone()
+        {
+            var result = new TileMap(0, 0);
+            result.tiles = tiles;
+            return result;
+        }
     }
 }

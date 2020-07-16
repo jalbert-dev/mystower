@@ -62,9 +62,9 @@ namespace Server.Message
 
     public class MapChanged : IGameMessage
     {
-        public DataHandle<TileMap<byte>> NewMapData { get; }
+        public DataHandle<TileMap> NewMapData { get; }
 
-        internal MapChanged(TileMap<byte> newMapData)
+        internal MapChanged(TileMap newMapData)
         {
             NewMapData = newMapData.ToDataHandle();
         }

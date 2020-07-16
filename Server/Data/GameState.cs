@@ -8,6 +8,6 @@ namespace Server.Data
     public partial class GameState
     {
         Util.ValueList<Actor> actors;
-        TileMap<byte> map;
+        TileMap map;
     }
 }

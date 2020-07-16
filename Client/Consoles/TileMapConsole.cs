@@ -51,7 +51,7 @@ namespace Client.Consoles
             canvasHeight = h;
         }
 
-        public void RebuildTileMap(TileMap<byte> map)
+        public void RebuildTileMap(Server.Data.TileMap map)
         {
             int w = map.Width;
             int h = map.Height;
