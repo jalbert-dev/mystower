@@ -126,8 +126,7 @@ namespace Util
             // fields populated.
              => node.TryGetValue("_archetype").Match(
                     some: archetypeToken => 
-                        Result.Ok(archetypeToken!)
-                            .Bind(token => ValidateIsStringToken(token, nodeId))
+                            ValidateIsStringToken(archetypeToken!, nodeId)
                             .Map(token => token.ToObject<string>()!)
                             .Bind(id => FindArchetypeNodeByName(rootNode, id, nodeId))
                             .Bind(pair => ConvertToJObject(pair.id, pair.token))
