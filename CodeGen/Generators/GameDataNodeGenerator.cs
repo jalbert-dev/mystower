@@ -284,7 +284,25 @@ namespace CodeGen
 
             classType = classType
                 .WithMembers(new SyntaxList<MemberDeclarationSyntax>())
-                .WithAttributeLists(List<AttributeListSyntax>())
+                .WithAttributeLists(SingletonList<AttributeListSyntax>(AttributeList(
+                    SingletonSeparatedList<AttributeSyntax>(Attribute(
+                        QualifiedName(
+                            QualifiedName(
+                                IdentifierName("Newtonsoft"),
+                                IdentifierName("Json")),
+                            IdentifierName("JsonObject")))
+                        .WithArgumentList(AttributeArgumentList(SingletonSeparatedList<AttributeArgumentSyntax>(
+                            AttributeArgument(
+                                MemberAccessExpression(
+                                    SyntaxKind.SimpleMemberAccessExpression,
+                                    MemberAccessExpression(
+                                        SyntaxKind.SimpleMemberAccessExpression,
+                                        MemberAccessExpression(
+                                            SyntaxKind.SimpleMemberAccessExpression,
+                                            IdentifierName("Newtonsoft"),
+                                            IdentifierName("Json")),
+                                        IdentifierName("MemberSerialization")),
+                                    IdentifierName("Fields"))))))))))
                 .AddMembers(BuildConstructorForRecord(classType))
                 .AddMembers(BuildPropsForFieldsInRecord(classType).ToArray())
                 .AddMembers(ImplementIEquatable(classType).ToArray())
