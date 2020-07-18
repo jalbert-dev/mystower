@@ -18,6 +18,8 @@ namespace Server.Data
 
         // TODO!: Move into Archetype data structure!
         StatBlock baseStatus;
+
+        int set_timeUntilAct(int value) => Math.Max(0, value);
     }
 
     [CodeGen.GameDataNode]
@@ -32,5 +34,7 @@ namespace Server.Data
     public partial class ActorStatus
     {
         int hp;
+
+        int set_hp(int value) => Math.Max(0, value);
     }
 }

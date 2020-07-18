@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using Util;
 
 namespace CodeGen
 {
@@ -62,7 +63,7 @@ namespace CodeGen
                 .WithBody(Block(ParameterAssignmentToFields(cls)))
                 .NormalizeWhitespace();
             
-        private static PropertyDeclarationSyntax BuildDefaultAccessorProp(TypeSyntax type, string propName, SyntaxToken field)
+        private static PropertyDeclarationSyntax BuildDefaultAccessorProp(TypeSyntax type, string propName, SyntaxToken field, MethodDeclarationSyntax? setter)
              => PropertyDeclaration(type, propName)
                     .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
                     .WithAccessorList(
@@ -72,22 +73,24 @@ namespace CodeGen
                                     .WithExpressionBody(ArrowExpressionClause(IdentifierName(field)))
                                     .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)),
                                 AccessorDeclaration(SyntaxKind.SetAccessorDeclaration)
-                                    .WithExpressionBody(ArrowExpressionClause(
-                                        AssignmentExpression(
-                                            SyntaxKind.SimpleAssignmentExpression,
-                                            IdentifierName(field),
-                                            IdentifierName("value"))))
-                                    .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)),
+                                    .WithBody(Block(
+                                        setter == null ?
+                                            ParseStatement(
+                                                $"{field} = value;"
+                                            ) :
+                                            ParseStatement($@"
+                                                {field} = {setter.Identifier.Text}(value);
+                                            ")
+                                    ))
                             })))
                 .NormalizeWhitespace();
 
         private static string FieldToPropName(SyntaxToken identifier)
             => identifier.Text.First().ToString().ToUpper() + identifier.Text.Substring(1);
-
+                
         private static IEnumerable<PropertyDeclarationSyntax> BuildPropsForFieldsInRecord(ClassDeclarationSyntax cls)
-            => GetFieldVariableDeclarations(cls)
-                .Select(fv => (fv.Item1, fv.Item2, FieldToPropName(fv.var.Identifier)))
-                .Select(fv => BuildDefaultAccessorProp(fv.Item1, fv.Item3, fv.Item2.Identifier));
+             => from decl in GetFieldDeclsWithSetterMethods(cls)
+                select BuildDefaultAccessorProp(decl.type, FieldToPropName(decl.var.Identifier), decl.var.Identifier, decl.method);
 
         private static MemberDeclarationSyntax GenerateValueEquals(ClassDeclarationSyntax cls)
              => MethodDeclaration(
@@ -188,6 +191,15 @@ namespace CodeGen
             return sym.Type.IsValueType || sym.Type.FullName() == typeof(string).FullName || await DeclaredDeepCloneable(v, compilation);
         }
 
+        private static IEnumerable<(TypeSyntax type, VariableDeclaratorSyntax var, MethodDeclarationSyntax? method)> GetFieldDeclsWithSetterMethods(ClassDeclarationSyntax cls)
+             => from fv in GetFieldVariableDeclarations(cls)
+                from method in cls.ChildNodes()
+                                  .OfType<MethodDeclarationSyntax>()
+                                  .Where(m => m.Identifier.Text == $"set_{fv.var.Identifier.Text}")
+                                  .FirstOrDefault()
+                                  .AsSingleton()
+                select (fv.type, fv.var, method);
+
         public async Task<SyntaxList<MemberDeclarationSyntax>> GenerateAsync(TransformationContext context, IProgress<Diagnostic> progress, CancellationToken cancellationToken)
         {
             var classType = (ClassDeclarationSyntax)context.ProcessingNode;
@@ -207,7 +219,77 @@ namespace CodeGen
                         new object[] {}));
             }
 
-            // must not declare a constructor?
+            foreach (var (type, var, method) in GetFieldDeclsWithSetterMethods(classType).Where(x => x.method != null))
+            {
+                var fieldType = context.SemanticModel.GetTypeInfo(type).Type;
+
+                if (!SymbolEqualityComparer.Default.Equals(
+                        context.SemanticModel.GetTypeInfo(method.ReturnType).Type,
+                        fieldType))
+                {
+                    progress.Report(
+                        Diagnostic.Create(
+                            new DiagnosticDescriptor(
+                                "JGAME1009", 
+                                "Setter type doesn't match field type",
+                                "Return type of setter method '{0}' must match type of field '{1}' ('{2}').", 
+                                "Test.Category", 
+                                DiagnosticSeverity.Error, 
+                                true),
+                            method.ReturnType.GetLocation(),
+                            new object[] { method.Identifier.Text, var.Identifier.Text, fieldType.FullName() }));
+                }
+
+                if (method.ParameterList.Parameters.Count != 1 ||
+                    !SymbolEqualityComparer.Default.Equals(
+                        context.SemanticModel.GetTypeInfo(method.ParameterList.Parameters.First().Type).Type,
+                        fieldType))
+                {
+                    progress.Report(
+                        Diagnostic.Create(
+                            new DiagnosticDescriptor(
+                                "JGAME1010", 
+                                "Invalid setter method signature",
+                                "Setter method '{0}' must have exactly 1 parameter of type '{1}'.", 
+                                "Test.Category", 
+                                DiagnosticSeverity.Error, 
+                                true),
+                            method.ParameterList.GetLocation(),
+                            new object[] { method.Identifier.Text, fieldType.FullName() }));
+                }
+            }
+
+            foreach (var method in classType.ChildNodes().OfType<MethodDeclarationSyntax>()
+                    .Where(method => method.Modifiers
+                        .Any(modifier => modifier.Kind() == SyntaxKind.PublicKeyword)))
+            {
+                progress.Report(
+                    Diagnostic.Create(
+                        new DiagnosticDescriptor(
+                            "JGAME1008", 
+                            "Public methods not allowed",
+                            "Game data node class method '{0}.{1}' may not be public.", 
+                            "Test.Category", 
+                            DiagnosticSeverity.Error, 
+                            true),
+                        method.Identifier.GetLocation(),
+                        new object[] { classType.Identifier.Text, method.Identifier.Text }));
+            }
+
+            if (classType.ChildNodes().OfType<ConstructorDeclarationSyntax>().Any())
+            {
+                progress.Report(
+                    Diagnostic.Create(
+                        new DiagnosticDescriptor(
+                            "JGAME1007", 
+                            "Illegal constructor",
+                            "Game data node class '{0}' may not define constructors.", 
+                            "Test.Category", 
+                            DiagnosticSeverity.Error, 
+                            true),
+                        classType.Identifier.GetLocation(),
+                        new object[] { classType.Identifier }));
+            }
 
             var fieldvars = from f in classType.ChildNodes().OfType<FieldDeclarationSyntax>()
                             from v in f.Declaration.Variables
