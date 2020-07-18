@@ -79,7 +79,7 @@ namespace Server.Logic
                 // Calculate + deal damage to each actor and store result in AttackResults
                 var results = targets.Select(target => {
                     var dmg = DamageHandling.CalcDamage(actor, target);
-                    target.Status.Hp = Math.Max(0, target.Status.Hp - dmg);
+                    target.Status.Hp = target.Status.Hp - dmg;
 
                     return new Message.AttackResult(target) 
                     { 

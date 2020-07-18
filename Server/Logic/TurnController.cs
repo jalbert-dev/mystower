@@ -25,7 +25,7 @@ namespace Server.Logic
 
         public static void AdvanceTime(Actor actor, int dt)
         {
-            actor.TimeUntilAct = Math.Max(0, actor.TimeUntilAct - dt);
+            actor.TimeUntilAct = actor.TimeUntilAct - dt;
         }
 
         public static void AdvanceTime(GameState gs, int dt)
