@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Server.Data;
+using Server.Database;
 
 namespace Server.Logic
 {
@@ -9,7 +10,7 @@ namespace Server.Logic
     {
         public class Idle : IAction
         {
-            public int Execute(IClientProxy client, GameState gs, Actor actor) {
+            public int Execute(IServerProxy server, GameState gs, Actor actor) {
                 return 10;
             }
         }
@@ -25,11 +26,11 @@ namespace Server.Logic
             public int dx { get; }
             public int dy { get; }
 
-            public int Execute(IClientProxy client, GameState gs, Actor actor)
+            public int Execute(IServerProxy server, GameState gs, Actor actor)
             {
                 // should always set facing regardless of move success
                 actor.Facing = (dx, dy);
-                client.EmitMessage(new Message.ActorFaced(actor, actor.Facing));
+                server.EmitClientMessage(new Message.ActorFaced(actor, actor.Facing));
 
                 var dstX = actor.Position.x + dx;
                 var dstY = actor.Position.y + dy;
@@ -37,7 +38,7 @@ namespace Server.Logic
                 if (Map.CanMoveInto(gs.Map, gs.Actors, dstX, dstY))
                 {
 
-                    client.EmitMessage(new Message.ActorMoved(actor, actor.Position.x, actor.Position.y, dx, dy));
+                    server.EmitClientMessage(new Message.ActorMoved(actor, actor.Position.x, actor.Position.y, dx, dy));
                     actor.Position = (dstX, dstY);
 
                     return 20;
@@ -53,10 +54,10 @@ namespace Server.Logic
 
             public Face(int dx, int dy) => (this.dx, this.dy) = (dx, dy);
 
-            public int Execute(IClientProxy client, GameState gs, Actor actor)
+            public int Execute(IServerProxy server, GameState gs, Actor actor)
             {
                 actor.Facing = (dx, dy);
-                client.EmitMessage(new Message.ActorFaced(actor, new Vec2i(dx, dy)));
+                server.EmitClientMessage(new Message.ActorFaced(actor, new Vec2i(dx, dy)));
                 return 0;
             }
         }
@@ -66,7 +67,7 @@ namespace Server.Logic
             // TODO: Should probably take an attack ID or something
             public TryAttack() { }
 
-            public int Execute(IClientProxy client, GameState gs, Actor actor)
+            public int Execute(IServerProxy server, GameState gs, Actor actor)
             {
                 // Determine attack targets
 
@@ -77,8 +78,27 @@ namespace Server.Logic
                     a.Position.y == actor.Position.y + actor.Facing.y);
 
                 // Calculate + deal damage to each actor and store result in AttackResults
+                var attackerStats = 
+                    server.Database
+                        .Lookup<ActorArchetype>(actor.ArchetypeId)
+                        .Map(archetype => archetype.StatusAtLevel(actor.Level));
                 var results = targets.Select(target => {
-                    var dmg = DamageHandling.CalcDamage(actor, target);
+                    var targetStats = 
+                        server.Database
+                            .Lookup<ActorArchetype>(target.ArchetypeId)
+                            .Map(archetype => archetype.StatusAtLevel(target.Level));
+
+                    var dmgCalc = 
+                        from a in attackerStats
+                        from t in targetStats
+                        select DamageHandling.CalcDamage(a, t);
+
+                    int dmg = 0;
+                    if (dmgCalc.IsSuccess)
+                        dmg = dmgCalc.Value;
+                    else
+                        System.Console.WriteLine($"Damage calculation failed: {dmgCalc.Err}");
+                    
                     target.Status.Hp = target.Status.Hp - dmg;
 
                     return new Message.AttackResult(target) 
@@ -88,11 +108,11 @@ namespace Server.Logic
                 });
 
                 // Emit AttackResult to clients
-                client.EmitMessage(new Message.ActorAttacked(actor, results));
+                server.EmitClientMessage(new Message.ActorAttacked(actor, results));
 
                 foreach (var deadActor in DamageHandling.GetDeadActors(targets).ToList())
                 {
-                    client.EmitMessage(new Message.ActorDead(deadActor));
+                    server.EmitClientMessage(new Message.ActorDead(deadActor));
                     gs.Actors.Remove(deadActor);
                 }
                 return 50;

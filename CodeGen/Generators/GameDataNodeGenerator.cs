@@ -262,6 +262,8 @@ namespace CodeGen
             }
 
             foreach (var method in classType.ChildNodes().OfType<MethodDeclarationSyntax>()
+                    .Where(method => !method.Modifiers
+                        .Any(modifier => modifier.Kind() == SyntaxKind.StaticKeyword))
                     .Where(method => method.Modifiers
                         .Any(modifier => modifier.Kind() == SyntaxKind.PublicKeyword)))
             {

@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using SadConsole;
 using SadConsole.Input;
 using SadRogue.Primitives;
 using Util;
+using Util.Functional;
 
 namespace Client.State
 {
@@ -15,8 +17,14 @@ namespace Client.State
 
         public SadConsole.UI.Controls.Label lblName = new SadConsole.UI.Controls.Label("MYSTOWER");
 
-        bool startNewGame = false;
-        bool loadGame = false;
+        enum Transition
+        {
+            None,
+            NewGame,
+            LoadGame,
+        }
+
+        Transition nextScreen = Transition.None;
 
         List<SadConsole.UI.Controls.Button> focusOrder;
         int focused = 0;
@@ -33,8 +41,8 @@ namespace Client.State
             ControlHostComponent.Add(btnExit);
             ControlHostComponent.Add(lblName);
 
-            btnNewGame.Click += (a, b) => startNewGame = true;
-            btnLoadGame.Click += (a, b) => loadGame = true;
+            btnNewGame.Click += (a, b) => nextScreen = Transition.NewGame;
+            btnLoadGame.Click += (a, b) => nextScreen = Transition.LoadGame;
             btnExit.Click += (a, b) => System.Environment.Exit(0);
 
             focusOrder = new List<SadConsole.UI.Controls.Button>()
@@ -95,14 +103,42 @@ namespace Client.State
             return false;
         }
 
-        public IState<StateManager>? Exec(StateManager obj)
+        private Result<Util.Database> LoadDefaultServerDatabases()
         {
-            if (startNewGame)
-                return new State.Gameplay(Server.GameServer.NewGame());
-            if (loadGame)
-                return new State.Gameplay(Server.GameServer.FromSaveGame(File.ReadAllText("Saves/save.sav")));
-            return null;
+            Util.Database db = new Database();
+            
+            var dict = ArchetypeJson.Read<Server.Database.ActorArchetype>(
+                File.ReadAllText("Resources/Data/Server/ActorArchetype.json"));
+            if (dict.IsSuccess)
+                db.AddDatabase(dict.Value);
+            else
+                return Result.Error(dict.Err);
+
+            return Result.Ok(db);
         }
+
+        private IState<StateManager>? CreateGameplayState(Func<Util.Database, Result<Server.GameServer>> serverFactory)
+        {
+            nextScreen = Transition.None;
+
+            return LoadDefaultServerDatabases()
+                    .Bind(serverFactory)
+                    .Match<Gameplay?>(
+                        ok: server => new Gameplay(server),
+                        err: error => {
+                            System.Console.WriteLine($"Error creating server: {error.Message}");
+                            return null;
+                        }
+                    );
+        }
+
+        public IState<StateManager>? Exec(StateManager obj)
+            => nextScreen switch
+            {
+                Transition.NewGame => CreateGameplayState(db => Server.GameServer.NewGame(db)),
+                Transition.LoadGame => CreateGameplayState(db => Server.GameServer.FromSaveGame(File.ReadAllText("Saves/save.sav"), db)),
+                _ => null
+            };
 
         public IState<StateManager>? OnEnter(StateManager obj)
         {

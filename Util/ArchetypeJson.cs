@@ -167,7 +167,9 @@ namespace Util
         }
 
         private static Result<T> LoadDataFromArchetypes<T>(string leafName, List<JObject> archetypes) where T : new()
-             => typeof(T).GetFields().FoldBind(new T(),
+             => typeof(T)
+                    .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    .FoldBind(new T(),
                     (newObj, field) =>
                         FindPropertyTokenInArchetypes(leafName, archetypes, field.Name)
                         .Map(token => token.ToObject(field.FieldType))

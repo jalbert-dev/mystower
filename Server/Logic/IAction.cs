@@ -4,6 +4,6 @@ namespace Server.Logic
 {
     public interface IAction
     {
-        int Execute(IClientProxy client, Data.GameState gs, Data.Actor actor);
+        int Execute(IServerProxy client, Data.GameState gs, Data.Actor actor);
     }
 }

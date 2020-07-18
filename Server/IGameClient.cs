@@ -8,9 +8,11 @@ namespace Server
         void Dispatch(IGameClient c);
     }
 
-    public interface IClientProxy
+    public interface IServerProxy
     {
-        void EmitMessage(IGameMessage message);
+        void EmitClientMessage(IGameMessage message);
+
+        Util.Database Database { get; }
     }
 
     public interface IGameClient

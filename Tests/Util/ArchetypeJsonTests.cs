@@ -16,6 +16,14 @@ namespace Tests.Util
             public List<int> c = new List<int>();
         }
 
+        public class StructWithPrivateMembers
+        {
+            private int a = 0;
+            public int b;
+
+            public int A => a;
+        }
+
         [Fact] public void InvalidJsonGivesParseError()
         {
             var result = ArchetypeJson.Read<TestStruct>(@"{ cats are pretty cute! }");
@@ -388,6 +396,22 @@ namespace Tests.Util
 
             result.IsSuccess.Should().BeFalse();
             result.Err.Should().BeOfType<U.Error.JsonParseFailed>();
+        }
+
+        [Fact] public void PrivateMembersAreAlsoDeserialized()
+        {
+            var input = @"{
+                ""item1"": {
+                    ""a"": 42,
+                    ""b"": 4
+                }
+            }";
+
+            var result = ArchetypeJson.Read<StructWithPrivateMembers>(input);
+
+            result.IsSuccess.Should().BeTrue();
+            result.Value["item1"].A.Should().Be(42);
+            result.Value["item1"].b.Should().Be(4);
         }
     }
 }

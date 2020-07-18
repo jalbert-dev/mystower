@@ -119,6 +119,9 @@ namespace Util.Functional
             }
         }
 
+        public U Match<U>(Func<TValue, U> ok, Func<IError, U> err)
+            => success ? ok(value) : err(error);
+
         public Result<U> Select<U>(Func<TValue, U> f) => Map(f);
         public Result<V> SelectMany<U, V>(Func<TValue, Result<U>> f, Func<TValue, U, V> g)
         {

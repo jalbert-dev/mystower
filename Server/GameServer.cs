@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Server.Data;
+using Server.Database;
 using Server.Logic;
 using Util;
 using Util.Functional;
@@ -87,15 +88,19 @@ namespace Server
 
     public class GameServer
     {
-        ClientProxy proxyClient = new ClientProxy();
+        ServerProxy proxyClient;
         RWLocked<GameState> gameStateLock { get; }
         Actor? waitingOn = null;
+        public readonly Util.Database Database;
 
         static List<IGameMessage> emptyMessageList = new List<IGameMessage>();
 
-        internal GameServer(GameState state)
+        internal GameServer(GameState state, Util.Database db)
         {
             gameStateLock = new RWLocked<GameState>(state);
+            Database = db;
+
+            proxyClient = new ServerProxy(Database);
         }
 
         private static TileMap TestMap(int w, int h)
@@ -115,32 +120,21 @@ namespace Server
             return map;
         }
 
-        public static Actor ConstructActor(string aiType, int x, int y, int ct)
-            => new Actor(
-                new Vec2i(x, y), 
-                new Vec2i(0, 1), 
-                aiType, 
-                ct, 
-                1, 
-                new ActorStatus(10),
-                new StatBlock(10, 5, 2));
-
-        public static GameServer NewGame()
-             => new GameServer(
-                    new GameState(
-                        new ValueList<Actor>
-                        {
-                            ConstructActor(nameof(AIType.PlayerControlled), 5, 5, 20),
-                            ConstructActor(nameof(AIType.MoveRandomly), 2, 1, 21),
-                            ConstructActor(nameof(AIType.MoveRandomly), 1, 3, 20),
-                            ConstructActor(nameof(AIType.Idle), 4, 8, 10),
-                        },
-                        TestMap(100, 50)));
+        public static Result<GameServer> NewGame(Util.Database gamedb)
+             => from player in Actor.FromArchetype(5, 5, 20, 1, "player", gamedb.Lookup<ActorArchetype>)
+                from a in Actor.FromArchetype(2, 1, 21, 1, "squablin", gamedb.Lookup<ActorArchetype>)
+                from b in Actor.FromArchetype(1, 3, 20, 1, "squablin", gamedb.Lookup<ActorArchetype>)
+                from c in Actor.FromArchetype(4, 8, 10, 1, "squablin", gamedb.Lookup<ActorArchetype>)
+                select 
+                    new GameServer(new GameState(
+                        new ValueList<Actor> { player, a, b, c },
+                        TestMap(100, 50)),
+                    gamedb);
         
-        public static GameServer FromSaveGame(string str)
-            => new GameServer(GameStateIO.LoadFromString(str));
-        public static GameServer FromSaveGame(TextReader reader)
-            => FromSaveGame(reader.ReadToEnd());
+        public static Result<GameServer> FromSaveGame(string str, Util.Database gamedb)
+            => Result.Ok(new GameServer(GameStateIO.LoadFromString(str), gamedb));
+        public static Result<GameServer> FromSaveGame(TextReader reader, Util.Database gamedb)
+            => FromSaveGame(reader.ReadToEnd(), gamedb);
 
         public void ToSaveGame(TextWriter outStream)
             => gameStateLock.ReadResource(gameState => GameStateIO.SaveToStream(gameState, outStream));

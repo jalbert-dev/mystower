@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Server.Data;
+using Server.Database;
 
 namespace Server.Logic
 {
     public static class DamageHandling
     {
-        public static int CalcDamage(Actor attacker, Actor target)
+        public static int CalcDamage(StatBlock attacker, StatBlock target)
         {
-            var dmg = Math.Max(1, attacker.BaseStatus.Atk - target.BaseStatus.Def);
+            var dmg = Math.Max(1, attacker.atk - target.def);
             return dmg;
         }
 

@@ -1,0 +1,52 @@
+{
+    "__base": {
+        "lvlMinStatus": {
+            "hp": 1,
+            "atk": 1,
+            "def": 1
+        },
+        "lvlMaxStatus": {
+            "hp": 1,
+            "atk": 1,
+            "def": 1
+        },
+        "defaultAiType": "MoveRandomly",
+        "nameId": "No name specified",
+        "appearanceId": "base_actor"
+    },
+
+    "player": {
+        "_archetype": "__base",
+
+        "lvlMinStatus": {
+            "hp": 13,
+            "atk": 5,
+            "def": 2
+        },
+        "lvlMaxStatus": {
+            "hp": 499,
+            "atk": 100,
+            "def": 50
+        },
+        "defaultAiType": "PlayerControlled",
+        "nameId": "Player",
+        "appearanceId": "player"
+    },
+    
+    "squablin": {
+        "_archetype": "__base",
+
+        "lvlMinStatus": {
+            "hp": 8,
+            "atk": 4,
+            "def": 2
+        },
+        "lvlMaxStatus": {
+            "hp": 555,
+            "atk": 150,
+            "def": 99
+        },
+        "nameId": "Squablin",
+        "appearanceId": "squablin"
+    }
+}
