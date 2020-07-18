@@ -222,12 +222,14 @@ namespace CodeGen
             foreach (var (type, var, method) in GetFieldDeclsWithSetterMethods(classType).Where(x => x.method != null))
             {
                 var fieldType = context.SemanticModel.GetTypeInfo(type).Type;
+                if (fieldType == null)
+                    continue;
 
                 if (!SymbolEqualityComparer.Default.Equals(
                         context.SemanticModel.GetTypeInfo(method.ReturnType).Type,
                         fieldType))
                 {
-                    progress.Report(
+                    progress?.Report(
                         Diagnostic.Create(
                             new DiagnosticDescriptor(
                                 "JGAME1009", 
@@ -245,7 +247,7 @@ namespace CodeGen
                         context.SemanticModel.GetTypeInfo(method.ParameterList.Parameters.First().Type).Type,
                         fieldType))
                 {
-                    progress.Report(
+                    progress?.Report(
                         Diagnostic.Create(
                             new DiagnosticDescriptor(
                                 "JGAME1010", 
@@ -263,7 +265,7 @@ namespace CodeGen
                     .Where(method => method.Modifiers
                         .Any(modifier => modifier.Kind() == SyntaxKind.PublicKeyword)))
             {
-                progress.Report(
+                progress?.Report(
                     Diagnostic.Create(
                         new DiagnosticDescriptor(
                             "JGAME1008", 
@@ -278,7 +280,7 @@ namespace CodeGen
 
             if (classType.ChildNodes().OfType<ConstructorDeclarationSyntax>().Any())
             {
-                progress.Report(
+                progress?.Report(
                     Diagnostic.Create(
                         new DiagnosticDescriptor(
                             "JGAME1007", 
@@ -299,7 +301,7 @@ namespace CodeGen
             {
                 if (fieldvars.Any(x => FieldToPropName(x.v.Identifier) == prop.Identifier.Text))
                 {
-                    progress.Report(
+                    progress?.Report(
                         Diagnostic.Create(
                             new DiagnosticDescriptor(
                                 "JGAME1006",
@@ -318,7 +320,7 @@ namespace CodeGen
             {
                 if (!char.IsLower(v.Identifier.Text[0]))
                 {
-                    progress.Report(
+                    progress?.Report(
                         Diagnostic.Create(
                             new DiagnosticDescriptor(
                                 "JGAME1002",
@@ -333,7 +335,7 @@ namespace CodeGen
 
                 if (HasPublicModifier(f.Modifiers))
                 {
-                    progress.Report(
+                    progress?.Report(
                         Diagnostic.Create(
                             new DiagnosticDescriptor(
                                 "JGAME1003",
@@ -349,7 +351,7 @@ namespace CodeGen
                 var varSymbol = (IFieldSymbol)context.SemanticModel.GetDeclaredSymbol(v);
                 if (!await DeclaredEquatable(v, context.Compilation))
                 {
-                    progress.Report(
+                    progress?.Report(
                         Diagnostic.Create(
                             new DiagnosticDescriptor(
                                 "JGAME1004",
@@ -363,7 +365,7 @@ namespace CodeGen
                 }
                 if (!await IsDeepCloneable(v, context.Compilation))
                 {
-                    progress.Report(
+                    progress?.Report(
                         Diagnostic.Create(
                             new DiagnosticDescriptor(
                                 "JGAME1005",
