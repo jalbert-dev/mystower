@@ -8,7 +8,7 @@ namespace Server
         void Dispatch(IGameClient c);
     }
 
-    public interface IServerProxy
+    public interface IServerContext
     {
         void EmitClientMessage(IGameMessage message);
 

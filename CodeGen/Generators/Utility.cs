@@ -177,8 +177,13 @@ namespace CodeGen
             ");
         }
 
+        private static string RefCloneExpression(VariableDeclaratorSyntax var)
+            => $"{var.Identifier} == null ? null : {var.Identifier}.DeepClone()";
+        private static string ValCloneExpression(VariableDeclaratorSyntax var)
+            => $"{var.Identifier}";
+
         public static async Task<string> BuildNamedConstructorArg(TypeSyntax type, VariableDeclaratorSyntax var, CSharpCompilation compilation)
-            => $"{var.Identifier}: {var.Identifier}{(await DeclaredDeepCloneable(var, compilation) ? ".DeepClone()" : "")}";
+            => $"{var.Identifier}: {(await DeclaredDeepCloneable(var, compilation) ? RefCloneExpression(var) : ValCloneExpression(var))}";
         
         public static async Task<MemberDeclarationSyntax> ImplementIDeepCloneable(ClassDeclarationSyntax classType, CSharpCompilation compilation)
              => ParseMemberDeclaration($@"
@@ -203,6 +208,12 @@ namespace CodeGen
             return attrs.Any(x => $"{x.AttributeClass.ContainingNamespace}.{x.AttributeClass.Name}" == name);
         }
 
+        public static async Task<bool> HasAutogenerationAttribute(ITypeSymbol type, Compilation compilation)
+        {
+            return await AnyAttributeByName(type, compilation, "CodeGen.GameDataNodeAttribute") ||
+                   await AnyAttributeByName(type, compilation, "CodeGen.DatabaseTypeAttribute");
+        }
+
         public static async Task<bool> DeclaredEquatable(VariableDeclaratorSyntax v, Compilation compilation)
         {
             var sym = v.GetFieldSymbol(compilation);
@@ -210,7 +221,7 @@ namespace CodeGen
             // TODO!: This is an incorrect implementation! Must check for implementation of IEquatable<T>,
             //        rather than any IEquatable`1!
             return sym.Type.AllInterfaces.Any(x => x.FullName() == typeof(IEquatable<>).FullName) ||
-                (await AnyAttributeByName(sym.Type, compilation, "CodeGen.GameDataNodeAttribute"));
+                (await HasAutogenerationAttribute(sym.Type, compilation));
         }
 
         public static async Task<bool> DeclaredDeepCloneable(VariableDeclaratorSyntax v, Compilation compilation)
@@ -218,7 +229,7 @@ namespace CodeGen
             var sym = v.GetFieldSymbol(compilation);
 
             return sym.Type.AllInterfaces.Any(x => x.FullName() == typeof(IDeepCloneable<>).FullName) ||
-                (await AnyAttributeByName(sym.Type, compilation, "CodeGen.GameDataNodeAttribute"));
+                (await HasAutogenerationAttribute(sym.Type, compilation));
         }
 
         public static async Task<bool> IsDeepCloneable(VariableDeclaratorSyntax v, Compilation compilation)

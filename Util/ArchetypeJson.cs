@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System;
 using System.Text.RegularExpressions;
+using System.Runtime.Serialization;
 
 namespace Util.Error
 {
@@ -33,6 +34,15 @@ namespace Util.Error
         public KeyNotFoundInDatabase(string n, string k)
             => (typename, key) = (n, k);
         public string Message => $"No key '{key}' exists in database for '{typename}'!";
+    }
+
+    public class DatabaseReverseLookupFailed<T> : IError
+    {
+        readonly string typename;
+        readonly T value;
+        public DatabaseReverseLookupFailed(string n, T k)
+            => (typename, value) = (n, k);
+        public string Message => $"Failed to reverse-lookup key corresponding to '{value}' in database for '{typename}'!";
     }
 
     public class JsonParseFailed : IError
@@ -90,14 +100,38 @@ namespace Util
 {
     public class Database
     {
+        private struct DBPair<T>
+        {
+            public Dictionary<string, T> lookup;
+            public Dictionary<T, string> reverse;
+
+            public DBPair(Dictionary<string, T> d)
+            {
+                lookup = d;
+                reverse = lookup.ToDictionary(pair => pair.Value, pair => pair.Key);
+            }
+        }
+
         private readonly Dictionary<Type, object> databases = new Dictionary<Type, object>();
 
-        public void AddDatabase<T>(Dictionary<string, T> d) => databases[typeof(T)] = d;
+        public void AddDatabase<T>(Dictionary<string, T> d)
+        {
+            databases[typeof(T)] = new DBPair<T>(d);
+        }
 
         public Result<T> Lookup<T>(string key)
-             => from Dictionary<string, T> db in databases.TryGetValue(typeof(T)).ErrorIfNone(() => new Error.NoDatabaseForType(typeof(T).Name))
-                from value in db.TryGetValue(key).ErrorIfNone(() => new Error.KeyNotFoundInDatabase(typeof(T).Name, key))
+             => from DBPair<T> db in databases.TryGetValue(typeof(T))
+                    .ErrorIfNone(() => new Error.NoDatabaseForType(typeof(T).Name))
+                from value in db.lookup.TryGetValue(key)
+                    .ErrorIfNone(() => new Error.KeyNotFoundInDatabase(typeof(T).Name, key))
                 select value;
+
+        public Result<string> LookupKey<T>(T value)
+             => from DBPair<T> db in databases.TryGetValue(typeof(T))
+                    .ErrorIfNone(() => new Error.NoDatabaseForType(typeof(T).Name))
+                from key in db.reverse.TryGetValue(value)
+                    .ErrorIfNone(() => new Error.DatabaseReverseLookupFailed<T>(typeof(T).Name, value))
+                select key;
     }
 
     public static class ArchetypeJson
@@ -166,16 +200,16 @@ namespace Util
             return obj;
         }
 
-        private static Result<T> LoadDataFromArchetypes<T>(string leafName, List<JObject> archetypes) where T : new()
+        private static Result<T> LoadDataFromArchetypes<T>(string leafName, List<JObject> archetypes)
              => typeof(T)
                     .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    .FoldBind(new T(),
+                    .FoldBind((T)FormatterServices.GetUninitializedObject(typeof(T)),
                     (newObj, field) =>
                         FindPropertyTokenInArchetypes(leafName, archetypes, field.Name)
                         .Map(token => token.ToObject(field.FieldType))
                         .Map(value => newObj.WithValue(field, value)));
 
-        private static Result<T> CreateObjectFrom<T>(JObject rootNode, string id, JToken token) where T : new()
+        private static Result<T> CreateObjectFrom<T>(JObject rootNode, string id, JToken token)
              => (token as JObject)
                 .ErrorIfNull(() => new Error.NodeNotJsonObject(id))
                 .Bind(obj => GetArchetypeHierarchy(rootNode, id, obj))
@@ -202,7 +236,7 @@ namespace Util
             }
         }
 
-        private static Result<Dictionary<string, T>> LoadNodesFromRoot<T>(JObject rootNode) where T : new()
+        private static Result<Dictionary<string, T>> LoadNodesFromRoot<T>(JObject rootNode)
              => (rootNode as IEnumerable<KeyValuePair<string, JToken?>>)
                 // object with id starting with "__" are only for being
                 // archetypes of other objects, so we aren't guaranteed to
@@ -213,7 +247,7 @@ namespace Util
                         CreateObjectFrom<T>(rootNode, kv.Key, kv.Value!)
                         .Map(newObject => db.WithKeyValue(kv.Key, newObject)));
 
-        public static Result<Dictionary<string, T>> Read<T>(string str) where T : new()
+        public static Result<Dictionary<string, T>> Read<T>(string str)
              => ParseJsonString(StripComments(str)).Bind(LoadNodesFromRoot<T>);
     }
 }

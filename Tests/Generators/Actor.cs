@@ -1,6 +1,7 @@
 using System.Linq;
 using FsCheck;
 using Server.Data;
+using Server.Database;
 
 namespace Tests.Server.Generators
 {
@@ -19,6 +20,27 @@ namespace Tests.Server.Generators
              => from hp in Gen.Choose(1, 30)
                 select new ActorStatus(hp: hp);
 
+        static ActorArchetype defaultArchetype =
+            new ActorArchetype(
+                lvlMinStatus: new StatBlock(),
+                lvlMaxStatus: new StatBlock(),
+                defaultAiType: "",
+                nameId: "",
+                appearanceId: "");
+
+        public static global::Util.Database DefaultDatabase =
+            new global::Util.Database();
+        
+        static ActorGen()
+        {
+            DefaultDatabase.AddDatabase<ActorArchetype>(
+                new System.Collections.Generic.Dictionary<string, ActorArchetype>()
+                {
+                    ["DefaultArchetype"] = defaultArchetype
+                }
+            );
+        }
+
         public static Arbitrary<Actor> Default()
              => Arb.From(
                     from pos in Gen.Choose(0, 30).Two()
@@ -33,7 +55,7 @@ namespace Tests.Server.Generators
                         timeUntilAct: ct,
                         level: lvl,
                         status: status,
-                        archetypeId: ""));
+                        archetype: defaultArchetype));
 
         public static Arbitrary<Actor> WithTimeUntilAct(this Arbitrary<Actor> arb, int ct)
             => arb.Generator.Select(x => {

@@ -20,17 +20,15 @@ namespace Tests.Server
                         from actors in ActorGen.Default().WithPositionOnMap(map).Generator.ArrayOf(actorCount)
                         select new GameState(actors.ToValueList(), map)),
                     state => {
-                        // doing a deep comparison of two nested data structures isn't really feasible
-                        // here like it is in F# where it's more or less automatic so we'll 
-                        // compared serialized states. (this does mean unordered collections,
-                        // floating-point nonsense, etc. could cause failures...)
-                        // TODO: serialization-based equality is really weak
                         var sw = new StringWriter();
-                        GameStateIO.SaveToStream(state, sw);
+                        var db = ActorGen.DefaultDatabase;
+                        GameStateIO.SaveToStream(state, sw, db).Should().BeNull(
+                            "because saving game state should not result in an error");
                         var srcSerialized = sw.ToString();
-                        var loadedState = GameStateIO.LoadFromString(srcSerialized);
+                        var loadedState = GameStateIO.LoadFromString(srcSerialized, db);
 
-                        loadedState.Should().BeEquivalentTo(state,
+                        loadedState.IsSuccess.Should().BeTrue();
+                        loadedState.Value.Should().BeEquivalentTo(state,
                             "because game state after loading should be identical to original state");
                     });
     }

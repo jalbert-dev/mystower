@@ -10,7 +10,7 @@ namespace Server.Logic
     {
         public class Idle : IAction
         {
-            public int Execute(IServerProxy server, GameState gs, Actor actor) {
+            public int Execute(IServerContext server, GameState gs, Actor actor) {
                 return 10;
             }
         }
@@ -26,7 +26,7 @@ namespace Server.Logic
             public int dx { get; }
             public int dy { get; }
 
-            public int Execute(IServerProxy server, GameState gs, Actor actor)
+            public int Execute(IServerContext server, GameState gs, Actor actor)
             {
                 // should always set facing regardless of move success
                 actor.Facing = (dx, dy);
@@ -54,7 +54,7 @@ namespace Server.Logic
 
             public Face(int dx, int dy) => (this.dx, this.dy) = (dx, dy);
 
-            public int Execute(IServerProxy server, GameState gs, Actor actor)
+            public int Execute(IServerContext server, GameState gs, Actor actor)
             {
                 actor.Facing = (dx, dy);
                 server.EmitClientMessage(new Message.ActorFaced(actor, new Vec2i(dx, dy)));
@@ -67,7 +67,7 @@ namespace Server.Logic
             // TODO: Should probably take an attack ID or something
             public TryAttack() { }
 
-            public int Execute(IServerProxy server, GameState gs, Actor actor)
+            public int Execute(IServerContext server, GameState gs, Actor actor)
             {
                 // Determine attack targets
 
@@ -78,26 +78,11 @@ namespace Server.Logic
                     a.Position.y == actor.Position.y + actor.Facing.y);
 
                 // Calculate + deal damage to each actor and store result in AttackResults
-                var attackerStats = 
-                    server.Database
-                        .Lookup<ActorArchetype>(actor.ArchetypeId)
-                        .Map(archetype => archetype.StatusAtLevel(actor.Level));
+                var attackerStats = actor.Archetype.StatusAtLevel(actor.Level);
                 var results = targets.Select(target => {
-                    var targetStats = 
-                        server.Database
-                            .Lookup<ActorArchetype>(target.ArchetypeId)
-                            .Map(archetype => archetype.StatusAtLevel(target.Level));
+                    var targetStats = actor.Archetype.StatusAtLevel(target.Level);
 
-                    var dmgCalc = 
-                        from a in attackerStats
-                        from t in targetStats
-                        select DamageHandling.CalcDamage(a, t);
-
-                    int dmg = 0;
-                    if (dmgCalc.IsSuccess)
-                        dmg = dmgCalc.Value;
-                    else
-                        System.Console.WriteLine($"Damage calculation failed: {dmgCalc.Err}");
+                    var dmg = DamageHandling.CalcDamage(attackerStats, targetStats);
                     
                     target.Status.Hp = target.Status.Hp - dmg;
 

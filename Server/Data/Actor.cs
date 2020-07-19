@@ -5,6 +5,8 @@ using Util.Functional;
 
 namespace Server.Data
 {
+    
+
     /// A serializable structure representing a living actor in the game world.
     [CodeGen.GameDataNode]
     public partial class Actor
@@ -18,7 +20,7 @@ namespace Server.Data
         int level;
         ActorStatus status;
 
-        string archetypeId;
+        ActorArchetype archetype;
 
         int set_level(int value) => ActorArchetype.ClampLevel(value);
         int set_timeUntilAct(int value) => Math.Max(0, value);
@@ -32,7 +34,7 @@ namespace Server.Data
                         timeUntilAct: ct,
                         level: lvl,
                         status: ActorStatus.FromArchetype(archetype, lvl),
-                        archetypeId: archetypeId));
+                        archetype: archetype));
     }
 
     [CodeGen.GameDataNode]

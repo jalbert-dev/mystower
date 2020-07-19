@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Server
 {
-    public class ServerProxy : IServerProxy
+    public class ServerContext : IServerContext
     {
         List<IGameMessage> messages = new List<IGameMessage>();
 
@@ -15,7 +15,7 @@ namespace Server
             return messagesCopy;
         }
 
-        public ServerProxy(Util.Database database)
+        public ServerContext(Util.Database database)
         {
             this.Database = database;
         }

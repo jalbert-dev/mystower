@@ -32,7 +32,33 @@ namespace CodeGen
                 .AddMembers(
                     (from decl in GetFieldVariableDeclarations(classType)
                     select BuildReadOnlyAccessorProp(decl.type, FieldToPropName(decl.var.Identifier), decl.var.Identifier))
-                    .ToArray());
+                    .ToArray())
+                .AddMembers(
+                    BuildConstructorForRecord(classType))
+                .AddMembers(
+                    ParseMemberDeclaration($"public bool Equals({classType.Identifier} other) => object.ReferenceEquals(this, other);"),
+                    ParseMemberDeclaration($"public {classType.Identifier} DeepClone() => this;"));
+
+            classType = classType
+                .AddBaseListTypes(
+                    SimpleBaseType(
+                        QualifiedName(
+                            AliasQualifiedName(
+                                IdentifierName(Token(SyntaxKind.GlobalKeyword)),
+                                Token(SyntaxKind.ColonColonToken),   
+                                IdentifierName("System")),
+                            GenericName(Identifier("IEquatable"))
+                                .WithTypeArgumentList(TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
+                                    IdentifierName(classType.Identifier)))))),
+                    SimpleBaseType(
+                        QualifiedName(
+                            AliasQualifiedName(
+                                IdentifierName(Token(SyntaxKind.GlobalKeyword)),
+                                Token(SyntaxKind.ColonColonToken),   
+                                IdentifierName("Util")),
+                            GenericName(Identifier("IDeepCloneable"))
+                            .WithTypeArgumentList(TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
+                                        IdentifierName(classType.Identifier)))))));
 
             return Task.FromResult(SingletonList<MemberDeclarationSyntax>(classType));
         }

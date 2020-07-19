@@ -88,7 +88,7 @@ namespace Server
 
     public class GameServer
     {
-        ServerProxy proxyClient;
+        ServerContext proxyClient;
         RWLocked<GameState> gameStateLock { get; }
         Actor? waitingOn = null;
         public readonly Util.Database Database;
@@ -100,7 +100,7 @@ namespace Server
             gameStateLock = new RWLocked<GameState>(state);
             Database = db;
 
-            proxyClient = new ServerProxy(Database);
+            proxyClient = new ServerContext(Database);
         }
 
         private static TileMap TestMap(int w, int h)
@@ -132,12 +132,17 @@ namespace Server
                     gamedb);
         
         public static Result<GameServer> FromSaveGame(string str, Util.Database gamedb)
-            => Result.Ok(new GameServer(GameStateIO.LoadFromString(str), gamedb));
+             => GameStateIO.LoadFromString(str, gamedb)
+                    .Map(state => new GameServer(state, gamedb));
         public static Result<GameServer> FromSaveGame(TextReader reader, Util.Database gamedb)
             => FromSaveGame(reader.ReadToEnd(), gamedb);
 
         public void ToSaveGame(TextWriter outStream)
-            => gameStateLock.ReadResource(gameState => GameStateIO.SaveToStream(gameState, outStream));
+            => gameStateLock.ReadResource(gameState => {
+                var err = GameStateIO.SaveToStream(gameState, outStream, Database);
+                if (err != null)
+                    Console.WriteLine(err.Message);
+            });
         public string ToSaveGame()
         {
             StringWriter sw = new StringWriter();
