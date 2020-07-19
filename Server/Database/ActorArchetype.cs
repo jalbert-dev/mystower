@@ -14,7 +14,7 @@ namespace Server.Database
         public int def;
     }
 
-    [CodeGen.DatabaseType, JsonConverter(typeof(DatabaseTypeConverter<ActorArchetype>))]
+    [CodeGen.DatabaseType]
     public partial class ActorArchetype
     {
         private StatBlock lvlMinStatus = default(StatBlock);
@@ -41,48 +41,6 @@ namespace Server.Database
             lvl = ClampLevel(lvl);
             float t = (float)(lvl - 1) / (float)(MAX_LEVEL - 1);
             return (int)((1 - t) * a + t * b);
-        }
-    }
-
-    public class DatabaseTypeConverter<T> : Newtonsoft.Json.JsonConverter<T> where T : class
-    {
-        private static Util.Database GetContextDatabase(JsonSerializer serializer)
-        {
-            var lookup = (serializer.Context.Context as Util.Database);
-            if (lookup == null)
-                throw new JsonException("JSON serializer not supplied with database context!");
-            return lookup;
-        }
-
-        public override void WriteJson(JsonWriter writer, T? value, JsonSerializer serializer)
-        {
-            if (value == null)
-                return;
-
-            GetContextDatabase(serializer)
-                .LookupKey(value)
-                .Match(
-                    ok: key => writer.WriteValue(key),
-                    err: err => throw new JsonException($"Exception looking up key for instance of '{typeof(T).FullName}': {err.Message}")
-                );
-        }
-
-        public override T ReadJson(JsonReader reader, Type objectType, T? existingValue, bool hasExistingValue, JsonSerializer serializer)
-        {
-            if (reader.Value == null)
-                return null!;
-
-            var key = reader.Value as string;
-
-            if (key == null)
-                throw new JsonException($"Unable to read '{typeof(T).FullName}' string key from JSON.");
-
-            return GetContextDatabase(serializer)
-                .Lookup<T>(key)
-                .Match(
-                    ok: obj => obj,
-                    err: err => throw new JsonException($"No '{typeof(T).FullName}' found in database by key '{key}'.")
-                );
         }
     }
 }

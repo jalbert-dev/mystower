@@ -28,7 +28,29 @@ namespace CodeGen
 
             classType = classType
                 .WithMembers(new SyntaxList<MemberDeclarationSyntax>())
-                .WithAttributeLists(List<AttributeListSyntax>())
+                .WithAttributeLists(
+                    SingletonList<AttributeListSyntax>(
+                        AttributeList(
+                            SingletonSeparatedList<AttributeSyntax>(
+                                Attribute(
+                                    QualifiedName(
+                                        QualifiedName(
+                                            IdentifierName("Newtonsoft"),
+                                            IdentifierName("Json")),
+                                        IdentifierName("JsonConverter")))
+                                .WithArgumentList(
+                                    AttributeArgumentList(
+                                        SingletonSeparatedList<AttributeArgumentSyntax>(
+                                            AttributeArgument(
+                                                TypeOfExpression(
+                                                    QualifiedName(
+                                                        IdentifierName("Util"),
+                                                        GenericName(
+                                                            Identifier("DatabaseTypeConverter"))
+                                                        .WithTypeArgumentList(
+                                                            TypeArgumentList(
+                                                                SingletonSeparatedList<TypeSyntax>(
+                                                                    IdentifierName(classType.Identifier))))))))))))))
                 .AddMembers(
                     (from decl in GetFieldVariableDeclarations(classType)
                     select BuildReadOnlyAccessorProp(decl.type, FieldToPropName(decl.var.Identifier), decl.var.Identifier))
