@@ -13,18 +13,19 @@ namespace Server.Database
         public int def;
     }
 
-    public class ActorArchetype
+    [CodeGen.DatabaseType]
+    public partial class ActorArchetype
     {
+        private StatBlock lvlMinStatus = default(StatBlock);
+        private StatBlock lvlMaxStatus = default(StatBlock);
+        private string defaultAiType = "";
+
+        private string nameId = "";
+        private string appearanceId = "";
+
         private const int MIN_LEVEL = 1;
         private const int MAX_LEVEL = 99;
         public static int ClampLevel(int lvl) => Math.Min(MAX_LEVEL, Math.Max(MIN_LEVEL, lvl));
-
-        private StatBlock lvlMinStatus = default(StatBlock);
-        private StatBlock lvlMaxStatus = default(StatBlock);
-        public string defaultAiType = "";
-
-        public string nameId = "";
-        public string appearanceId = "";
 
         public StatBlock StatusAtLevel(int level)
             => new StatBlock

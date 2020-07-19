@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using Util;
+using static CodeGen.Util;
 
 namespace CodeGen
 {
@@ -18,10 +18,23 @@ namespace CodeGen
         {
         }
 
-        public async Task<SyntaxList<MemberDeclarationSyntax>> GenerateAsync(TransformationContext context, IProgress<Diagnostic> progress, CancellationToken cancellationToken)
+        public Task<SyntaxList<MemberDeclarationSyntax>> GenerateAsync(TransformationContext context, IProgress<Diagnostic> progress, CancellationToken cancellationToken)
         {
             var classType = (ClassDeclarationSyntax)context.ProcessingNode;
-            return SingletonList<MemberDeclarationSyntax>(classType);
+
+            progress.EnforceIsPartialClass(classType);
+            progress.EnforcePrivateFieldsAndNames(classType);
+            progress.EnforceAutogenPropNamesNotDeclared(classType);
+
+            classType = classType
+                .WithMembers(new SyntaxList<MemberDeclarationSyntax>())
+                .WithAttributeLists(List<AttributeListSyntax>())
+                .AddMembers(
+                    (from decl in GetFieldVariableDeclarations(classType)
+                    select BuildReadOnlyAccessorProp(decl.type, FieldToPropName(decl.var.Identifier), decl.var.Identifier))
+                    .ToArray());
+
+            return Task.FromResult(SingletonList<MemberDeclarationSyntax>(classType));
         }
     }
 }

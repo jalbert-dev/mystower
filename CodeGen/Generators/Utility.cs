@@ -67,10 +67,12 @@ namespace CodeGen
         public static bool HasPublicModifier(SyntaxTokenList tokens)
             => tokens.Any(tok => tok.Kind() == SyntaxKind.PublicKeyword);
 
-        public static IEnumerable<(TypeSyntax type, VariableDeclaratorSyntax var)> GetFieldVariableDeclarations(ClassDeclarationSyntax cls)
+        public static IEnumerable<(TypeSyntax type, FieldDeclarationSyntax field, VariableDeclaratorSyntax var)> GetFieldVariableDeclarations(ClassDeclarationSyntax cls)
              => from f in cls.ChildNodes().OfType<FieldDeclarationSyntax>()
+                where f.Modifiers.All(x => x.Kind() != SyntaxKind.StaticKeyword)
+                where f.Modifiers.All(x => x.Kind() != SyntaxKind.ConstKeyword)
                 from v in f.Declaration.Variables
-                select (f.Declaration.Type, v);
+                select (f.Declaration.Type, f, v);
 
         public static IEnumerable<ParameterSyntax> GetFieldsAsParameters(ClassDeclarationSyntax cls)
              => from fv in GetFieldVariableDeclarations(cls)
@@ -115,6 +117,9 @@ namespace CodeGen
                                     ))
                             })))
                 .NormalizeWhitespace();
+
+        public static MemberDeclarationSyntax BuildReadOnlyAccessorProp(TypeSyntax type, string propName, SyntaxToken fieldIdentifier)
+             => ParseMemberDeclaration($"public {type} {propName} => {fieldIdentifier.Text};");
 
         public static string FieldToPropName(SyntaxToken identifier)
             => identifier.Text.First().ToString().ToUpper() + identifier.Text.Substring(1);

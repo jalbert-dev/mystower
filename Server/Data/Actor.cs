@@ -28,7 +28,7 @@ namespace Server.Data
                     .Map(archetype => new Actor(
                         position: new Vec2i(x, y), 
                         facing: new Vec2i(0, 1), 
-                        aiType: archetype.defaultAiType, 
+                        aiType: archetype.DefaultAiType, 
                         timeUntilAct: ct,
                         level: lvl,
                         status: ActorStatus.FromArchetype(archetype, lvl),
