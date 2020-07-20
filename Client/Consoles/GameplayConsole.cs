@@ -88,13 +88,13 @@ namespace Client.Consoles
 
             MapActors.OnAddActor += (a) => 
             {
-                TileMap.ActorContainer.Children.Add(a);
+                TileMap.EntityLayer.Children.Add(a);
             };
             MapActors.OnRemoveActor += (a) =>
             {
                 if (fallbackCameraFocusActor == a)
                     fallbackCameraFocusActor = null;
-                TileMap.ActorContainer.Children.Remove(a);
+                TileMap.EntityLayer.Children.Remove(a);
             };
 
             HandleMessages(Server.GetClientInitMessages());

@@ -12,7 +12,6 @@ namespace Client
     public class MapActor : Entity
     {
         public DataHandle<Actor> Actor { get; }
-        public SadConsole.Console ParentTileMap { get; }
         public Vec2i Facing { get; set; }
         public bool ShowFacingMarker { get => facingMarker.IsVisible; set => facingMarker.IsVisible = value; }
 
@@ -20,13 +19,9 @@ namespace Client
 
         // TODO!: This constructor should take a Font instead of using the parent console's Font.
         //        Once that's taken care of, remove the requirement entirely and have caller set parent.
-        public MapActor(SadConsole.Console parent, DataHandle<Actor> actor) : base(1,1)
+        public MapActor(DataHandle<Actor> actor) : base(1,1)
         {
-            ParentTileMap = parent;
-
             this.Actor = actor;
-            Animation.Font = parent.Font;
-            Animation.FontSize = parent.FontSize;
             
             Animation.UsePixelPositioning = true;
 
@@ -45,6 +40,10 @@ namespace Client
 
         public void Sync(GameServer server)
             => server.QueryData(Actor, actor => {
+                // TODO!: Sync should require a ClientContext so we can lookup the appropriate font for this actor's archetype
+                Animation.Font = SadConsole.GameHost.Instance.Fonts["Tileset"];
+                Animation.FontSize = Animation.Font.GetFontSize(SadConsole.Font.Sizes.Four);
+
                 Animation.Surface.Cells[0] = new SadConsole.ColoredGlyph
                 {
                     Foreground = Color.White,

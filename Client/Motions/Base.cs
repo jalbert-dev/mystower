@@ -32,11 +32,15 @@ namespace Client
             }
         }
 
-        public static IEnumerable Lunge(MapActor actor, int t1, int t2, float depth, Action middle)
+        public static IEnumerable Lunge(SadRogue.Primitives.Point tileSize,
+                                        MapActor actor,
+                                        int t1,
+                                        int t2,
+                                        float depth,
+                                        Action middle)
         {
             var offset = default(Point);
-            var tileScale = actor.ParentTileMap.FontSize;
-            var extent = tileScale * depth * new Point(actor.Facing.x, actor.Facing.y);
+            var extent = tileSize * depth * new Point(actor.Facing.x, actor.Facing.y);
             var extentf = new Vector2(extent.X, extent.Y);
             
             for (int i = 1; i <= t1; i++)

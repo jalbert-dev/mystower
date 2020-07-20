@@ -11,11 +11,17 @@ namespace Client.Consoles
         // we need this, so we'll store it ourselves
         private int canvasWidthPx, canvasHeightPx;
 
+        private ScreenObject transformRoot;
+        public IScreenObject TransformRoot => transformRoot;
+
         public PerPixelTileMap(SadConsole.ScreenObject parent) : base(3, 3)
         {
             Renderer = renderer = new TileMapRenderer();
 
             Parent = parent;
+
+            transformRoot = new ScreenObject();
+            transformRoot.Parent = this;
         }
 
         public void SetMapSize(int tileWidth, int tileHeight) 
@@ -76,11 +82,9 @@ namespace Client.Consoles
 
         public override void Draw(System.TimeSpan delta)
         {
-            // TODO: this is weird and requires resetting PositionOffset of attached Entities outside of this method
             // Adjust position of child elements to account for viewport location
             foreach (var c in Children)
-                if (c is SadConsole.Entities.Entity e)
-                    e.PositionOffset -= (ViewPosition.SurfaceLocationToPixel(FontSize) + renderer.ViewportPixelOffset);
+                c.Position = (ViewPosition.SurfaceLocationToPixel(FontSize) + renderer.ViewportPixelOffset) * -1;
             base.Draw(delta);
         }
     }

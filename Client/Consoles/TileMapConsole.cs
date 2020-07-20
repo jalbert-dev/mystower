@@ -17,9 +17,11 @@ namespace Client.Consoles
 
         private PerPixelTileMap Grid => layers["grid"];
         private PerPixelTileMap Map => layers["map"];
+        private PerPixelTileMap Entity => layers["entity"];
 
-        // TODO!: This should be a ScreenObject; Console exposes too much
-        public SadConsole.Console ActorContainer => Map;
+        public SadConsole.IScreenObject EntityLayer => Entity.TransformRoot;
+
+        public Point TileSize => Map.FontSize;
 
         public bool IsGridVisible { set => Grid.IsVisible = value; }
 
@@ -48,7 +50,13 @@ namespace Client.Consoles
                 DefaultBackground = Color.Transparent,
                 Font = gridFont,
                 FontSize = gridFontSize,
-                Parent = Map,
+            };
+
+            layers["entity"] = new PerPixelTileMap(Root)
+            {
+                DefaultBackground = Color.Transparent,
+                Font = mapFont,
+                FontSize = mapFontSize,
             };
 
             ResizeViewportPx(pixelWidth, pixelHeight);
