@@ -18,10 +18,10 @@ namespace Client
 
         private Entity facingMarker;
 
-
+        // TODO!: This constructor should take a Font instead of using the parent console's Font.
+        //        Once that's taken care of, remove the requirement entirely and have caller set parent.
         public MapActor(SadConsole.Console parent, DataHandle<Actor> actor) : base(1,1)
         {
-            this.Parent = parent;
             ParentTileMap = parent;
 
             this.Actor = actor;
@@ -29,7 +29,6 @@ namespace Client
             Animation.FontSize = parent.FontSize;
             
             Animation.UsePixelPositioning = true;
-
 
             var facingFont = SadConsole.GameHost.Instance.Fonts["Directionals"];
             facingMarker = new Entity(1, 1, facingFont, facingFont.GetFontSize(SadConsole.Font.Sizes.Four));
@@ -41,7 +40,6 @@ namespace Client
                 Glyph = 2,
             };
             facingMarker.Animation.UsePixelPositioning = true;
-            Children.Add(facingMarker);
             facingMarker.Parent = this;
         }
 
@@ -54,7 +52,7 @@ namespace Client
                     Glyph = actor.AiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125,
                 };
                 Position = new Point(actor.Position.x, actor.Position.y)
-                    .SurfaceLocationToPixel(ParentTileMap.FontSize.X, ParentTileMap.FontSize.Y);
+                    .SurfaceLocationToPixel(Animation.FontSize.X, Animation.FontSize.Y);
                 Facing = actor.Facing;
             });
 

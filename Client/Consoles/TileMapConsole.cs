@@ -9,46 +9,49 @@ using static SadConsole.RectangleExtensions;
 
 namespace Client.Consoles
 {
-    public class TileMap : SadConsole.Console
+    public class TileMap
     {
-        private TileMapRenderer _tilemapRenderer;
+        private ScreenObject Root = new ScreenObject();
 
-        private int canvasWidth, canvasHeight;
+        private Dictionary<string, PerPixelTileMap> layers = new Dictionary<string, PerPixelTileMap>();
 
-        private SadConsole.Console grid;
-        private TileMapRenderer _gridRenderer;
+        private PerPixelTileMap Grid => layers["grid"];
+        private PerPixelTileMap Map => layers["map"];
 
-        public bool IsGridVisible { set => grid.IsVisible = value; }
+        // TODO!: This should be a ScreenObject; Console exposes too much
+        public SadConsole.Console ActorContainer => Map;
 
-        public TileMap() : base(1, 1)
+        public bool IsGridVisible { set => Grid.IsVisible = value; }
+
+        public TileMap(IScreenObject parent) : base()
         {
-            DefaultBackground = Color.Black;
-            Font = SadConsole.GameHost.Instance.Fonts["Tileset"];
-            FontSize = Font.GetFontSize(Sizes.Four);
-            Renderer = _tilemapRenderer = new TileMapRenderer();
+            Root.Parent = parent;
 
-            grid = new SadConsole.Console(1, 1);
-            grid.Font = SadConsole.GameHost.Instance.Fonts["Directionals"];
-            grid.FontSize = grid.Font.GetFontSize(Sizes.Four);
-            Children.Add(grid);
-            grid.Parent = this;
-            grid.Renderer = _gridRenderer = new TileMapRenderer();
-            grid.DefaultBackground = Color.Transparent;
+            var mapFont = SadConsole.GameHost.Instance.Fonts["Tileset"];
+            var mapFontSize = mapFont.GetFontSize(Sizes.Four);
 
-            ResizePx(SadConsole.Settings.Rendering.RenderWidth, SadConsole.Settings.Rendering.RenderHeight, 1, 1);
-        }
+            var gridFont = SadConsole.GameHost.Instance.Fonts["Directionals"];
+            var gridFontSize = gridFont.GetFontSize(Sizes.Four);
 
-        public void ResizePx(int w, int h) => ResizePx(w, h, BufferWidth, BufferHeight);
-        public void ResizePx(int w, int h, int bufferWidth, int bufferHeight)
-        {
-            // https://stackoverflow.com/a/53520604 -- handy ceil implementation for ints!
-            var neededWidth = (w / FontSize.X) + (w % FontSize.X == 0 ? 0 : 1);
-            var neededHeight = (h / FontSize.Y) + (h % FontSize.Y == 0 ? 0 : 1);
+            var pixelWidth = SadConsole.Settings.Rendering.RenderWidth;
+            var pixelHeight = SadConsole.Settings.Rendering.RenderHeight;
 
-            Resize(neededWidth, neededHeight, bufferWidth, bufferHeight, false);
-            grid.Resize(neededWidth, neededHeight, bufferWidth, bufferHeight, false);
-            canvasWidth = w;
-            canvasHeight = h;
+            layers["map"] = new PerPixelTileMap(Root)
+            {
+                DefaultBackground = Color.Black,
+                Font = mapFont,
+                FontSize = mapFontSize,
+            };
+
+            layers["grid"] = new PerPixelTileMap(Root)
+            {
+                DefaultBackground = Color.Transparent,
+                Font = gridFont,
+                FontSize = gridFontSize,
+                Parent = Map,
+            };
+
+            ResizeViewportPx(pixelWidth, pixelHeight);
         }
 
         public void RebuildTileMap(Server.Data.TileMap map)
@@ -56,9 +59,11 @@ namespace Client.Consoles
             int w = map.Width;
             int h = map.Height;
 
-            this.ResizePx(canvasWidth, canvasHeight, w, h);
-            this.Clear();
-            grid.Clear();
+            foreach (var layer in layers.Values)
+            {
+                layer.SetMapSize(w, h);
+                layer.Clear();
+            }
 
             // VERY temporary...
             var r = new Random();
@@ -69,71 +74,31 @@ namespace Client.Consoles
             {
                 for (int j = 0; j < h; j++)
                 {
-                    this.SetGlyph(i, j,
+                    Map.SetGlyph(i, j,
                         map[i,j] == 0 ? Grass[r.Next(4)] : Tree[r.Next(4)],
                         map[i,j] == 0 ? Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()) : Color.DarkGreen,
                         Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
-                    grid.SetGlyph(i, j, 10, Color.Black.SetAlpha(128));
+                    Grid.SetGlyph(i, j, 10, Color.Black.SetAlpha(128));
                 }
             }
         }
 
-        public void CenterViewOn(MapActor actor)
+        public void CenterViewOn(MapActor cameraFocus)
         {
-            var vp = Surface.View;
-            // ! .ToPixels(Point) is currently broken
-            var viewPortPx = vp.ToPixels(FontSize.X, FontSize.Y);
-
-            // before anything, we need to clamp the viewport size to our canvas size
-            // this is a hack piled on top of other hacks, but it prevents the topleft from
-            // snapping to the nearest tile
-            if (viewPortPx.Width > canvasWidth)
-                viewPortPx = viewPortPx.WithWidth(canvasWidth);
-            if (viewPortPx.Height > canvasHeight)
-                viewPortPx = viewPortPx.WithHeight(canvasHeight);
-               
-            var halfSize = new Point(FontSize.X / 2, FontSize.Y / 2);
-            var centered = viewPortPx.WithCenter(actor.Position + halfSize);
-
-            // bounds check the centered viewport
-            int nx = centered.X;
-            int ny = centered.Y;
-            if (centered.MaxExtentX + 1 > BufferWidth * FontSize.X)
-                nx -= centered.MaxExtentX + 1 - BufferWidth * FontSize.X;
-            else if (nx < 0)
-                nx = 0;
-            if (centered.MaxExtentY + 1 > BufferHeight * FontSize.Y)
-                ny -= centered.MaxExtentY + 1 - BufferHeight * FontSize.Y;
-            else if (ny < 0)
-                ny = 0;
-            
-            centered = centered.WithX(nx).WithY(ny);
-            
-            Surface.View = vp
-                .WithX(centered.X / FontSize.X)
-                .WithY(centered.Y / FontSize.Y);
-
-            _gridRenderer.ViewportPixelOffset = _tilemapRenderer.ViewportPixelOffset = 
-                new Point(centered.X % FontSize.X, centered.Y % FontSize.Y);
-            _gridRenderer.ToEdgeX = _tilemapRenderer.ToEdgeX = 
-                BufferWidth - 1 - Surface.View.MaxExtentX;
-            _gridRenderer.ToEdgeY = _tilemapRenderer.ToEdgeY = 
-                BufferHeight - 1 - Surface.View.MaxExtentY;
+            foreach (var layer in layers.Values)
+                layer.CenterViewOn(cameraFocus.Position.X, cameraFocus.Position.Y);
         }
 
-        public override void Draw(System.TimeSpan timeElapsed)
+        public void ResizeViewportPx(int width, int height)
         {
-            // TODO: this is pretty unexpected and has a hidden requirement that
-            //       child elements must have their positions reset every tick.
-            //       dig deeper into SadConsole and figure out where to best put
-            //       adjustment of child position for viewport
-            //       Or just cache old positions and reset after base.Draw...
+            foreach (var layer in layers.Values)
+                layer.ResizeViewportPx(width, height);
+        }
 
-            // Adjust position of child elements to account for viewport location
-            foreach (var c in Children)
-                if (c is SadConsole.Entities.Entity e)
-                    e.PositionOffset -= (ViewPosition.SurfaceLocationToPixel(FontSize) + _tilemapRenderer.ViewportPixelOffset);
-            base.Draw(timeElapsed);
+        public void SetMapSize(int tileWidth, int tileHeight)
+        {
+            foreach (var layer in layers.Values)
+                layer.SetMapSize(tileWidth, tileHeight);
         }
     }
 }

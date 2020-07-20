@@ -10,7 +10,7 @@ namespace Client
 
         public void HandleMessage(ActorAppeared msg)
         {
-            var a = new MapActor(Client.TileMap, msg.Actor);
+            var a = new MapActor(Client.TileMap.ActorContainer, msg.Actor);
             a.Sync(Client.Server);
             Client.MapActors.Add(a);
         }

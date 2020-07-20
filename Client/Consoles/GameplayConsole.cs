@@ -77,8 +77,7 @@ namespace Client.Consoles
             Server = s;
             msgHandler = new GameplayMessageHandler(this);
 
-            TileMap = new Consoles.TileMap();
-            Children.Add(TileMap);
+            TileMap = new Consoles.TileMap(this);
 
             MessageLog = new Consoles.MessageLog();
             Children.Add(MessageLog);
@@ -89,13 +88,13 @@ namespace Client.Consoles
 
             MapActors.OnAddActor += (a) => 
             {
-                TileMap.Children.Add(a);
+                TileMap.ActorContainer.Children.Add(a);
             };
             MapActors.OnRemoveActor += (a) =>
             {
                 if (fallbackCameraFocusActor == a)
                     fallbackCameraFocusActor = null;
-                TileMap.Children.Remove(a);
+                TileMap.ActorContainer.Children.Remove(a);
             };
 
             HandleMessages(Server.GetClientInitMessages());
@@ -279,7 +278,7 @@ namespace Client.Consoles
 
         public void OnWindowResize(int width, int height)
         {
-            TileMap.ResizePx(width, height);
+            TileMap.ResizeViewportPx(width, height);
 
             var msgW = width / MessageLog.FontSize.X * 3 / 5;
             var msgH = height / MessageLog.FontSize.Y * 1 / 5;
