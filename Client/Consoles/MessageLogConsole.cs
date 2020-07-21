@@ -1,32 +1,31 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using SadConsole;
 using SadRogue.Primitives;
 
 namespace Client.Consoles
 {
-    public class MessageLog : SadConsole.Console
+    public class MessageLog
     {
-        private List<string> messages = new List<string>(256);
-        private bool dirty = true;
+        private ScreenObject root;
+        private SadConsole.Console logFrame;
         private SadConsole.Console msgDisplay;
 
-        // notice that this is oldest message first!
-        private IEnumerable<string> RecentMessages
-            => AllMessages.Take(Height).Reverse();
+        public float PercentOfScreenHeight { get; set; } = 1.0f / 5.0f;
+        public float PercentOfScreenWidth { get; set; } = 3.0f / 5.0f;
+        public int OffsetFromBottomPx { get; set; } = 40;
 
-        public IEnumerable<string> AllMessages
-            => messages.Reverse<string>();
-
-        public MessageLog() : base(1, 1) 
+        public MessageLog(IScreenObject parent, ILogMessageSource msgSource)
         { 
-            DefaultBackground = Color.Gray;
-            UsePixelPositioning = true;
+            root = new ScreenObject();
+
+            logFrame = new SadConsole.Console(1, 1);
+            logFrame.DefaultBackground = Color.Gray;
+            logFrame.UsePixelPositioning = true;
 
             msgDisplay = new SadConsole.Console(1, 1);
             msgDisplay.Position = new Point(2, 1);
             msgDisplay.DefaultBackground = Color.Transparent;
+            msgDisplay.Font = logFrame.Font;
 
             msgDisplay.Cursor.PrintAppearance = new SadConsole.ColoredGlyph 
             { 
@@ -34,65 +33,60 @@ namespace Client.Consoles
                 Background=Color.Transparent 
             };
 
-            Children.Add(msgDisplay);
+            root.Parent = parent;
+            logFrame.Parent = root;
+            msgDisplay.Parent = logFrame;
+
+            msgSource.OnNewMessage += OnNewMessage;
         }
 
-        public void Reposition(int x, int y, int w, int h)
+        public void Reposition(int screenWidthPx, int screenHeightPx, ILogMessageSource msgSource)
         {
-            Resize(w, h, w, h, false);
+            int x = screenWidthPx / 2;
+            int y = screenHeightPx - OffsetFromBottomPx;
+            int h = (int)((float)screenHeightPx * PercentOfScreenHeight);
+            int w = (int)((float)screenWidthPx * PercentOfScreenWidth);
+
+            int widthInTiles = w / msgDisplay.FontSize.X;
+            int heightInTiles = h / msgDisplay.FontSize.Y;
+
+            logFrame.Resize(widthInTiles, heightInTiles, widthInTiles, heightInTiles, false);
 
             // By default, the origin of the message log is at the center-bottom
-            Position = new Point(x - w * FontSize.X / 2, y - h * FontSize.Y);
+            root.Position = new Point(x - w / 2, y - h);
 
-            msgDisplay.Resize(w - 4, h - 2, w - 4, h - 2, false);
+            msgDisplay.Resize(widthInTiles - 4, heightInTiles - 2, widthInTiles - 4, heightInTiles - 2, false);
 
-            dirty = true;
+            RedrawMessages(msgSource);
         }
 
-        public override void Update(TimeSpan timeElapsed)
+        private void OnNewMessage(ILogMessageSource msgSource)
         {
-            base.Update(timeElapsed);
+            RedrawMessages(msgSource);
+            root.IsVisible = true;
         }
 
-        public override void Draw(TimeSpan timeElapsed)
+        public void RedrawMessages(ILogMessageSource msgSource)
         {
-            if (dirty)
-            {
-                dirty = false;
+            var msgs = msgSource.GetRecentMessages(msgDisplay.Height);
 
-                this.Clear();
-                var boxCell = new SadConsole.ColoredGlyph { Glyph=219, Foreground=Color.WhiteSmoke };
-                this.DrawBox(new Rectangle(0, 0, Width, Height), boxCell);
-                this.DrawLine(new Point(1, 0), new Point(Width-2, 0), boxCell.Foreground, DefaultBackground, 223);
-                this.DrawLine(new Point(1, Height-1), new Point(Width-2, Height-1), boxCell.Foreground, DefaultBackground, 220);
+            logFrame.Clear();
+            var boxCell = new SadConsole.ColoredGlyph { Glyph=219, Foreground=Color.WhiteSmoke };
+            logFrame.DrawBox(new Rectangle(0, 0, logFrame.Width, logFrame.Height), boxCell);
+            logFrame.DrawLine(new Point(1, 0), new Point(logFrame.Width-2, 0), boxCell.Foreground, logFrame.DefaultBackground, 223);
+            logFrame.DrawLine(new Point(1, logFrame.Height-1), new Point(logFrame.Width-2, logFrame.Height-1), boxCell.Foreground, logFrame.DefaultBackground, 220);
 
-                msgDisplay.Clear();
-                msgDisplay.Cursor.AutomaticallyShiftRowsUp = true;
-                msgDisplay.Cursor.UseLinuxLineEndings = true;
+            msgDisplay.Clear();
+            msgDisplay.Cursor.AutomaticallyShiftRowsUp = true;
+            msgDisplay.Cursor.UseLinuxLineEndings = true;
 
-                msgDisplay.Cursor.Move(0, 0);
-                msgDisplay.Cursor.Print(string.Join("\n", RecentMessages));
-            }
-
-            base.Draw(timeElapsed);
-        }
-
-        public void AddMessage(string msg) 
-        {
-            dirty = true;
-            messages.Add(msg);
-            this.IsVisible = true;
+            msgDisplay.Cursor.Move(0, 0);
+            msgDisplay.Cursor.Print(string.Join("\n", msgs));
         }
 
         public void ToggleVisible()
         {
-            this.IsVisible = !this.IsVisible;
-        }
-
-        public void ClearMessages()
-        {
-            dirty = false;
-            messages.Clear();
+            root.IsVisible = !root.IsVisible;
         }
     }
 }

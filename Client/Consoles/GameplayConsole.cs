@@ -50,14 +50,15 @@ namespace Client.Consoles
         }
 
         public Consoles.TileMap TileMap { get; }
-        public Consoles.MessageLog MessageLog { get; }
-        public Consoles.DebugStats DebugStatsDisplay = new Consoles.DebugStats();
+        public Consoles.DebugStats DebugStatsDisplay { get; } = new Consoles.DebugStats();
+        private readonly Consoles.MessageLog messageLogConsole;
 
         public GameServer Server { get; }
         public Choreographer<MapActor> Choreographer { get; } = new Choreographer<MapActor>();
         public Util.CoroutineContainer Coroutines { get; } = new Util.CoroutineContainer();
 
         public ActorSet MapActors { get; } = new ActorSet();
+        public GameMessageLog MessageLog { get; } = new GameMessageLog();
 
         public bool ShouldReturnToTitle { get; private set; } = false;
 
@@ -79,8 +80,7 @@ namespace Client.Consoles
 
             TileMap = new Consoles.TileMap(this);
 
-            MessageLog = new Consoles.MessageLog();
-            Children.Add(MessageLog);
+            messageLogConsole = new Consoles.MessageLog(this, MessageLog);
 
             Children.Add(DebugStatsDisplay);
 
@@ -216,7 +216,7 @@ namespace Client.Consoles
                 ShouldReturnToTitle = true;
 
             if (info.IsKeyPressed(Keys.L))
-                MessageLog.ToggleVisible();
+                messageLogConsole.ToggleVisible();
 
             if (info.IsKeyPressed(Keys.F5))
             {
@@ -279,12 +279,7 @@ namespace Client.Consoles
         public void OnWindowResize(int width, int height)
         {
             TileMap.ResizeViewportPx(width, height);
-
-            var msgW = width / MessageLog.FontSize.X * 3 / 5;
-            var msgH = height / MessageLog.FontSize.Y * 1 / 5;
-            int msgX = width / 2;
-            int msgY = height - 40;
-            MessageLog.Reposition(msgX, msgY, msgW, msgH);
+            messageLogConsole.Reposition(width, height, MessageLog);
         }
     }
 }

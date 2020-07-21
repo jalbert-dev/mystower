@@ -60,7 +60,7 @@ namespace Client
             }
         }
 
-        public static IEnumerable Death(Consoles.MessageLog msg, MapActor actor, Action whenDone)
+        public static IEnumerable Death(GameMessageLog msg, MapActor actor, Action whenDone)
         {
             msg.AddMessage("Actor is defeated!");
             for (int i = 0; i < 10; i++)
