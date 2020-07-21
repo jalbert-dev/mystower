@@ -20,7 +20,7 @@ namespace Tests.Server.Generators
              => from hp in Gen.Choose(1, 30)
                 select new ActorStatus(hp: hp);
 
-        static ActorArchetype defaultArchetype =
+        private static readonly ActorArchetype defaultArchetype =
             new ActorArchetype(
                 lvlMinStatus: new StatBlock(),
                 lvlMaxStatus: new StatBlock(),
@@ -33,7 +33,7 @@ namespace Tests.Server.Generators
         
         static ActorGen()
         {
-            DefaultDatabase.AddDatabase<ActorArchetype>(
+            DefaultDatabase.AddDatabase(
                 new System.Collections.Generic.Dictionary<string, ActorArchetype>()
                 {
                     ["DefaultArchetype"] = defaultArchetype

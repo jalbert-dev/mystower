@@ -19,8 +19,8 @@ namespace Tests.Util.FunctionalTests
     }
     static class Helpers
     {
-        public static Res.GenericError err(string msg) => Res.Error(new TestErr { value = msg });
-        public static global::Util.Functional.Result<T> err<T>(string msg) => err(msg);
+        public static Res.GenericError Err(string msg) => Res.Error(new TestErr { value = msg });
+        public static global::Util.Functional.Result<T> Err<T>(string msg) => Err(msg);
     }
 
     public class OptionTests
@@ -174,7 +174,7 @@ namespace Tests.Util.FunctionalTests
         [Fact] public void IsSuccessReflectsContents()
         {
             Res.Ok(5).IsSuccess.Should().BeTrue();
-            ((Result<int>)err("")).IsSuccess.Should().BeFalse();
+            ((Result<int>)Err("")).IsSuccess.Should().BeFalse();
         }
 
         [Property] public bool OkContainsGivenValue(string str)
@@ -195,7 +195,7 @@ namespace Tests.Util.FunctionalTests
 
         [Fact] public void AccessingValueOfErrorResultThrows()
         {
-            Func<int> f = () => ((Result<int>)err("honk")).Value;
+            Func<int> f = () => ((Result<int>)Err("honk")).Value;
             f.Should().Throw<ResultNotSuccessException>("because non-Success Results may not have a value");
         }
 
@@ -230,7 +230,7 @@ namespace Tests.Util.FunctionalTests
 
         [Fact] public void ErrorMapsToSameErrorAndDoesntCallMapper()
         {
-            var result = err<int>("An error!");
+            var result = Err<int>("An error!");
             bool mapperCalled = false;
             var mapped = result.Map(x => {
                 mapperCalled = true;
@@ -244,7 +244,7 @@ namespace Tests.Util.FunctionalTests
 
         [Fact] public void ErrorBindsToSameErrorAndDoesntCallBinder()
         {
-            var result = err<int>("An error!");
+            var result = Err<int>("An error!");
             bool mapperCalled = false;
             var mapped = result.Bind(x => {
                 mapperCalled = true;
@@ -267,9 +267,9 @@ namespace Tests.Util.FunctionalTests
             Res.Ok(5)
                 .Map(x => x + 5)
                 .Bind(x => Res.Ok(x - 3))
-                .Bind<int>(x => err("This is an error!"))
+                .Bind<int>(x => Err("This is an error!"))
                 .Map(x => x * 64)
-                .Bind<int>(x => err("This, too is an error..."))
+                .Bind<int>(x => Err("This, too is an error..."))
                 .Err.Message.Should().Be("This is an error!",
                     "because the first error in a chain of maps/binds should be the end result");
         }
@@ -298,7 +298,7 @@ namespace Tests.Util.FunctionalTests
         [Fact] public void FinallyWithErrorDoesntInvokeActionAndGivesSameErrorResult()
         {
             bool invoked = false;
-            var result = err<int>("This is an error!");
+            var result = Err<int>("This is an error!");
             var finalResult = result.Finally(value => invoked = true);
             invoked.Should().BeFalse();
             finalResult.Err.Should().BeSameAs(result.Err);
@@ -309,7 +309,7 @@ namespace Tests.Util.FunctionalTests
                     .Should().BeEquivalentTo(Res.Ok(4));
                     
         [Fact] public void LinqQueryOnErrorResultProducesError()
-             => (from x in err<int>("Error") select x * 2)
+             => (from x in Err<int>("Error") select x * 2)
                     .IsSuccess.Should().BeFalse();
         
         [Fact] public void LinqCompoundQueryOnOkResultsProducesOk()
@@ -328,7 +328,7 @@ namespace Tests.Util.FunctionalTests
             var result = 
                 from x in Res.Ok(2)
                 from y in Res.Ok(5)
-                from z in err<int>("error")
+                from z in Err<int>("error")
                 from a in Res.Ok(7)
                 select mapper(x, y, z, a);
 

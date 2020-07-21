@@ -12,20 +12,19 @@ namespace Tests.Client
         {
             public int position = 0;
         }
-        ChoreographyStep<TestActor> Step = new ChoreographyStep<TestActor>();
+
+        private readonly ChoreographyStep<TestActor> Step = new ChoreographyStep<TestActor>();
 
         static IEnumerable YieldInstantly(Action? action = null) 
         {
-            if (action != null)
-                action();
+            action?.Invoke();
             yield break;
         }
         static IEnumerable ForNUpdatesDo(int count = 1, Action? action = null)
         {
             for (int i = 0; i < count; i++)
             {
-                if (action != null)
-                    action();
+                action?.Invoke();
                 yield return null;
             }
         }
@@ -48,7 +47,7 @@ namespace Tests.Client
             Step.Clear();
             
             Step.IsDone.Should().BeTrue();
-            actor.position.Should().Be(default(int));
+            actor.position.Should().Be(default);
         }
 
         [Fact] public void UpdatePerformsQueuedWork()
@@ -145,7 +144,7 @@ namespace Tests.Client
             FluentActions.Invoking(() => Step.Update()).Should().NotThrow(
                 "because queued work should be able to clear the queue during execution");
             Step.IsDone.Should().BeTrue();
-            actor.position.Should().Be(default(int));
+            actor.position.Should().Be(default);
         }
     }
 }

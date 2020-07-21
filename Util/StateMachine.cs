@@ -36,7 +36,7 @@ namespace Util
                 return previous!;
 
             var interrupt = previous?.OnExit(host);
-            newState = interrupt != null ? interrupt : newState;
+            newState = interrupt ?? newState;
             return ResolveTransition(host, newState, newState.OnEnter(host));
         }
 

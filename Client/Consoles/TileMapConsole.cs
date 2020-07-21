@@ -7,106 +7,109 @@ using Server.Data;
 using static SadConsole.Font;
 using static SadConsole.RectangleExtensions;
 
-namespace Client.Consoles
+namespace Client
 {
-    public class TileMap
+    public static partial class Consoles
     {
-        private ScreenObject Root = new ScreenObject();
-
-        private Dictionary<string, PerPixelTileMap> layers = new Dictionary<string, PerPixelTileMap>();
-
-        private PerPixelTileMap Grid => layers["grid"];
-        private PerPixelTileMap Map => layers["map"];
-        private PerPixelTileMap Entity => layers["entity"];
-
-        public SadConsole.IScreenObject EntityLayer => Entity.TransformRoot;
-
-        public Point TileSize => Map.FontSize;
-
-        public bool IsGridVisible { set => Grid.IsVisible = value; }
-
-        public TileMap(IScreenObject parent) : base()
+        public class TileMap
         {
-            Root.Parent = parent;
+            private readonly ScreenObject Root = new ScreenObject();
 
-            var mapFont = SadConsole.GameHost.Instance.Fonts["Tileset"];
-            var mapFontSize = mapFont.GetFontSize(Sizes.Four);
+            private readonly Dictionary<string, PerPixelTileMap> layers = new Dictionary<string, PerPixelTileMap>();
 
-            var gridFont = SadConsole.GameHost.Instance.Fonts["Directionals"];
-            var gridFontSize = gridFont.GetFontSize(Sizes.Four);
+            private PerPixelTileMap Grid => layers["grid"];
+            private PerPixelTileMap Map => layers["map"];
+            private PerPixelTileMap Entity => layers["entity"];
 
-            var pixelWidth = SadConsole.Settings.Rendering.RenderWidth;
-            var pixelHeight = SadConsole.Settings.Rendering.RenderHeight;
+            public IScreenObject EntityLayer => Entity.TransformRoot;
 
-            layers["map"] = new PerPixelTileMap(Root)
+            public Point TileSize => Map.FontSize;
+
+            public bool IsGridVisible { set => Grid.IsVisible = value; }
+
+            public TileMap(IScreenObject parent) : base()
             {
-                DefaultBackground = Color.Black,
-                Font = mapFont,
-                FontSize = mapFontSize,
-            };
+                Root.Parent = parent;
 
-            layers["grid"] = new PerPixelTileMap(Root)
-            {
-                DefaultBackground = Color.Transparent,
-                Font = gridFont,
-                FontSize = gridFontSize,
-            };
+                var mapFont = GameHost.Instance.Fonts["Tileset"];
+                var mapFontSize = mapFont.GetFontSize(Sizes.Four);
 
-            layers["entity"] = new PerPixelTileMap(Root)
-            {
-                DefaultBackground = Color.Transparent,
-                Font = mapFont,
-                FontSize = mapFontSize,
-            };
+                var gridFont = GameHost.Instance.Fonts["Directionals"];
+                var gridFontSize = gridFont.GetFontSize(Sizes.Four);
 
-            ResizeViewportPx(pixelWidth, pixelHeight);
-        }
+                var pixelWidth = Settings.Rendering.RenderWidth;
+                var pixelHeight = Settings.Rendering.RenderHeight;
 
-        public void RebuildTileMap(Server.Data.TileMap map)
-        {
-            int w = map.Width;
-            int h = map.Height;
+                layers["map"] = new PerPixelTileMap(Root)
+                {
+                    DefaultBackground = Color.Black,
+                    Font = mapFont,
+                    FontSize = mapFontSize,
+                };
 
-            foreach (var layer in layers.Values)
-            {
-                layer.SetMapSize(w, h);
-                layer.Clear();
+                layers["grid"] = new PerPixelTileMap(Root)
+                {
+                    DefaultBackground = Color.Transparent,
+                    Font = gridFont,
+                    FontSize = gridFontSize,
+                };
+
+                layers["entity"] = new PerPixelTileMap(Root)
+                {
+                    DefaultBackground = Color.Transparent,
+                    Font = mapFont,
+                    FontSize = mapFontSize,
+                };
+
+                ResizeViewportPx(pixelWidth, pixelHeight);
             }
 
-            // VERY temporary...
-            var r = new Random();
-            var Grass = new List<int> { 5, 6, 7, 1 };
-            var Tree = new List<int> { 48, 49, 50, 51 };
-
-            for (int i = 0; i < w; i++)
+            public void RebuildTileMap(Server.Data.TileMap map)
             {
-                for (int j = 0; j < h; j++)
+                int w = map.Width;
+                int h = map.Height;
+
+                foreach (var layer in layers.Values)
                 {
-                    Map.SetGlyph(i, j,
-                        map[i,j] == 0 ? Grass[r.Next(4)] : Tree[r.Next(4)],
-                        map[i,j] == 0 ? Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()) : Color.DarkGreen,
-                        Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
-                    Grid.SetGlyph(i, j, 10, Color.Black.SetAlpha(128));
+                    layer.SetMapSize(w, h);
+                    layer.Clear();
+                }
+
+                // VERY temporary...
+                var r = new Random();
+                var Grass = new List<int> { 5, 6, 7, 1 };
+                var Tree = new List<int> { 48, 49, 50, 51 };
+
+                for (int i = 0; i < w; i++)
+                {
+                    for (int j = 0; j < h; j++)
+                    {
+                        Map.SetGlyph(i, j,
+                            map[i,j] == 0 ? Grass[r.Next(4)] : Tree[r.Next(4)],
+                            map[i,j] == 0 ? Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()) : Color.DarkGreen,
+                            Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
+                        Grid.SetGlyph(i, j, 10, Color.Black.SetAlpha(128));
+                    }
                 }
             }
-        }
 
-        public void CenterViewOn(MapActor cameraFocus)
-        {
-            foreach (var layer in layers.Values)
-                layer.CenterViewOn(cameraFocus.Position.X, cameraFocus.Position.Y);
-        }
+            public void CenterViewOn(MapActor cameraFocus)
+            {
+                foreach (var layer in layers.Values)
+                    layer.CenterViewOn(cameraFocus.Position.X, cameraFocus.Position.Y);
+            }
 
-        public void ResizeViewportPx(int width, int height)
-        {
-            foreach (var layer in layers.Values)
-                layer.ResizeViewportPx(width, height);
-        }
+            public void ResizeViewportPx(int width, int height)
+            {
+                foreach (var layer in layers.Values)
+                    layer.ResizeViewportPx(width, height);
+            }
 
-        public void SetMapSize(int tileWidth, int tileHeight)
-        {
-            foreach (var layer in layers.Values)
-                layer.SetMapSize(tileWidth, tileHeight);
+            public void SetMapSize(int tileWidth, int tileHeight)
+            {
+                foreach (var layer in layers.Values)
+                    layer.SetMapSize(tileWidth, tileHeight);
+            }
         }
     }
 }

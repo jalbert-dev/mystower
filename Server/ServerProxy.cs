@@ -5,7 +5,7 @@ namespace Server
 {
     public class ServerContext : IServerContext
     {
-        List<IGameMessage> messages = new List<IGameMessage>();
+        private readonly List<IGameMessage> messages = new List<IGameMessage>();
 
         public void EmitClientMessage(IGameMessage message) => messages.Add(message);
         public List<IGameMessage> PopMessages()

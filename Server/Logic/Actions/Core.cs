@@ -23,8 +23,8 @@ namespace Server.Logic
                 this.dy = dy;
             }
 
-            public int dx { get; }
-            public int dy { get; }
+            public readonly int dx;
+            public readonly int dy;
 
             public int Execute(IServerContext server, GameState gs, Actor actor)
             {
@@ -49,8 +49,8 @@ namespace Server.Logic
 
         public class Face : IAction
         {
-            public int dx { get; }
-            public int dy { get; }
+            public readonly int dx;
+            public readonly int dy;
 
             public Face(int dx, int dy) => (this.dx, this.dy) = (dx, dy);
 

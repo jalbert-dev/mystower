@@ -182,17 +182,17 @@ namespace CodeGen
         private static string ValCloneExpression(VariableDeclaratorSyntax var)
             => $"{var.Identifier}";
 
-        public static async Task<string> BuildNamedConstructorArg(TypeSyntax type, VariableDeclaratorSyntax var, CSharpCompilation compilation)
+        public static async Task<string> BuildNamedConstructorArg(VariableDeclaratorSyntax var, CSharpCompilation compilation)
             => $"{var.Identifier}: {(await DeclaredDeepCloneable(var, compilation) ? RefCloneExpression(var) : ValCloneExpression(var))}";
         
         public static async Task<MemberDeclarationSyntax> ImplementIDeepCloneable(ClassDeclarationSyntax classType, CSharpCompilation compilation)
              => ParseMemberDeclaration($@"
                     public {classType.Identifier} DeepClone()
                         => new {classType.Identifier}(
-                            {string.Join(",\n", await Task.WhenAll(GetFieldVariableDeclarations(classType).Select(async x => await BuildNamedConstructorArg(x.Item1, x.var, compilation)).ToArray()))});
+                            {string.Join(",\n", await Task.WhenAll(GetFieldVariableDeclarations(classType).Select(async x => await BuildNamedConstructorArg(x.var, compilation)).ToArray()))});
                 ");
 
-        public static MemberDeclarationSyntax BuildToStringForRecord(ClassDeclarationSyntax cls)
+        public static MemberDeclarationSyntax BuildToStringForRecord()
              => ParseMemberDeclaration(@"
                     public override string ToString() => global::Util.Stringify.ToPrettyJson(this);
                 ");

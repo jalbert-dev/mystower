@@ -17,8 +17,8 @@ namespace Server.Database
     [CodeGen.DatabaseType]
     public partial class ActorArchetype
     {
-        private StatBlock lvlMinStatus = default(StatBlock);
-        private StatBlock lvlMaxStatus = default(StatBlock);
+        private StatBlock lvlMinStatus = default;
+        private StatBlock lvlMaxStatus = default;
         private string defaultAiType = "";
 
         private string nameId = "";

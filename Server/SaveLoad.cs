@@ -10,13 +10,13 @@ namespace Server
     {
         public class ErrorSavingGame : IError
         {
-            JsonException exception;
+            private readonly JsonException exception;
             public ErrorSavingGame(JsonException exception) => this.exception = exception;
             public string Message => $"Error saving game: {exception.Message}";
         }
         public class ErrorLoadingGame : IError
         {
-            JsonException exception;
+            private readonly JsonException exception;
             public ErrorLoadingGame(JsonException exception) => this.exception = exception;
             public string Message => $"Error loading game: {exception.Message}";
         }

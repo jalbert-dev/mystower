@@ -17,17 +17,16 @@ namespace Client.State
 
         public SadConsole.UI.Controls.Label lblName = new SadConsole.UI.Controls.Label("MYSTOWER");
 
-        enum Transition
+        private enum Transition
         {
             None,
             NewGame,
             LoadGame,
         }
 
-        Transition nextScreen = Transition.None;
-
-        List<SadConsole.UI.Controls.Button> focusOrder;
-        int focused = 0;
+        private Transition nextScreen = Transition.None;
+        private readonly List<SadConsole.UI.Controls.Button> focusOrder;
+        private int focused = 0;
         public TitleScreen() : base(1, 1) 
         {
             btnNewGame.Text = "New Game";
@@ -70,7 +69,7 @@ namespace Client.State
         {
             if (focused < 0)
                 focused += focusOrder.Count;
-            focused = focused % focusOrder.Count;
+            focused %= focusOrder.Count;
             for (int i = 0; i < focusOrder.Count; i++)
                 focusOrder[i].IsFocused = i == focused;
         }

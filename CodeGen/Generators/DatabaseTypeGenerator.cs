@@ -14,7 +14,7 @@ namespace CodeGen
 {
     public class DatabaseTypeGenerator : ICodeGenerator
     {
-        public DatabaseTypeGenerator(AttributeData attributeData) 
+        public DatabaseTypeGenerator(AttributeData _) 
         {
         }
 

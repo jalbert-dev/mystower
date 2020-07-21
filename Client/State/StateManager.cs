@@ -10,7 +10,7 @@ namespace Client
 
     public class StateManager : SadConsole.ScreenObject
     {
-        StateMachine<StateManager> Machine;
+        private readonly StateMachine<StateManager> Machine;
 
         public StateManager(IState<StateManager> startState)
         {

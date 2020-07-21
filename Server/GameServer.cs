@@ -13,7 +13,7 @@ namespace Server
     {
         public class InvalidAI : IError
         {
-            string type;
+            private readonly string type;
             public InvalidAI(string type) => this.type = type;
             public string Message => $"Invalid AI type '{type}'.";
         }
@@ -88,12 +88,11 @@ namespace Server
 
     public class GameServer
     {
-        ServerContext proxyClient;
-        RWLocked<GameState> gameStateLock { get; }
-        Actor? waitingOn = null;
+        private readonly ServerContext proxyClient;
+        private readonly RWLocked<GameState> gameStateLock;
+        private Actor? waitingOn = null;
         public readonly Util.Database Database;
-
-        static List<IGameMessage> emptyMessageList = new List<IGameMessage>();
+        private static readonly List<IGameMessage> emptyMessageList = new List<IGameMessage>();
 
         internal GameServer(GameState state, Util.Database db)
         {
@@ -195,7 +194,7 @@ namespace Server
                     none: () => Result.Ok<Option<Actor>>(Option.None),
                     some: actor => PerformActorAI(gameState, actor));
 
-        private IEnumerable<IGameMessage> clientInitMessages(GameState gameState)
+        private IEnumerable<IGameMessage> ClientInitMessages(GameState gameState)
         {
             yield return new Message.MapChanged(gameState.Map);
             foreach (var actor in gameState.Actors)
@@ -207,7 +206,7 @@ namespace Server
         /// a client to the current world state.
         /// </summary>
         public IEnumerable<IGameMessage> GetClientInitMessages() 
-            => gameStateLock.ReadResource(clientInitMessages);
+            => gameStateLock.ReadResource(ClientInitMessages);
 
         /// <summary>
         /// Runs world simulation, and returns a SimResult object containing

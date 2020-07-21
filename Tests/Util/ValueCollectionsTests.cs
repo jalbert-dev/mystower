@@ -25,6 +25,8 @@ namespace Tests.Util.ValueCollections
         {
             var a = new ValueList<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             var b = new ValueList<int> { 1, 2, 3, 4, 5, 6, 7, 8, 8 };
+
+            a.Equals(b).Should().BeFalse();
         }
 
         // TODO: .Equal() tests for struct and IEquatable class

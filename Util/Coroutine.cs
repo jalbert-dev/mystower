@@ -85,12 +85,12 @@ namespace Util
 
         void Add(IEnumerable enumerable) => callstack.Push(enumerable.GetEnumerator());
 
-        Stack<IEnumerator> callstack;
+        private readonly Stack<IEnumerator> callstack;
     }
 
     public class CoroutineContainer
     {
-        List<Coroutine> coroutines = new List<Coroutine>();
+        private readonly List<Coroutine> coroutines = new List<Coroutine>();
 
         /// <summary>
         /// Creates a coroutine for the given enumerable and adds it to the

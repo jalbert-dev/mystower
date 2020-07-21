@@ -57,8 +57,10 @@ namespace Server.Data
 
         public TileMap DeepClone()
         {
-            var result = new TileMap(0, 0);
-            result.tiles = tiles;
+            var result = new TileMap(0, 0)
+            {
+                tiles = tiles
+            };
             return result;
         }
     }

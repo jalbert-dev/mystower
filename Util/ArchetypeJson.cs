@@ -162,9 +162,8 @@ namespace Util
             if (reader.Value == null)
                 return null!;
 
-            var key = reader.Value as string;
 
-            if (key == null)
+            if (!(reader.Value is string key))
                 throw new JsonException($"Unable to read '{typeof(T).FullName}' string key from JSON.");
 
             return GetContextDatabase(serializer)
@@ -178,9 +177,6 @@ namespace Util
 
     public static class ArchetypeJson
     {
-        private static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> self, out TKey key, out TValue value)
-            => (key, value) = (self.Key, self.Value);
-
         private static Result<JToken> ValidateIsStringToken(JToken token, string contextNodeName)
              => token.Type == JTokenType.String ? 
                     Result.Ok(token) :

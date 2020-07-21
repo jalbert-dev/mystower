@@ -15,7 +15,7 @@ namespace CodeGen
 
     public class GameDataNodeGenerator : ICodeGenerator
     {
-        public GameDataNodeGenerator(AttributeData attributeData) 
+        public GameDataNodeGenerator(AttributeData _) 
         {
         }
 
@@ -110,7 +110,7 @@ namespace CodeGen
                 .AddMembers(BuildPropsForFieldsInRecord(classType).ToArray())
                 .AddMembers(ImplementIEquatable(classType).ToArray())
                 .AddMembers(await ImplementIDeepCloneable(classType, context.Compilation))
-                .AddMembers(BuildToStringForRecord(classType));
+                .AddMembers(BuildToStringForRecord());
 
             classType = classType
                 .AddBaseListTypes(

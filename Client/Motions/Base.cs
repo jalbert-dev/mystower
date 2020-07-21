@@ -16,7 +16,7 @@ namespace Client
 
         public static IEnumerable Wiggle(MapActor actor, int duration, int speed, int amplitude)
         {
-            Point offset = default(Point);
+            Point offset = default;
             bool dir = false;
 
             for (int t = 0; t <= duration; t++)
@@ -39,10 +39,10 @@ namespace Client
                                         float depth,
                                         Action middle)
         {
-            var offset = default(Point);
             var extent = tileSize * depth * new Point(actor.Facing.x, actor.Facing.y);
             var extentf = new Vector2(extent.X, extent.Y);
-            
+
+            Point offset;
             for (int i = 1; i <= t1; i++)
             {
                 offset = Vector2.LerpPrecise(Vector2.Zero, extentf, (float)i / t1).ToPoint().ToPoint();

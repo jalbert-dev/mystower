@@ -9,11 +9,9 @@ namespace Client
     public class ChoreographyStep<T> where T : class
     {
         private const int INITIAL_MOTION_LIST_LEN = 4;
-
-        Dictionary<T, List<Coroutine>> motions = new Dictionary<T, List<Coroutine>>();
-        List<(T, IEnumerable)> deferred = new List<(T, IEnumerable)>();
-
-        bool deferQueuing = false;
+        private readonly Dictionary<T, List<Coroutine>> motions = new Dictionary<T, List<Coroutine>>();
+        private readonly List<(T, IEnumerable)> deferred = new List<(T, IEnumerable)>();
+        private bool deferQueuing = false;
 
         public bool IsDone => motions.Values.All(x => x.Count == 0);
 
@@ -91,14 +89,14 @@ namespace Client
     /// </summary>
     public class Choreographer<T> where T : class
     {
-        List<ChoreographyStep<T>> steps = new List<ChoreographyStep<T>>(16);
+        readonly List<ChoreographyStep<T>> steps = new List<ChoreographyStep<T>>(16);
 
         /// <summary>
         /// Returns whether the choreographer has motions to execute.
         /// </summary>
         public bool IsBusy => steps.Count != 0;
 
-        public void Update(TimeSpan timeElapsed)
+        public void Update(TimeSpan _)
         {
             var currentStep = steps.FirstOrDefault();
 

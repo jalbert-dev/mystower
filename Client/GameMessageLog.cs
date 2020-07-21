@@ -13,7 +13,7 @@ namespace Client
     public class GameMessageLog : ILogMessageSource
     {
 
-        private List<string> messages = new List<string>(256);
+        private readonly List<string> messages = new List<string>(256);
 
         public event ILogMessageSource.LogMessageHandler? OnNewMessage;
 

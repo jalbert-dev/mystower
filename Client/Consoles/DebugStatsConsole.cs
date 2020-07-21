@@ -2,39 +2,42 @@ using System;
 using SadConsole;
 using SadRogue.Primitives;
 
-namespace Client.Consoles
+namespace Client
 {
-    public class DebugStats : SadConsole.Console
+    public static partial class Consoles
     {
-        public long LastSimulationTime { get; set; }
-        public long UpdateDelta { get; set; }
-        public long RenderDelta { get; set; }
-        public long Frame { get; set; }
-
-        public DebugStats() : base(40, 4)
+        public class DebugStats : SadConsole.Console
         {
-            DefaultBackground = Color.Transparent;
-            IsVisible = false;
+            public long LastSimulationTime { get; set; }
+            public long UpdateDelta { get; set; }
+            public long RenderDelta { get; set; }
+            public long Frame { get; set; }
 
-            Cursor.UseLinuxLineEndings = true;
-            Cursor.PrintAppearance = new SadConsole.ColoredGlyph 
-            { 
-                Foreground=Color.White, 
-                Background=Color.Transparent 
-            };
-        }
+            public DebugStats() : base(40, 4)
+            {
+                DefaultBackground = Color.Transparent;
+                IsVisible = false;
 
-        public override void Draw(TimeSpan delta)
-        {
-            Frame = (Frame+1) % 1000;
+                Cursor.UseLinuxLineEndings = true;
+                Cursor.PrintAppearance = new SadConsole.ColoredGlyph 
+                { 
+                    Foreground=Color.White, 
+                    Background=Color.Transparent 
+                };
+            }
 
-            this.Clear();
-            Cursor.Position = new Point(0, 0);
-            Cursor.Print($"Last simulation time: {LastSimulationTime}ms\n");
-            Cursor.Print($"   Last update delta: {UpdateDelta}ms\n");
-            Cursor.Print($"   Last render delta: {RenderDelta}ms\n");
-            Cursor.Print($"               Frame: {Frame}");
-            base.Draw(delta);
+            public override void Draw(TimeSpan delta)
+            {
+                Frame = (Frame+1) % 1000;
+
+                this.Clear();
+                Cursor.Position = new Point(0, 0);
+                Cursor.Print($"Last simulation time: {LastSimulationTime}ms\n");
+                Cursor.Print($"   Last update delta: {UpdateDelta}ms\n");
+                Cursor.Print($"   Last render delta: {RenderDelta}ms\n");
+                Cursor.Print($"               Frame: {Frame}");
+                base.Draw(delta);
+            }
         }
     }
 }

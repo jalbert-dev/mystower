@@ -15,13 +15,13 @@ namespace Client
         public Vec2i Facing { get; set; }
         public bool ShowFacingMarker { get => facingMarker.IsVisible; set => facingMarker.IsVisible = value; }
 
-        private Entity facingMarker;
+        private readonly Entity facingMarker;
 
         // TODO!: This constructor should take a Font instead of using the parent console's Font.
         //        Once that's taken care of, remove the requirement entirely and have caller set parent.
         public MapActor(DataHandle<Actor> actor) : base(1,1)
         {
-            this.Actor = actor;
+            Actor = actor;
             
             Animation.UsePixelPositioning = true;
 

@@ -8,7 +8,7 @@ namespace Server.Logic
         public static bool IsTileWalkable(TileMap map, int x, int y)
             => map[x, y] == 0;
 
-        public static bool IsTileOccupied(TileMap map, IEnumerable<Actor> actors, int x, int y)
+        public static bool IsTileOccupied(IEnumerable<Actor> actors, int x, int y)
         {
             var target = new Vec2i { x=x, y=y };
             foreach (var a in actors)
@@ -23,6 +23,6 @@ namespace Server.Logic
         public static bool CanMoveInto(TileMap map, IEnumerable<Actor> actors, int x, int y)
             => IsInBounds(map, x, y) && 
                IsTileWalkable(map, x, y) && 
-               !IsTileOccupied(map, actors, x, y);
+               !IsTileOccupied(actors, x, y);
     }
 }
