@@ -319,6 +319,13 @@ namespace Tests.Util.FunctionalTests
                  from a in Res.Ok(7)
                  select x + y + z + a)
                 .Should().BeEquivalentTo(Res.Ok(2 + 3 + 5 + 7));
+
+        [Fact] public void LinqCompoundQuerySupportsVaryingTypes()
+             => (from x in Res.Ok(2)
+                 from y in Res.Ok("honk")
+                 from z in Res.Ok(1.4f)
+                 select x.ToString() + y + z.ToString())
+                .Should().BeEquivalentTo(Res.Ok("2honk1.4"));
         
         [Fact] public void LinqCompoundQueryProducesErrorAndDoesntRunMapper()
         { 

@@ -3,11 +3,18 @@
   <ItemGroup>
     <ProjectReference Include="..\Util\Util.csproj" />
     <ProjectReference Include="..\Server\Server.csproj" />
+    
+    <ProjectReference Include="..\CodeGen\Attributes\Attributes.csproj" />
+    <ProjectReference Include="..\CodeGen\Generators\Generators.csproj" OutputItemType="CodeGenerationRoslynPlugin" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="SadConsole.Host.MonoGame" Version="9.0.0-alpha6" />
     <PackageReference Include="SadConsole" Version="9.0.0-alpha6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CodeGeneration.Roslyn.Tool" Version="0.7.63" />
   </ItemGroup>
 
   <PropertyGroup>

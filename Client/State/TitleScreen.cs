@@ -33,7 +33,7 @@ namespace Client.State
             btnLoadGame.Text = "Load Game";
             btnExit.Text = "Exit";
 
-            lblName.Alignment = SadConsole.HorizontalAlignment.Center;
+            lblName.Alignment = HorizontalAlignment.Center;
             
             ControlHostComponent.Add(btnNewGame);
             ControlHostComponent.Add(btnLoadGame);
@@ -42,7 +42,7 @@ namespace Client.State
 
             btnNewGame.Click += (a, b) => nextScreen = Transition.NewGame;
             btnLoadGame.Click += (a, b) => nextScreen = Transition.LoadGame;
-            btnExit.Click += (a, b) => System.Environment.Exit(0);
+            btnExit.Click += (a, b) => Environment.Exit(0);
 
             focusOrder = new List<SadConsole.UI.Controls.Button>()
             {
@@ -52,7 +52,7 @@ namespace Client.State
             };
             TriggerFocus();
 
-            OnWindowResize(SadConsole.Settings.Rendering.RenderWidth, SadConsole.Settings.Rendering.RenderHeight);
+            OnWindowResize(Settings.Rendering.RenderWidth, Settings.Rendering.RenderHeight);
         }
 
         public void OnWindowResize(int width, int height)
@@ -60,7 +60,7 @@ namespace Client.State
             var (w, h) = (width / FontSize.X, height / FontSize.Y);
             Resize(w, h, w, h, false);
 
-            btnNewGame.Position = new SadRogue.Primitives.Point(w / 2 - btnNewGame.Width / 2, h / 2);
+            btnNewGame.Position = new Point(w / 2 - btnNewGame.Width / 2, h / 2);
             btnLoadGame.PlaceRelativeTo(btnNewGame, Direction.Types.Down, 2);
             btnExit.PlaceRelativeTo(btnLoadGame, Direction.Types.Down, 2);
         }
@@ -74,7 +74,7 @@ namespace Client.State
                 focusOrder[i].IsFocused = i == focused;
         }
 
-        public override bool ProcessKeyboard(SadConsole.Input.Keyboard keyboard)
+        public override bool ProcessKeyboard(Keyboard keyboard)
         {
             if (keyboard.IsKeyPressed(Keys.Down))
             {
@@ -102,33 +102,41 @@ namespace Client.State
             return false;
         }
 
-        private Result<Util.Database> LoadDefaultServerDatabases()
+        private static Result<Util.Database> LoadDefaultServerDatabase(IFileSystem fs)
         {
-            Util.Database db = new Database();
-            
-            var dict = ArchetypeJson.Read<Server.Database.ActorArchetype>(
-                File.ReadAllText("Resources/Data/Server/ActorArchetype.json"));
-            if (dict.IsSuccess)
-                db.AddDatabase(dict.Value);
-            else
-                return Result.Error(dict.Err);
+            Util.Database db = new Util.Database();
 
-            return Result.Ok(db);
+            Result<Unit> read_table<T>(string path) => 
+                fs.ReadAllText(path)
+                    .Bind(ArchetypeJson.Read<T>)
+                    .Finally(table => db.AddDatabase(table));
+
+            return
+                read_table<Server.Database.ActorArchetype>("Resources/Data/Server/ActorArchetype.json")
+                .Map(_ => db);
         }
 
         private IState<StateManager>? CreateGameplayState(Func<Util.Database, Result<Server.GameServer>> serverFactory)
         {
+            IFileSystem fs = new LooseFileSystem();
+
             nextScreen = Transition.None;
 
-            return LoadDefaultServerDatabases()
-                    .Bind(serverFactory)
-                    .Match<Gameplay?>(
-                        ok: server => new Gameplay(server),
-                        err: error => {
-                            System.Console.WriteLine($"Error creating server: {error.Message}");
-                            return null;
-                        }
-                    );
+            var result = 
+                from server in 
+                    LoadDefaultServerDatabase(fs).Bind(serverFactory)
+                from clientContext in
+                    ClientContext.Construct(fs)
+                select
+                    new Gameplay(clientContext, server);
+
+            return result.Match<Gameplay?>(
+                ok: server => server,
+                err: error => {
+                    System.Console.WriteLine($"Error creating server: {error.Message}");
+                    return null;
+                }
+            );
         }
 
         public IState<StateManager>? Exec(StateManager obj)

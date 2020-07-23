@@ -11,7 +11,7 @@ namespace Client
         public void HandleMessage(ActorAppeared msg)
         {
             var a = new MapActor(msg.Actor);
-            a.Sync(Client.Server);
+            a.Sync(Client.ClientContext, Client.Server);
             Client.MapActors.Add(a);
         }
 
@@ -75,10 +75,12 @@ namespace Client
                             }
                         }),
                     ChoreographyOrder.Solo);
-            }
-            foreach (var a in msg.Results)
-            {
-                Client.MessageLog.AddMessage($"Actor attacks Actor!");
+                foreach (var a in msg.Results)
+                {
+                    var target = Client.MapActors.Lookup(a.Target);
+                    if (target != null)
+                        Client.MessageLog.AddMessage($"{attacker.DisplayName} attacks {target.DisplayName}!");
+                }
             }
         }
     }

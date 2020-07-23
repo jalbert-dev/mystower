@@ -6,6 +6,7 @@ using Color = SadRogue.Primitives.Color;
 
 using static SadConsole.PointExtensions;
 using Server;
+using Util.Functional;
 
 namespace Client
 {
@@ -15,12 +16,16 @@ namespace Client
         public Vec2i Facing { get; set; }
         public bool ShowFacingMarker { get => facingMarker.IsVisible; set => facingMarker.IsVisible = value; }
 
+        public string DisplayName { get; private set; }
+
         private readonly Entity facingMarker;
 
         // TODO!: This constructor should take a Font instead of using the parent console's Font.
         //        Once that's taken care of, remove the requirement entirely and have caller set parent.
         public MapActor(DataHandle<Actor> actor) : base(1,1)
         {
+            DisplayName = "[NAME NOT SET]";
+
             Actor = actor;
             
             Animation.UsePixelPositioning = true;
@@ -38,18 +43,69 @@ namespace Client
             facingMarker.Parent = this;
         }
 
-        public void Sync(GameServer server)
-            => server.QueryData(Actor, actor => {
-                // TODO!: Sync should require a ClientContext so we can lookup the appropriate font for this actor's archetype
-                Animation.Font = SadConsole.GameHost.Instance.Fonts["Tileset"];
-                Animation.FontSize = Animation.Font.GetFontSize(SadConsole.Font.Sizes.Four);
+        public class TilesetNotFound : IError
+        {
+            private string key;
+            public TilesetNotFound(string key) => this.key = key;
+            public string Message => $"No tileset '{key}' found!";
+        }
 
-                Animation.Surface.Cells[0] = new SadConsole.ColoredGlyph
+        private Result<SadConsole.Font> GetFontByName(string key)
+        {
+            if (!SadConsole.GameHost.Instance.Fonts.TryGetValue(key, out var font))
+                return Result.Error(new TilesetNotFound(key));
+            return Result.Ok(font);
+        }
+
+        private int SetAppearance(Database.ActorAppearance appearance, SadConsole.Font font)
+        {
+            Animation.Font = font;
+            Animation.FontSize = Animation.Font.GetFontSize(SadConsole.Font.Sizes.Four);
+
+            Animation.Surface.Cells[0] = new SadConsole.ColoredGlyph
+            {
+                Foreground = Color.White,
+                Background = Color.Transparent,
+                Glyph = appearance.Glyph,
+            };
+
+            return 0;
+        }
+
+        public void Sync(IClientContext clientContext, GameServer server)
+            => server.QueryData(Actor, actor => {
+                var result =
+                    from appearance in clientContext.Database.Lookup<Database.ActorAppearance>(actor.Archetype.AppearanceId)
+                    from font in GetFontByName(appearance.Tileset)
+                    select SetAppearance(appearance, font);
+                
+                if (!result.IsSuccess)
                 {
-                    Foreground = Color.White,
-                    Background = Color.Transparent,
-                    Glyph = actor.AiType == nameof(Server.Logic.AIType.PlayerControlled) ? 707 : 125,
-                };
+                    // TODO: replace with actual logging call!
+                    System.Console.WriteLine($"Warning: {result.Err.Message}");
+
+                    Animation.Font = SadConsole.GameHost.Instance.Fonts["Tileset"];
+                    Animation.FontSize = Animation.Font.GetFontSize(SadConsole.Font.Sizes.Four);
+
+                    Animation.Surface.Cells[0] = new SadConsole.ColoredGlyph
+                    {
+                        Foreground = Color.White,
+                        Background = Color.Transparent,
+                        Glyph = 1,
+                    };
+                }
+
+                if (clientContext.StringTable.TryGetValue(actor.Archetype.NameId, out var name))
+                {
+                    DisplayName = name;
+                }
+                else
+                {
+                    // TODO: replace with actual logging call!
+                    System.Console.WriteLine($"Unable to find ID '{actor.Archetype.NameId}' in string table!");
+                    DisplayName = actor.Archetype.NameId;
+                }
+
                 Position = new Point(actor.Position.x, actor.Position.y)
                     .SurfaceLocationToPixel(Animation.FontSize.X, Animation.FontSize.Y);
                 Facing = actor.Facing;

@@ -1,0 +1,10 @@
+{
+    "player": {
+        "tileset": "Tileset",
+        "glyph": 707
+    },
+    "squablin": {
+        "tileset": "Tileset",
+        "glyph": 125
+    }
+}

@@ -29,7 +29,7 @@
             "def": 50
         },
         "defaultAiType": "PlayerControlled",
-        "nameId": "Player",
+        "nameId": "NAME_PLAYER",
         "appearanceId": "player"
     },
     
@@ -46,7 +46,7 @@
             "atk": 150,
             "def": 99
         },
-        "nameId": "Squablin",
+        "nameId": "NAME_SQUABLIN",
         "appearanceId": "squablin"
     }
 }

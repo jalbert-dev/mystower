@@ -55,6 +55,7 @@ namespace Client
             public Consoles.DebugStats DebugStatsDisplay { get; } = new Consoles.DebugStats();
             private readonly Consoles.MessageLog messageLogConsole;
 
+            public IClientContext ClientContext { get; }
             public GameServer Server { get; }
             public Choreographer<MapActor> Choreographer { get; } = new Choreographer<MapActor>();
             public Util.CoroutineContainer Coroutines { get; } = new Util.CoroutineContainer();
@@ -75,8 +76,9 @@ namespace Client
             private DataHandle<Actor>? waitingActor;
             private MapActor? fallbackCameraFocusActor;
 
-            public Gameplay(GameServer s) : base(1, 1)
+            public Gameplay(IClientContext ctx, GameServer s) : base(1, 1)
             {
+                ClientContext = ctx;
                 Server = s;
                 msgHandler = new GameplayMessageHandler(this);
 
