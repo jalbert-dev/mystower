@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using SadConsole;
 using SadRogue.Primitives;
-using Server.Data;
 
 using static SadConsole.Font;
-using static SadConsole.RectangleExtensions;
 
 namespace Client
 {
@@ -16,6 +14,8 @@ namespace Client
             private readonly ScreenObject Root = new ScreenObject();
 
             private readonly Dictionary<string, PerPixelTileMap> layers = new Dictionary<string, PerPixelTileMap>();
+
+            private readonly FixedCenterCamera mapCamera;
 
             private PerPixelTileMap Grid => layers["grid"];
             private PerPixelTileMap Map => layers["map"];
@@ -37,8 +37,10 @@ namespace Client
                 var gridFont = GameHost.Instance.Fonts["Directionals"];
                 var gridFontSize = gridFont.GetFontSize(Sizes.Four);
 
-                var pixelWidth = Settings.Rendering.RenderWidth;
-                var pixelHeight = Settings.Rendering.RenderHeight;
+                var widthPixels = Settings.Rendering.RenderWidth;
+                var heightPixels = Settings.Rendering.RenderHeight;
+
+                mapCamera = new FixedCenterCamera(widthPixels, heightPixels);
 
                 layers["map"] = new PerPixelTileMap(Root)
                 {
@@ -61,7 +63,20 @@ namespace Client
                     FontSize = mapFontSize,
                 };
 
-                ResizeViewportPx(pixelWidth, pixelHeight);
+                mapCamera.OnViewSizeChanged += OnCameraViewSizeChange;
+                mapCamera.OnCameraPosChanged += OnCameraViewPosChange;
+            }
+
+            private void OnCameraViewSizeChange(ICamera cam)
+            {
+                foreach (var layer in layers.Values)
+                    layer.SyncViewSizeWithCamera(cam);
+            }
+
+            private void OnCameraViewPosChange(ICamera cam)
+            {
+                foreach (var layer in layers.Values)
+                    layer.SyncViewPosWithCamera(cam);
             }
 
             public void RebuildTileMap(Server.Data.TileMap map)
@@ -95,14 +110,14 @@ namespace Client
 
             public void CenterViewOn(MapActor cameraFocus)
             {
-                foreach (var layer in layers.Values)
-                    layer.CenterViewOn(cameraFocus.Position.X, cameraFocus.Position.Y);
+                mapCamera.SetCenter(
+                    cameraFocus.Position.X + cameraFocus.Animation.FontSize.X / 2,
+                    cameraFocus.Position.Y + cameraFocus.Animation.FontSize.Y / 2);
             }
 
             public void ResizeViewportPx(int width, int height)
             {
-                foreach (var layer in layers.Values)
-                    layer.ResizeViewportPx(width, height);
+                mapCamera.ViewSize = new Point(width, height);
             }
 
             public void SetMapSize(int tileWidth, int tileHeight)

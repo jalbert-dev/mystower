@@ -1,3 +1,4 @@
+using System;
 using SadConsole;
 using SadRogue.Primitives;
 
@@ -5,13 +6,9 @@ namespace Client
 {
     public static partial class Consoles
     {
-        public class PerPixelTileMap : Console
+        public class PerPixelTileMap : SadConsole.Console
         {
             private readonly TileMapRenderer renderer;
-            // since SadConsole doesn't normally support per-pixel scrolling, the
-            // size in pixels of the current viewport is only stored in tiles.
-            // we need this, so we'll store it ourselves
-            private int canvasWidthPx, canvasHeightPx;
 
             private readonly ScreenObject transformRoot;
             public IScreenObject TransformRoot => transformRoot;
@@ -32,34 +29,27 @@ namespace Client
             {
                 Resize(ViewWidth, ViewHeight, tileWidth, tileHeight, false);
             }
-            public void ResizeViewportPx(int w, int h)
+
+            private void ResizeViewportPx(int w, int h)
             {
+                // first calculate the smallest number of tiles in X and Y directions we'll need
+                // to cover an area (w, h) pixels in size
                 // https://stackoverflow.com/a/53520604 -- handy ceil implementation for ints!
                 var neededWidth = (w / FontSize.X) + (w % FontSize.X == 0 ? 0 : 1);
                 var neededHeight = (h / FontSize.Y) + (h % FontSize.Y == 0 ? 0 : 1);
                 
                 Resize(neededWidth, neededHeight, BufferWidth, BufferHeight, false);
-
-                // cache the pixel size of the visible area for pixel-precise centering
-                (canvasWidthPx, canvasHeightPx) = (w, h);
             }
 
-            public void CenterViewOn(int pxX, int pxY)
+            public void SyncViewSizeWithCamera(ICamera cam)
             {
-                var vp = Surface.View;
-                // ! .ToPixels(Point) is currently broken
-                var viewPortPx = vp.ToPixels(FontSize.X, FontSize.Y);
+                ResizeViewportPx(cam.ViewWidth, cam.ViewHeight);
+                SyncViewPosWithCamera(cam);
+            }
 
-                // before anything, we need to clamp the viewport size to our canvas size
-                // this is a hack piled on top of other hacks, but it prevents the topleft from
-                // snapping to the nearest tile
-                if (viewPortPx.Width > canvasWidthPx)
-                    viewPortPx = viewPortPx.WithWidth(canvasWidthPx);
-                if (viewPortPx.Height > canvasHeightPx)
-                    viewPortPx = viewPortPx.WithHeight(canvasHeightPx);
-                
-                var halfSize = new Point(FontSize.X / 2, FontSize.Y / 2);
-                var centered = viewPortPx.WithCenter(new Point(pxX, pxY) + halfSize);
+            public void SyncViewPosWithCamera(ICamera cam)
+            {
+                var centered = cam.View;
 
                 // bounds check the centered viewport
                 int nx = centered.X;
@@ -75,7 +65,7 @@ namespace Client
                 
                 centered = centered.WithX(nx).WithY(ny);
                 
-                Surface.View = vp
+                Surface.View = Surface.View
                     .WithX(centered.X / FontSize.X)
                     .WithY(centered.Y / FontSize.Y);
 
