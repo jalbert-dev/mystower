@@ -20,8 +20,6 @@ namespace Client
 
         private readonly Entity facingMarker;
 
-        // TODO!: This constructor should take a Font instead of using the parent console's Font.
-        //        Once that's taken care of, remove the requirement entirely and have caller set parent.
         public MapActor(DataHandle<Actor> actor) : base(1,1)
         {
             DisplayName = "[NAME NOT SET]";
