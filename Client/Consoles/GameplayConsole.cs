@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using SadConsole.Input;
-using SadRogue.Primitives;
 using Server;
 using Server.Data;
 using Server.Logic;
@@ -52,7 +51,7 @@ namespace Client
             }
 
             public Consoles.TileMap TileMap { get; }
-            public Consoles.DebugStats DebugStatsDisplay { get; } = new Consoles.DebugStats();
+            public Consoles.DebugStats DebugStatsDisplay { get; }
             private readonly Consoles.MessageLog messageLogConsole;
 
             public IClientContext ClientContext { get; }
@@ -86,7 +85,7 @@ namespace Client
 
                 messageLogConsole = new Consoles.MessageLog(this, MessageLog);
 
-                Children.Add(DebugStatsDisplay);
+                DebugStatsDisplay = new DebugStats(this);
 
                 Coroutines.Add(SimulationLoop(false));
 
