@@ -33,7 +33,7 @@ namespace Client
             if (vis != null)
                 Client.Choreographer.AddMotion(
                     vis,
-                    Motions.LerpMove(Client.TileMap.TileSize, vis, msg.SourceTile, msg.DestTile, 10),
+                    Motions.LerpMove(Client.MapTileSize, vis, msg.SourceTile, msg.DestTile, 10),
                     ChoreographyOrder.Simultaneous);
         }
 
@@ -66,7 +66,7 @@ namespace Client
             {
                 Client.Choreographer.AddMotion(
                     attacker,
-                    step => Motions.Lunge(Client.TileMap.TileSize, attacker, 4, 6, 0.33f, 
+                    step => Motions.Lunge(Client.MapTileSize, attacker, 4, 6, 0.33f, 
                         () => {
                             foreach (var a in msg.Results)
                             {

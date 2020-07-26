@@ -41,6 +41,8 @@ namespace Client
             private static readonly ColoredGlyph ENEMY_ACTOR = new ColoredGlyph(Color.Red, Color.Transparent, 6);
 
             public float Alpha { get; set; } = 0.8f;
+            public int MarginPx { get; set; } = 40;
+
             public bool IsVisible
             {
                 get => terrainLayer.IsVisible;
@@ -96,6 +98,13 @@ namespace Client
                         tilePos.Y,
                         ENEMY_ACTOR);
                 }
+            }
+
+            public void Reposition(int screenWidth, int screenHeight)
+            {
+                root.Position = new Point(
+                    screenWidth - terrainLayer.AbsoluteArea.Size.X - MarginPx,
+                    MarginPx);
             }
         }
     }

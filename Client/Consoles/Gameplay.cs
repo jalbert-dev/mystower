@@ -17,8 +17,8 @@ namespace Client
     {
         public class Gameplay : SadConsole.Console, IResizeHandler
         {
-            public Consoles.TileMap TileMap { get; }
-            public Consoles.DebugStats DebugStatsDisplay { get; }
+            private readonly Consoles.DebugStats debugStats;
+            private readonly Consoles.TileMap tilemap;
             private readonly Consoles.MessageLog messageLogConsole;
             private readonly Consoles.MiniMap minimap;
 
@@ -26,6 +26,8 @@ namespace Client
             public GameServer Server { get; }
             public Choreographer<MapActor> Choreographer { get; } = new Choreographer<MapActor>();
             public Util.CoroutineContainer Coroutines { get; } = new Util.CoroutineContainer();
+
+            public SadRogue.Primitives.Point MapTileSize => tilemap.TileSize;
 
             public ActorSet MapActors { get; } = new ActorSet();
             public GameMessageLog MessageLog { get; } = new GameMessageLog();
@@ -49,25 +51,25 @@ namespace Client
                 Server = s;
                 msgHandler = new GameplayMessageHandler(this);
 
-                TileMap = new TileMap(this);
+                tilemap = new TileMap(this);
 
                 messageLogConsole = new MessageLog(this, MessageLog);
 
                 minimap = new MiniMap(this);
 
-                DebugStatsDisplay = new DebugStats(this);
+                debugStats = new DebugStats(this);
 
                 Coroutines.Add(SimulationLoop(false));
 
                 MapActors.OnAddActor += (a) => 
                 {
-                    TileMap.EntityLayer.Children.Add(a);
+                    tilemap.EntityLayer.Children.Add(a);
                 };
                 MapActors.OnRemoveActor += (a) =>
                 {
                     if (fallbackCameraFocusActor == a)
                         fallbackCameraFocusActor = null;
-                    TileMap.EntityLayer.Children.Remove(a);
+                    tilemap.EntityLayer.Children.Remove(a);
                 };
 
                 Choreographer.OnMotionCompletion += UpdateActorsOnMinimap;
@@ -114,7 +116,7 @@ namespace Client
                         keyState = null;
                     }
                     
-                    var simTask = Task.Run(() => TimedRunSimulation(Server, userAction, DebugStatsDisplay));
+                    var simTask = Task.Run(() => TimedRunSimulation(Server, userAction, debugStats));
 
                     // TODO: async could work via two-bit prediction or something.
                     //       if the last few significant updates have been >16ms,
@@ -136,7 +138,7 @@ namespace Client
 
             public override void Update(TimeSpan timeElapsed)
             {
-                DebugStatsDisplay.UpdateDelta = timeElapsed.Milliseconds;
+                debugStats.UpdateDelta = timeElapsed.Milliseconds;
 
                 Coroutines.Update();
 
@@ -185,7 +187,7 @@ namespace Client
             private void CheckNonGameplayHotkeys(SadConsole.Input.Keyboard info)
             {
                 if (info.IsKeyPressed(Keys.F1))
-                    DebugStatsDisplay.IsVisible = !DebugStatsDisplay.IsVisible;
+                    debugStats.IsVisible = !debugStats.IsVisible;
 
                 if (info.IsKeyPressed(Keys.Escape))
                     ShouldReturnToTitle = true;
@@ -205,7 +207,7 @@ namespace Client
             {
                 foreach (var actor in MapActors.Actors)
                     actor.ShowFacingMarker = value;
-                TileMap.IsGridVisible = value;
+                tilemap.IsGridVisible = value;
             }
 
             public override bool ProcessKeyboard(SadConsole.Input.Keyboard info)
@@ -220,7 +222,7 @@ namespace Client
 
             public override void Draw(TimeSpan timeElapsed)
             {
-                DebugStatsDisplay.RenderDelta = timeElapsed.Milliseconds;
+                debugStats.RenderDelta = timeElapsed.Milliseconds;
 
                 foreach (var actor in MapActors.Actors)
                 {
@@ -246,26 +248,27 @@ namespace Client
                         fallbackCameraFocusActor;
                         
                 if (cameraFocus != null)
-                    TileMap.CenterViewOn(cameraFocus);
+                    tilemap.CenterViewOn(cameraFocus);
                 
                 base.Draw(timeElapsed);
             }
 
             public void OnWindowResize(int width, int height)
             {
-                TileMap.ResizeViewportPx(width, height);
+                tilemap.ResizeViewportPx(width, height);
                 messageLogConsole.Reposition(width, height, MessageLog);
+                minimap.Reposition(width, height);
             }
 
             public void UpdateMapTerrain(Server.Data.TileMap terrainData)
             {
-                TileMap.RebuildTileMap(terrainData);
+                tilemap.RebuildTileMap(terrainData);
                 minimap.RebuildTerrain(terrainData);
             }
 
             public void UpdateActorsOnMinimap()
             {
-                minimap.RebuildLocalActorDisplay(MapActors.Actors, TileMap.TileSize);
+                minimap.RebuildLocalActorDisplay(MapActors.Actors, tilemap.TileSize);
             }
         }
     }
