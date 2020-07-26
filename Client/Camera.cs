@@ -48,7 +48,7 @@ namespace Client
         public ICamera.CameraEventHandler? OnCameraPosChanged { get; set; }
 
         public FixedCenterCamera(int viewWidth, int viewHeight)
-            => (ViewWidth, ViewHeight) = (viewWidth, ViewHeight);
+            => (ViewWidth, ViewHeight) = (viewWidth, viewHeight);
 
         public void SetCenter(int pxX, int pxY)
         {

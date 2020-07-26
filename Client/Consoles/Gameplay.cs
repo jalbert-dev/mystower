@@ -45,6 +45,12 @@ namespace Client
             private DataHandle<Actor>? waitingActor;
             private MapActor? fallbackCameraFocusActor;
 
+            protected override void Dispose(bool disposing)
+            {
+                minimap.Dispose();
+                base.Dispose(disposing);
+            }
+
             public Gameplay(IClientContext ctx, GameServer s) : base(1, 1)
             {
                 ClientContext = ctx;

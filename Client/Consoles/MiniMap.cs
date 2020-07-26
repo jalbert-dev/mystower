@@ -15,7 +15,6 @@ namespace Client
 
             private Texture2D? wallAtlas;
 
-            private static readonly ColoredGlyph WALL = new ColoredGlyph(Color.White, Color.Transparent, 1);
             private static readonly ColoredGlyph FLOOR = new ColoredGlyph(Color.CornflowerBlue, Color.Transparent, 1);
 
             private static readonly ColoredGlyph PLAYER_ACTOR = new ColoredGlyph(Color.Yellow, Color.Transparent, 6);
@@ -208,7 +207,7 @@ namespace Client
                 }
             }
 
-            public void Reposition(int screenWidth, int screenHeight)
+            public void Reposition(int screenWidth, int _)
             {
                 terrainLayer.Position = new Point(
                     screenWidth - terrainLayer.AbsoluteArea.Size.X - MarginPx,
