@@ -220,7 +220,7 @@ namespace Client
                 return false;
             }
 
-            public override void Draw(TimeSpan timeElapsed)
+            public override void Render(TimeSpan timeElapsed)
             {
                 debugStats.RenderDelta = timeElapsed.Milliseconds;
 
@@ -250,7 +250,7 @@ namespace Client
                 if (cameraFocus != null)
                     tilemap.CenterViewOn(cameraFocus);
                 
-                base.Draw(timeElapsed);
+                base.Render(timeElapsed);
             }
 
             public void OnWindowResize(int width, int height)

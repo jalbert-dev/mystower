@@ -114,7 +114,7 @@ namespace Client
             base.Update(delta);
         }
 
-        public override void Draw(System.TimeSpan delta)
+        public override void Render(System.TimeSpan delta)
         {
             facingMarker.Animation.Surface.Cells[0].Glyph = Facing switch
             {
@@ -129,7 +129,7 @@ namespace Client
                 _ => 0
             };
             facingMarker.Animation.IsDirty = true;
-            base.Draw(delta);
+            base.Render(delta);
         }
     }
 }

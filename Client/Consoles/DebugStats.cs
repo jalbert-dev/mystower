@@ -28,7 +28,7 @@ namespace Client
                     };
                 }
 
-                public override void Draw(TimeSpan delta)
+                public override void Render(TimeSpan delta)
                 {
                     frame = (frame+1) % 1000;
 
@@ -38,7 +38,7 @@ namespace Client
                     Cursor.Print($"   Last update delta: {Data.UpdateDelta}ms\n");
                     Cursor.Print($"   Last render delta: {Data.RenderDelta}ms\n");
                     Cursor.Print($"               Frame: {frame}");
-                    base.Draw(delta);
+                    base.Render(delta);
                 }
             }
 

@@ -9,8 +9,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SadConsole.Host.MonoGame" Version="9.0.0-alpha6" />
-    <PackageReference Include="SadConsole" Version="9.0.0-alpha6" />
+    <PackageReference Include="SadConsole.Host.MonoGame" Version="9.0.0-alpha9" />
+    <PackageReference Include="SadConsole" Version="9.0.0-alpha9" />
   </ItemGroup>
 
   <ItemGroup>

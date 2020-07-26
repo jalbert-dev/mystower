@@ -8,7 +8,7 @@ using XnaRectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace Client
 {
-    public class TileMapRenderer : SadConsole.Renderers.ScreenObjectRenderer
+    public class TileMapRenderer : SadConsole.Renderers.ScreenSurfaceRenderer
     {
         // TODO: This whole class is a pile of hacks to get around how inflexible 
         //       SadConsole's default renderer is. v9 made this worse, if anything!
@@ -52,7 +52,7 @@ namespace Client
             if (BackingTexture == null || extW != BackingTexture.Width || extH != BackingTexture.Height)
             {
                 BackingTexture?.Dispose();
-                BackingTexture = new RenderTarget2D(SadConsole.MonoGame.Global.GraphicsDevice, extW, extH, false, SadConsole.MonoGame.Global.GraphicsDevice.DisplayMode.Format, DepthFormat.Depth24);
+                BackingTexture = new RenderTarget2D(SadConsole.Host.Global.GraphicsDevice, extW, extH, false, SadConsole.Host.Global.GraphicsDevice.DisplayMode.Format, DepthFormat.Depth24);
             }
 
             // Update cached drawing rectangles if something is out of size.

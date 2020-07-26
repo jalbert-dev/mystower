@@ -29,16 +29,26 @@ namespace Client.State
         private int focused = 0;
         public TitleScreen() : base(1, 1) 
         {
+            DefaultBackground = Color.SkyBlue;
+
             btnNewGame.Text = "New Game";
             btnLoadGame.Text = "Load Game";
             btnExit.Text = "Exit";
 
             lblName.Alignment = HorizontalAlignment.Center;
             
-            ControlHostComponent.Add(btnNewGame);
-            ControlHostComponent.Add(btnLoadGame);
-            ControlHostComponent.Add(btnExit);
-            ControlHostComponent.Add(lblName);
+            Controls.Add(btnNewGame);
+            Controls.Add(btnLoadGame);
+            Controls.Add(btnExit);
+            Controls.Add(lblName);
+
+            var colors = new SadConsole.UI.Themes.Colors()
+            {
+                Appearance_ControlNormal = new ColoredGlyph(Color.White, Color.Transparent),
+            };
+
+            foreach (var c in Controls)
+                c.ThemeColors = colors;
 
             btnNewGame.Click += (a, b) => nextScreen = Transition.NewGame;
             btnLoadGame.Click += (a, b) => nextScreen = Transition.LoadGame;

@@ -13,7 +13,7 @@ namespace Client
                 private readonly MiniMap host;
                 public MiniMapRoot(MiniMap host) => this.host = host;
 
-                public override void Draw(System.TimeSpan delta)
+                public override void Render(System.TimeSpan delta)
                 {
                     if (host.dirty)
                     {
@@ -24,7 +24,7 @@ namespace Client
                             t.Foreground = t.Foreground.SetAlpha(newAlpha);
                         }
                     }
-                    base.Draw(delta);
+                    base.Render(delta);
                 }
             }
 

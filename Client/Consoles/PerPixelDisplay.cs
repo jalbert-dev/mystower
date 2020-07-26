@@ -74,12 +74,12 @@ namespace Client
                 renderer.ToEdgeY = BufferHeight - 1 - Surface.View.MaxExtentY;
             }
 
-            public override void Draw(System.TimeSpan delta)
+            public override void Render(System.TimeSpan delta)
             {
                 // Adjust position of child elements to account for viewport location
                 foreach (var c in Children)
                     c.Position = (ViewPosition.SurfaceLocationToPixel(FontSize) + renderer.ViewportPixelOffset) * -1;
-                base.Draw(delta);
+                base.Render(delta);
             }
         }
     }
