@@ -8,31 +8,8 @@ namespace Client
     {
         public class MiniMap
         {
-            private class MiniMapRoot : SadConsole.ScreenObject
-            {
-                private readonly MiniMap host;
-                public MiniMapRoot(MiniMap host) => this.host = host;
-
-                public override void Render(System.TimeSpan delta)
-                {
-                    if (host.dirty)
-                    {
-                        byte newAlpha = (byte)(255 * MathHelpers.Clamp(host.Alpha, 0.0f, 1.0f));
-
-                        foreach (var t in host.terrainLayer.Cells)
-                        {
-                            t.Foreground = t.Foreground.SetAlpha(newAlpha);
-                        }
-                    }
-                    base.Render(delta);
-                }
-            }
-
-            private readonly MiniMapRoot root;
             private readonly SadConsole.Console terrainLayer;
             private readonly SadConsole.Console actorLayer;
-
-            private bool dirty = false;
 
             private static readonly ColoredGlyph WALL = new ColoredGlyph(Color.White, Color.Transparent, 1);
             private static readonly ColoredGlyph FLOOR = new ColoredGlyph(Color.CornflowerBlue, Color.Transparent, 1);
@@ -40,7 +17,14 @@ namespace Client
             private static readonly ColoredGlyph PLAYER_ACTOR = new ColoredGlyph(Color.Yellow, Color.Transparent, 6);
             private static readonly ColoredGlyph ENEMY_ACTOR = new ColoredGlyph(Color.Red, Color.Transparent, 6);
 
-            public float Alpha { get; set; } = 0.8f;
+            public float Alpha 
+            {
+                get => terrainLayer.Renderer.Opacity / 255;
+                set
+                {
+                    terrainLayer.Renderer.Opacity = (byte)(value * 255);
+                }
+            }
             public int MarginPx { get; set; } = 40;
 
             public bool IsVisible
@@ -51,16 +35,11 @@ namespace Client
 
             public MiniMap(IScreenObject parent)
             {
-                root = new MiniMapRoot(this)
-                {
-                    Parent = parent
-                };
-
                 terrainLayer = new Console(1, 1)
                 {
                     UsePixelPositioning = true,
                     DefaultBackground = Color.Transparent,
-                    Parent = root,
+                    Parent = parent,
                     Font = SadConsole.GameHost.Instance.Fonts["Minimap"],
                     FontSize = SadConsole.GameHost.Instance.Fonts["Minimap"].GetFontSize(SadConsole.Font.Sizes.One),
                 };
@@ -73,6 +52,8 @@ namespace Client
                     Font = terrainLayer.Font,
                     FontSize = terrainLayer.FontSize,
                 };
+
+                Alpha = 0.5f;
             }
 
             public void RebuildTerrain(Server.Data.TileMap terrainData)
@@ -83,8 +64,6 @@ namespace Client
                 for (int i = 0; i < terrainData.Width; i++)
                     for (int j = 0; j < terrainData.Height; j++)
                         terrainLayer.SetCellAppearance(i, j, terrainData[i, j] == 0 ? FLOOR : WALL);
-                
-                dirty = true;
             }
 
             public void RebuildLocalActorDisplay(IEnumerable<MapActor> actors, Point mapTileSize)
@@ -102,7 +81,7 @@ namespace Client
 
             public void Reposition(int screenWidth, int screenHeight)
             {
-                root.Position = new Point(
+                terrainLayer.Position = new Point(
                     screenWidth - terrainLayer.AbsoluteArea.Size.X - MarginPx,
                     MarginPx);
             }
