@@ -20,6 +20,7 @@ namespace Client
             public Consoles.TileMap TileMap { get; }
             public Consoles.DebugStats DebugStatsDisplay { get; }
             private readonly Consoles.MessageLog messageLogConsole;
+            public Consoles.MiniMap MiniMap { get; }
 
             public IClientContext ClientContext { get; }
             public GameServer Server { get; }
@@ -48,9 +49,11 @@ namespace Client
                 Server = s;
                 msgHandler = new GameplayMessageHandler(this);
 
-                TileMap = new Consoles.TileMap(this);
+                TileMap = new TileMap(this);
 
-                messageLogConsole = new Consoles.MessageLog(this, MessageLog);
+                messageLogConsole = new MessageLog(this, MessageLog);
+
+                MiniMap = new MiniMap(this);
 
                 DebugStatsDisplay = new DebugStats(this);
 

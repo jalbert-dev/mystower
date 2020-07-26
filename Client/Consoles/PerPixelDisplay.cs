@@ -6,14 +6,14 @@ namespace Client
 {
     public static partial class Consoles
     {
-        public class PerPixelTileMap : SadConsole.Console
+        public class PerPixelDisplay : SadConsole.Console
         {
             private readonly TileMapRenderer renderer;
 
             private readonly ScreenObject transformRoot;
             public IScreenObject TransformRoot => transformRoot;
 
-            public PerPixelTileMap(SadConsole.ScreenObject parent) : base(3, 3)
+            public PerPixelDisplay(SadConsole.ScreenObject parent) : base(3, 3)
             {
                 Renderer = renderer = new TileMapRenderer();
 

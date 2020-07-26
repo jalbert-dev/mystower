@@ -49,7 +49,10 @@ namespace Client
 
         public void HandleMessage(MapChanged msg)
         {
-            Client.Server.QueryData(msg.NewMapData, Client.TileMap.RebuildTileMap);
+            Client.Server.QueryData(msg.NewMapData, (mapData) => {
+                Client.TileMap.RebuildTileMap(mapData);
+                Client.MiniMap.RebuildTerrain(mapData);
+            });
         }
 
         public void HandleMessage(AddedToLog msg)

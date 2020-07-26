@@ -13,13 +13,13 @@ namespace Client
         {
             private readonly ScreenObject Root = new ScreenObject();
 
-            private readonly Dictionary<string, PerPixelTileMap> layers = new Dictionary<string, PerPixelTileMap>();
+            private readonly Dictionary<string, PerPixelDisplay> layers = new Dictionary<string, PerPixelDisplay>();
 
             private readonly FixedCenterCamera mapCamera;
 
-            private PerPixelTileMap Grid => layers["grid"];
-            private PerPixelTileMap Map => layers["map"];
-            private PerPixelTileMap Entity => layers["entity"];
+            private PerPixelDisplay Grid => layers["grid"];
+            private PerPixelDisplay Map => layers["map"];
+            private PerPixelDisplay Entity => layers["entity"];
 
             public IScreenObject EntityLayer => Entity.TransformRoot;
 
@@ -42,21 +42,21 @@ namespace Client
 
                 mapCamera = new FixedCenterCamera(widthPixels, heightPixels);
 
-                layers["map"] = new PerPixelTileMap(Root)
+                layers["map"] = new PerPixelDisplay(Root)
                 {
                     DefaultBackground = Color.Black,
                     Font = mapFont,
                     FontSize = mapFontSize,
                 };
 
-                layers["grid"] = new PerPixelTileMap(Root)
+                layers["grid"] = new PerPixelDisplay(Root)
                 {
                     DefaultBackground = Color.Transparent,
                     Font = gridFont,
                     FontSize = gridFontSize,
                 };
 
-                layers["entity"] = new PerPixelTileMap(Root)
+                layers["entity"] = new PerPixelDisplay(Root)
                 {
                     DefaultBackground = Color.Transparent,
                     Font = mapFont,

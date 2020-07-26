@@ -1,0 +1,9 @@
+{
+  "Name": "Minimap",
+  "FilePath": "minimap.png",
+  "GlyphHeight": 3,
+  "GlyphPadding": 0,
+  "GlyphWidth": 3,
+  "SolidGlyphIndex": 1,
+  "Columns": 8
+}
