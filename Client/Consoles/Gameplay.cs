@@ -20,7 +20,7 @@ namespace Client
             public Consoles.TileMap TileMap { get; }
             public Consoles.DebugStats DebugStatsDisplay { get; }
             private readonly Consoles.MessageLog messageLogConsole;
-            public Consoles.MiniMap MiniMap { get; }
+            private readonly Consoles.MiniMap minimap;
 
             public IClientContext ClientContext { get; }
             public GameServer Server { get; }
@@ -53,7 +53,7 @@ namespace Client
 
                 messageLogConsole = new MessageLog(this, MessageLog);
 
-                MiniMap = new MiniMap(this);
+                minimap = new MiniMap(this);
 
                 DebugStatsDisplay = new DebugStats(this);
 
@@ -69,6 +69,8 @@ namespace Client
                         fallbackCameraFocusActor = null;
                     TileMap.EntityLayer.Children.Remove(a);
                 };
+
+                Choreographer.OnMotionCompletion += UpdateActorsOnMinimap;
 
                 HandleMessages(Server.GetClientInitMessages());
 
@@ -253,6 +255,17 @@ namespace Client
             {
                 TileMap.ResizeViewportPx(width, height);
                 messageLogConsole.Reposition(width, height, MessageLog);
+            }
+
+            public void UpdateMapTerrain(Server.Data.TileMap terrainData)
+            {
+                TileMap.RebuildTileMap(terrainData);
+                minimap.RebuildTerrain(terrainData);
+            }
+
+            public void UpdateActorsOnMinimap()
+            {
+                minimap.RebuildLocalActorDisplay(MapActors.Actors, TileMap.TileSize);
             }
         }
     }

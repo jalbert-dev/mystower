@@ -37,8 +37,10 @@ namespace Client
             }
         }
 
-        public void Update()
+        public bool Update()
         {
+            bool completedMotionThisTick = false;
+
             deferQueuing = true;
             foreach (var motionList in motions.Values)
             {
@@ -46,6 +48,10 @@ namespace Client
                 while (frontMotion != null)
                 {
                     frontMotion.Step();
+
+                    if (frontMotion.IsDone)
+                        completedMotionThisTick = true;
+
                     if (frontMotion.IsDone && motionList.Count > 0)
                     {
                         motionList.RemoveAt(0);
@@ -60,6 +66,8 @@ namespace Client
             deferQueuing = false;
             
             QueueDeferred();
+
+            return completedMotionThisTick;
         }
 
         private void QueueDeferred()
@@ -96,17 +104,25 @@ namespace Client
         /// </summary>
         public bool IsBusy => steps.Count != 0;
 
+        public event Action? OnMotionCompletion;
+
         public void Update(TimeSpan _)
         {
             var currentStep = steps.FirstOrDefault();
 
             if (currentStep != null)
             {
-                currentStep.Update();
+                var completedMotion = currentStep.Update();
+                if (completedMotion)
+                {
+                    OnMotionCompletion?.Invoke();
+                }
                 
                 // prune finished steps from the list after updating
                 if (currentStep.IsDone)
+                {
                     steps.RemoveAt(0);
+                }
             }
         }
 

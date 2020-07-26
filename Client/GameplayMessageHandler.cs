@@ -13,6 +13,8 @@ namespace Client
             var a = new MapActor(msg.Actor);
             a.Sync(Client.ClientContext, Client.Server);
             Client.MapActors.Add(a);
+
+            Client.UpdateActorsOnMinimap();
         }
 
         public void HandleMessage(ActorDead msg)
@@ -49,10 +51,7 @@ namespace Client
 
         public void HandleMessage(MapChanged msg)
         {
-            Client.Server.QueryData(msg.NewMapData, (mapData) => {
-                Client.TileMap.RebuildTileMap(mapData);
-                Client.MiniMap.RebuildTerrain(mapData);
-            });
+            Client.Server.QueryData(msg.NewMapData, Client.UpdateMapTerrain);
         }
 
         public void HandleMessage(AddedToLog msg)
