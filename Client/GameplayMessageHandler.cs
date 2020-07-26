@@ -70,17 +70,19 @@ namespace Client
                             {
                                 var target = Client.MapActors.Lookup(a.Target);
                                 if (target != null)
+                                    Client.MessageLog.AddMessage($"{attacker.DisplayName} attacks {target.DisplayName}!");
+                            }
+                        },
+                        () => {
+                            foreach (var a in msg.Results)
+                            {
+                                var target = Client.MapActors.Lookup(a.Target);
+                                if (target != null)
                                     step.QueueMotion(target, Motions.Wiggle(target, 20, 4, 8));
                                 Client.MessageLog.AddMessage($"{a.DamageDealt} damage!");
                             }
                         }),
                     ChoreographyOrder.Solo);
-                foreach (var a in msg.Results)
-                {
-                    var target = Client.MapActors.Lookup(a.Target);
-                    if (target != null)
-                        Client.MessageLog.AddMessage($"{attacker.DisplayName} attacks {target.DisplayName}!");
-                }
             }
         }
     }

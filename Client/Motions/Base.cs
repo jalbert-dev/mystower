@@ -37,8 +37,11 @@ namespace Client
                                         int t1,
                                         int t2,
                                         float depth,
-                                        Action middle)
+                                        Action atBegin,
+                                        Action atMiddle)
         {
+            atBegin();
+
             var extent = tileSize * depth * new Point(actor.Facing.x, actor.Facing.y);
             var extentf = new Vector2(extent.X, extent.Y);
 
@@ -50,7 +53,7 @@ namespace Client
                 yield return null;
             }
 
-            middle();
+            atMiddle();
 
             for (int i = 1; i <= t2; i++)
             {
