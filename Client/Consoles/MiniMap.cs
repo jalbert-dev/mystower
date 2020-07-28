@@ -113,7 +113,7 @@ namespace Client
 
                         int mask = 0;
                         bool maskFlagSet(int f) => (mask & f) == f;
-                        //    8 bit mask. High bits are corner mask. Remove corner bits if corresponding low bits are set. (use xor?)
+                        //    8 bit mask. High bits are corner mask. Remove corner bits if corresponding low bits are set.
                         mask |= 0b00000001 & hasBorder(x-1, y);
                         mask |= 0b00000010 & hasBorder(x+1, y);
                         mask |= 0b00000100 & hasBorder(x, y-1);

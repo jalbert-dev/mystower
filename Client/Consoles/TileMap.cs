@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SadConsole;
 using SadRogue.Primitives;
 
@@ -99,10 +100,25 @@ namespace Client
                 {
                     for (int j = 0; j < h; j++)
                     {
-                        Map.SetGlyph(i, j,
-                            map[i,j] == 0 ? Grass[r.Next(4)] : Tree[r.Next(4)],
-                            map[i,j] == 0 ? Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()) : Color.DarkGreen,
-                            Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
+                        if (map[i,j] == 0)
+                            Map.SetGlyph(i, j,
+                                Grass[r.Next(4)],
+                                Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()),
+                                Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
+                        if (map[i,j] == 1)
+                        {
+                            if (map.SurroundingTiles(i,j).Any(x => x == 0))
+                                Map.SetGlyph(i, j,
+                                    Tree[r.Next(4)],
+                                    Color.DarkGreen,
+                                    Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
+                            else
+                                Map.SetGlyph(i, j,
+                                    Tree[r.Next(4)],
+                                    new Color(0, 48, 10),
+                                    Color.Lerp(new Color(0, 18, 0), new Color(0, 24, 0), (float)r.NextDouble()));
+                        }
+
                         Grid.SetGlyph(i, j, 10, Color.Black.SetAlpha(128));
                     }
                 }

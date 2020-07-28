@@ -16,9 +16,12 @@ namespace Server.Data
         [Newtonsoft.Json.JsonProperty]
         byte[,] tiles;
 
-        public TileMap(int w, int h)
+        public TileMap(int w, int h, byte initialValue = 0)
         {
             tiles = new byte[w,h];
+            for (int i = 0; i < w; i++)
+                for (int j = 0; j < h; j++)
+                    tiles[i,j] = initialValue;
         }
 
         public int Width => tiles.GetLength(0);
@@ -39,11 +42,35 @@ namespace Server.Data
             return Tiles().SequenceEqual(other.Tiles());
         }
 
+        private bool TryGetTile(int x, int y, out byte v)
+        {
+            if (x >= 0 && y >= 0 && x < Width && y < Height)
+            {
+                v = this[x,y];
+                return true;
+            }
+            v = default;
+            return false;
+        }
+
         public IEnumerable<byte> Tiles()
         {
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
                     yield return tiles[i, j];
+        }
+
+        public IEnumerable<byte> SurroundingTiles(int x, int y)
+        {
+            byte v;
+            if (TryGetTile(x-1, y+0, out v)) yield return v;
+            if (TryGetTile(x+1, y+0, out v)) yield return v;
+            if (TryGetTile(x+0, y-1, out v)) yield return v;
+            if (TryGetTile(x+0, y+1, out v)) yield return v;
+            if (TryGetTile(x-1, y-1, out v)) yield return v;
+            if (TryGetTile(x-1, y+1, out v)) yield return v;
+            if (TryGetTile(x+1, y-1, out v)) yield return v;
+            if (TryGetTile(x+1, y+1, out v)) yield return v;
         }
 
         public IEnumerator<(int x, int y, byte type)> GetEnumerator()

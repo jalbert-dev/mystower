@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Server.Data;
 using Server.Database;
 using Server.Logic;
@@ -104,16 +105,46 @@ namespace Server
 
         private static TileMap TestMap(int w, int h)
         {
-            var map = new TileMap(w, h);
+            var map = new TileMap(w, h, 1);
 
-            for (int x = 0; x < w; x++)
+            var rooms = new List<(Vec2i pos, Vec2i size)>();
+            bool vacant(int px, int py, int sx, int sy)
             {
-                map[x,0] = 1;
-                map[x,h-1] = 1;
+                px = px < 0 ? 0 : px;
+                py = py < 0 ? 0 : py;
+
+                return !rooms.Any(room => {
+                    return (px <= room.pos.x + room.size.x && px + sx >= room.pos.x &&
+                            py <= room.pos.y + room.size.y && py + sy >= room.pos.y);
+                });
             }
-            for (int y = 0; y < h; y++)
+
+            // TODO: should inject fixed rng source!!
+            Random r = new Random();
+            
+            for (int i = 0; i < 9; i++)
             {
-                map[0,y] = 1;
+                for (int _ = 0; _ < 100; _++)
+                {
+                    int sizeX = r.Next(6, w / 4);
+                    int sizeY = r.Next(6, h / 4);
+                    
+                    int posX = r.Next(1, w-1 - sizeX);
+                    int posY = r.Next(1, h-1 - sizeY);
+
+                    if (vacant(posX-1, posY-1, sizeX+2, sizeY+2))
+                    {
+                        rooms.Add(((posX, posY), (sizeX, sizeY)));
+                        break;
+                    }
+                }
+            }
+
+            foreach (var (pos, size) in rooms)
+            {
+                for (int i = 0; i < size.x; i++)
+                    for (int j = 0; j < size.y; j++)
+                        map[i+pos.x, j+pos.y] = 0;
             }
 
             return map;
