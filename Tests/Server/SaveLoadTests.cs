@@ -15,10 +15,11 @@ namespace Tests.Server
         [Property] public Property SavedThenLoadedStateIsSameAsOriginal()
              => Prop.ForAll(
                     Arb.From(
+                        from rngSeed in Arb.Default.DoNotSizeUInt64().Generator
                         from map in TileMapGen.Default().Generator
                         from actorCount in Gen.Choose(0, 10)
                         from actors in ActorGen.Default().WithPositionOnMap(map).Generator.ArrayOf(actorCount)
-                        select new GameState(actors.ToValueList(), map)),
+                        select new GameState(actors.ToValueList(), map, new global::Server.Random.LCG64RandomSource(rngSeed.Item))),
                     state => {
                         var sw = new StringWriter();
                         var db = ActorGen.DefaultDatabase;

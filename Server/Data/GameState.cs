@@ -9,5 +9,6 @@ namespace Server.Data
     {
         Util.ValueList<Actor> actors;
         TileMap map;
+        Random.LCG64RandomSource rng;
     }
 }

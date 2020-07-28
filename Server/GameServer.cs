@@ -5,6 +5,7 @@ using System.Linq;
 using Server.Data;
 using Server.Database;
 using Server.Logic;
+using Server.Random;
 using Util;
 using Util.Functional;
 
@@ -103,7 +104,7 @@ namespace Server
             proxyClient = new ServerContext(Database);
         }
 
-        private static TileMap TestMap(int w, int h)
+        private static TileMap TestMap(int w, int h, IRandomSource rng)
         {
             var map = new TileMap(w, h, 1);
 
@@ -119,18 +120,15 @@ namespace Server
                 });
             }
 
-            // TODO: should inject fixed rng source!!
-            Random r = new Random();
-            
             for (int i = 0; i < 9; i++)
             {
                 for (int _ = 0; _ < 100; _++)
                 {
-                    int sizeX = r.Next(6, w / 4);
-                    int sizeY = r.Next(6, h / 4);
+                    int sizeX = rng.Next(6, w / 4);
+                    int sizeY = rng.Next(6, h / 4);
                     
-                    int posX = r.Next(1, w-1 - sizeX);
-                    int posY = r.Next(1, h-1 - sizeY);
+                    int posX = rng.Next(1, w-1 - sizeX);
+                    int posY = rng.Next(1, h-1 - sizeY);
 
                     if (vacant(posX-1, posY-1, sizeX+2, sizeY+2))
                     {
@@ -151,14 +149,14 @@ namespace Server
         }
 
         public static Result<GameServer> NewGame(Util.Database gamedb)
-             => from player in Actor.FromArchetype(5, 5, 20, 1, "player", gamedb.Lookup<ActorArchetype>)
+             => from rng in Result.Ok(new LCG64RandomSource())
+                let map = TestMap(100, 50, rng)
+                from player in Actor.FromArchetype(5, 5, 20, 1, "player", gamedb.Lookup<ActorArchetype>)
                 from a in Actor.FromArchetype(2, 1, 21, 1, "squablin", gamedb.Lookup<ActorArchetype>)
                 from b in Actor.FromArchetype(1, 3, 20, 1, "squablin", gamedb.Lookup<ActorArchetype>)
                 from c in Actor.FromArchetype(4, 8, 10, 1, "squablin", gamedb.Lookup<ActorArchetype>)
                 select 
-                    new GameServer(new GameState(
-                        new ValueList<Actor> { player, a, b, c },
-                        TestMap(100, 50)),
+                    new GameServer(new GameState(new ValueList<Actor> { player, a, b, c }, map, rng),
                     gamedb);
         
         public static Result<GameServer> FromSaveGame(string str, Util.Database gamedb)
