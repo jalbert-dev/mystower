@@ -15,7 +15,7 @@ namespace Server.Logic
             => (_, __) => new Actions.Idle();
 
         public static ActionSelector MoveRandomly => (gs, actor) => {
-            if (Map.CanMoveInto(gs.Map, gs.Actors, actor.Position.x + 1, actor.Position.y + 1))
+            if (Map.CanMoveFromAToB(gs.Map, gs.Actors, actor.Position, actor.Position + (1, 1)))
                 return new Actions.Move(1, 1);
             else
                 return new Actions.Idle();
@@ -48,7 +48,7 @@ namespace Server.Logic
                 int dx = dir.x > 1 ? 1 : dir.x < -1 ? -1 : dir.x;
                 int dy = dir.y > 1 ? 1 : dir.y < -1 ? -1 : dir.y;
 
-                if (!Map.CanMoveInto(gs.Map, gs.Actors, actor.Position.x + dx, actor.Position.y + dy))
+                if (!Map.CanMoveFromAToB(gs.Map, gs.Actors, actor.Position, actor.Position + (dx, dy)))
                     return new Actions.Idle();
 
                 return new Actions.Move(dx, dy);

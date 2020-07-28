@@ -6,8 +6,15 @@ namespace Server.Logic
 {
     public static class Map
     {
-        public static bool IsTileWalkable(byte tileType)
+        public static bool IsTileWall(byte tileType)
             => tileType switch
+            {
+                1 => true,
+                _ => false,
+            };
+
+        public static bool IsTileWalkable(byte tileType)
+            => !IsTileWall(tileType) && tileType switch
             {
                 0 => true,
                 2 => true,
@@ -26,7 +33,7 @@ namespace Server.Logic
             => GetTilesInRoom(room).Where(x => Logic.Map.IsTileWalkable(map[x]));
 
         public static IEnumerable<Vec2i> GetUnoccupiedTilesInRoom(MapRoom room, TileMap map, IEnumerable<Actor> actors)
-            => GetTilesInRoom(room).Where(x => Logic.Map.CanMoveInto(map, actors, x.x, x.y));
+            => GetTilesInRoom(room).Where(x => Logic.Map.IsTileOccupiable(map, actors, x.x, x.y));
 
         public static bool IsTileOccupied(IEnumerable<Actor> actors, int x, int y)
         {
@@ -40,9 +47,27 @@ namespace Server.Logic
         public static bool IsInBounds(TileMap map, int x, int y)
             => (x >= 0 && y >= 0 && x < map.Width && y < map.Height);
 
-        public static bool CanMoveInto(TileMap map, IEnumerable<Actor> actors, int x, int y)
+        public static bool IsTileOccupiable(TileMap map, IEnumerable<Actor> actors, int x, int y)
             => IsInBounds(map, x, y) && 
                IsTileWalkable(map, x, y) && 
                !IsTileOccupied(actors, x, y);
+
+        public static bool IsMoveBlockedByDiagonalWall(TileMap map, Vec2i moveSrc, Vec2i moveDst)
+        {
+            var delta = moveDst - moveSrc;
+
+            // if we're moving in a straight line, we're not trying to move diagonally, so we're good
+            if (delta.x == 0 || delta.y == 0)
+                return false;
+
+            var diag1 = new Vec2i(delta.x, 0);
+            var diag2 = new Vec2i(0, delta.y);
+
+            return IsTileWall(map[moveSrc + diag1]) || IsTileWall(map[moveSrc + diag2]);
+        }
+
+        public static bool CanMoveFromAToB(TileMap map, IEnumerable<Actor> actors, Vec2i a, Vec2i b)
+             => IsTileOccupiable(map, actors, b.x, b.y) && 
+                !IsMoveBlockedByDiagonalWall(map, a, b);
     }
 }

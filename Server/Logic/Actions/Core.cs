@@ -35,7 +35,7 @@ namespace Server.Logic
                 var dstX = actor.Position.x + dx;
                 var dstY = actor.Position.y + dy;
 
-                if (Map.CanMoveInto(gs.Map, gs.Actors, dstX, dstY))
+                if (Map.CanMoveFromAToB(gs.Map, gs.Actors, actor.Position, (dstX, dstY)))
                 {
 
                     server.EmitClientMessage(new Message.ActorMoved(actor, actor.Position.x, actor.Position.y, dx, dy));
