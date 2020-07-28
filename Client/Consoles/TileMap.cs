@@ -100,14 +100,14 @@ namespace Client
                 {
                     for (int j = 0; j < h; j++)
                     {
-                        if (map[i,j] == 0)
+                        if (map[i,j] != 1)
                             Map.SetGlyph(i, j,
                                 Grass[r.Next(4)],
                                 Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()),
                                 Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
-                        if (map[i,j] == 1)
+                        else
                         {
-                            if (map.SurroundingTiles(i,j).Any(x => x == 0))
+                            if (map.SurroundingTiles(i,j).Any(x => x.type == 0))
                                 Map.SetGlyph(i, j,
                                     Tree[r.Next(4)],
                                     Color.DarkGreen,

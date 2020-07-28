@@ -17,7 +17,12 @@ namespace Server.Random
         public LCG64RandomSource() : this(unchecked((UInt64)DateTime.Now.Ticks)) {}
         public LCG64RandomSource(UInt64 seed) => x = seed;
 
-        public int Next(int min, int max) => (int)((_next() % (UInt64)(max - min)) + (UInt64)min);
+        public int Next() => (int)_next();
+        public int Next(int min, int max)
+        {
+            var range = (UInt64)(max + 1 - min);
+            return (int)((_next() % (range * 4)) / 4 + (UInt64)min);
+        }
 
         public bool Equals(LCG64RandomSource other) => x == other.x;
         public LCG64RandomSource DeepClone() => new LCG64RandomSource(x);

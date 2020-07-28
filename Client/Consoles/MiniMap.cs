@@ -16,6 +16,7 @@ namespace Client
             private Texture2D? wallAtlas;
 
             private static readonly ColoredGlyph FLOOR = new ColoredGlyph(Color.CornflowerBlue, Color.Transparent, 1);
+            private static readonly ColoredGlyph ROAD = new ColoredGlyph(Color.DarkViolet, Color.Transparent, 1);
 
             private static readonly ColoredGlyph PLAYER_ACTOR = new ColoredGlyph(Color.Yellow, Color.Transparent, 6);
             private static readonly ColoredGlyph ENEMY_ACTOR = new ColoredGlyph(Color.Red, Color.Transparent, 6);
@@ -187,7 +188,13 @@ namespace Client
                     for (int i = 0; i < terrainData.Width; i++)
                     {
                         if (terrainData[i, j] == 0)
+                        {
                             terrainLayer.SetCellAppearance(i, j, FLOOR);
+                        }
+                        else if (terrainData[i, j] == 2)
+                        {
+                            terrainLayer.SetCellAppearance(i, j, ROAD);
+                        }
                         
                         wallLayer.SetGlyph(i, j, atlasIndexes[j * terrainData.Width + i]);
                     }

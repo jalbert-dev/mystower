@@ -3,18 +3,29 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
+using Newtonsoft.Json;
+using Server.Random;
 
 namespace Server.Data
 {
-    [Newtonsoft.Json.JsonObject(Newtonsoft.Json.MemberSerialization.OptIn)]
+    [CodeGen.GameDataNode]
+    public partial class MapRoom
+    {
+        Vec2i pos;
+        Vec2i size;
+    }
+
+    [JsonObject(MemberSerialization.Fields)]
     public class TileMap : IEquatable<TileMap>, IEnumerable<(int x, int y, byte type)>, IDeepCloneable<TileMap>
     {
+
         /// <summary>
         /// A 2D array representing the tiles of the map. Each entry of the array
         /// is a value representing a tile type ID.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty]
         byte[,] tiles;
+
+        List<MapRoom> rooms = new List<MapRoom>();
 
         public TileMap(int w, int h, byte initialValue = 0)
         {
@@ -24,13 +35,27 @@ namespace Server.Data
                     tiles[i,j] = initialValue;
         }
 
+        public MapRoom DefineRoom(Vec2i pos, Vec2i size)
+        {
+            var room = new MapRoom(pos, size);
+            rooms.Add(room);
+            return room;
+        }
+
         public int Width => tiles.GetLength(0);
         public int Height => tiles.GetLength(1);
+        public IEnumerable<MapRoom> Rooms => rooms;
 
         public byte this[int x, int y]
         {
             get => tiles[x, y];
             set => tiles[x, y] = value;
+        }
+
+        public byte this[Vec2i xy]
+        {
+            get => tiles[xy.x, xy.y];
+            set => tiles[xy.x, xy.y] = value;
         }
 
         public bool Equals(TileMap? other)
@@ -42,11 +67,11 @@ namespace Server.Data
             return Tiles().SequenceEqual(other.Tiles());
         }
 
-        private bool TryGetTile(int x, int y, out byte v)
+        private bool TryGetTile(int x, int y, out (Vec2i pos, byte type) v)
         {
             if (x >= 0 && y >= 0 && x < Width && y < Height)
             {
-                v = this[x,y];
+                v = ((x, y), this[x,y]);
                 return true;
             }
             v = default;
@@ -60,13 +85,17 @@ namespace Server.Data
                     yield return tiles[i, j];
         }
 
-        public IEnumerable<byte> SurroundingTiles(int x, int y)
+        public IEnumerable<(Vec2i pos, byte type)> SurroundingTiles(int x, int y, bool allowDiagonal = true)
         {
-            byte v;
+            (Vec2i pos, byte type) v;
             if (TryGetTile(x-1, y+0, out v)) yield return v;
             if (TryGetTile(x+1, y+0, out v)) yield return v;
             if (TryGetTile(x+0, y-1, out v)) yield return v;
             if (TryGetTile(x+0, y+1, out v)) yield return v;
+
+            if (!allowDiagonal)
+                yield break;
+            
             if (TryGetTile(x-1, y-1, out v)) yield return v;
             if (TryGetTile(x-1, y+1, out v)) yield return v;
             if (TryGetTile(x+1, y-1, out v)) yield return v;

@@ -1,12 +1,32 @@
 using System.Collections.Generic;
+using System.Linq;
 using Server.Data;
 
 namespace Server.Logic
 {
     public static class Map
     {
-        public static bool IsTileWalkable(TileMap map, int x, int y)
-            => map[x, y] == 0;
+        public static bool IsTileWalkable(byte tileType)
+            => tileType switch
+            {
+                0 => true,
+                2 => true,
+                _ => false,
+            };
+        public static bool IsTileWalkable(TileMap map, int x, int y) => IsTileWalkable(map[x,y]);
+
+        public static IEnumerable<Vec2i> GetTilesInRoom(MapRoom room)
+        {
+            for (int j = 0; j < room.Size.y; j++)
+                for (int i = 0; i < room.Size.x; i++)
+                    yield return (room.Pos.x + i, room.Pos.y + j);
+        }
+
+        public static IEnumerable<Vec2i> GetWalkableTilesInRoom(MapRoom room, TileMap map)
+            => GetTilesInRoom(room).Where(x => Logic.Map.IsTileWalkable(map[x]));
+
+        public static IEnumerable<Vec2i> GetUnoccupiedTilesInRoom(MapRoom room, TileMap map, IEnumerable<Actor> actors)
+            => GetTilesInRoom(room).Where(x => Logic.Map.CanMoveInto(map, actors, x.x, x.y));
 
         public static bool IsTileOccupied(IEnumerable<Actor> actors, int x, int y)
         {
