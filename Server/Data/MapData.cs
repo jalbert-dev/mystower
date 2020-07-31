@@ -85,7 +85,7 @@ namespace Server.Data
                     yield return tiles[i, j];
         }
 
-        public IEnumerable<(Vec2i pos, byte type)> SurroundingTiles(int x, int y, bool allowDiagonal = true)
+        public IEnumerable<(Vec2i pos, byte type)> SurroundingTiles(int x, int y, bool includeDiagonal = true)
         {
             (Vec2i pos, byte type) v;
             if (TryGetTile(x-1, y+0, out v)) yield return v;
@@ -93,7 +93,7 @@ namespace Server.Data
             if (TryGetTile(x+0, y-1, out v)) yield return v;
             if (TryGetTile(x+0, y+1, out v)) yield return v;
 
-            if (!allowDiagonal)
+            if (!includeDiagonal)
                 yield break;
             
             if (TryGetTile(x-1, y-1, out v)) yield return v;

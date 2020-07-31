@@ -10,11 +10,8 @@ namespace Tests.Server.Generators
         public static Gen<Vec2i> RandomFloorTilePos(TileMap m)
             => Gen.Elements(m.Where(x => x.type == 0).Select(x => new Vec2i(x.x, x.y)));
 
-        public static Gen<Vec2i> RandomFacing()
-             => Gen.Choose(-1, 1)
-                    .Two()
-                    .Where(x => !(x.Item1 == 0 && x.Item2 == 0))
-                    .Select(x => new Vec2i(x.Item1, x.Item2));
+        public static Gen<Direction> RandomFacing()
+             => Gen.Elements(System.Enum.GetValues(typeof(Direction)).Cast<Direction>());
         
         public static Gen<ActorStatus> DefaultActorStatus()
              => from hp in Gen.Choose(1, 30)

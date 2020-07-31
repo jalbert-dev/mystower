@@ -29,7 +29,7 @@ namespace Server.Logic
             public int Execute(IServerContext server, GameState gs, Actor actor)
             {
                 // should always set facing regardless of move success
-                actor.Facing = (dx, dy);
+                actor.Facing = (dx, dy).ToClosestDirection();
                 server.EmitClientMessage(new Message.ActorFaced(actor, actor.Facing));
 
                 var dstX = actor.Position.x + dx;
@@ -49,15 +49,14 @@ namespace Server.Logic
 
         public class Face : IAction
         {
-            public readonly int dx;
-            public readonly int dy;
+            public readonly Direction direction;
 
-            public Face(int dx, int dy) => (this.dx, this.dy) = (dx, dy);
+            public Face(Direction direction) => this.direction = direction;
 
             public int Execute(IServerContext server, GameState gs, Actor actor)
             {
-                actor.Facing = (dx, dy);
-                server.EmitClientMessage(new Message.ActorFaced(actor, new Vec2i(dx, dy)));
+                actor.Facing = direction;
+                server.EmitClientMessage(new Message.ActorFaced(actor, direction));
                 return 0;
             }
         }
@@ -72,10 +71,11 @@ namespace Server.Logic
                 // Determine attack targets
 
                 // For now, find actor in facing adjacent tile
+                var facingVector = actor.Facing.ToVec();
                 var targets = gs.Actors.Where(a =>
                     a != actor &&
-                    a.Position.x == actor.Position.x + actor.Facing.x &&
-                    a.Position.y == actor.Position.y + actor.Facing.y);
+                    a.Position.x == actor.Position.x + facingVector.x &&
+                    a.Position.y == actor.Position.y + facingVector.y);
 
                 // Calculate + deal damage to each actor and store result in AttackResults
                 var attackerStats = actor.Archetype.StatusAtLevel(actor.Level);

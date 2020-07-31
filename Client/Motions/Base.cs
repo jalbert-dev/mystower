@@ -2,13 +2,14 @@ using System;
 using System.Collections;
 using Microsoft.Xna.Framework;
 using SadRogue.Primitives;
+using Server.Data;
 using Point = SadRogue.Primitives.Point;
 
 namespace Client
 {
     public static partial class Motions
     {
-        public static IEnumerable SetFacing(MapActor actor, Server.Data.Vec2i facing)
+        public static IEnumerable SetFacing(MapActor actor, Server.Data.Direction facing)
         {
             actor.Facing = facing;
             yield break;
@@ -42,7 +43,7 @@ namespace Client
         {
             atBegin();
 
-            var extent = tileSize * depth * new Point(actor.Facing.x, actor.Facing.y);
+            var extent = tileSize * depth * actor.Facing.ToVec().ToPoint();
             var extentf = new Vector2(extent.X, extent.Y);
 
             Point offset;

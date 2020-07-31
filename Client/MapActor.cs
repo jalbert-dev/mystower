@@ -13,7 +13,7 @@ namespace Client
     public class MapActor : Entity
     {
         public DataHandle<Actor> Actor { get; }
-        public Vec2i Facing { get; set; }
+        public Direction Facing { get; set; }
         public bool ShowFacingMarker { get => facingMarker.IsVisible; set => facingMarker.IsVisible = value; }
 
         public string DisplayName { get; private set; }
@@ -118,14 +118,14 @@ namespace Client
         {
             facingMarker.Animation.Surface.Cells[0].Glyph = Facing switch
             {
-                (-1, 0) => 2,
-                (0, -1) => 3,
-                (1, 0) => 4,
-                (0, 1) => 5,
-                (-1, 1) => 6,
-                (-1, -1) => 7,
-                (1, -1) => 8,
-                (1, 1) => 9,
+                Direction.W => 2,
+                Direction.N => 3,
+                Direction.E => 4,
+                Direction.S => 5,
+                Direction.SW => 6,
+                Direction.NW => 7,
+                Direction.NE => 8,
+                Direction.SE => 9,
                 _ => 0
             };
             facingMarker.Animation.IsDirty = true;

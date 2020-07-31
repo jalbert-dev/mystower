@@ -49,9 +49,9 @@ namespace Server.Message
     public class ActorFaced : IGameMessage
     {
         public DataHandle<Actor> Actor { get; }
-        public Vec2i NewFacingDir { get; }
+        public Direction NewFacingDir { get; }
 
-        internal ActorFaced(Actor actor, Vec2i facingDir)
+        internal ActorFaced(Actor actor, Direction facingDir)
         {
             Actor = actor.ToDataHandle();
             NewFacingDir = facingDir;

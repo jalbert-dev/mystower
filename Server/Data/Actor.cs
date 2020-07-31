@@ -5,14 +5,12 @@ using Util.Functional;
 
 namespace Server.Data
 {
-    
-
     /// A serializable structure representing a living actor in the game world.
     [CodeGen.GameDataNode]
     public partial class Actor
     {
         Vec2i position;
-        Vec2i facing;
+        Direction facing;
 
         string aiType;
         int timeUntilAct;
@@ -29,7 +27,7 @@ namespace Server.Data
              => lookup(archetypeId)
                     .Map(archetype => new Actor(
                         position: new Vec2i(x, y), 
-                        facing: new Vec2i(0, 1), 
+                        facing: Direction.S, 
                         aiType: archetype.DefaultAiType, 
                         timeUntilAct: ct,
                         level: lvl,

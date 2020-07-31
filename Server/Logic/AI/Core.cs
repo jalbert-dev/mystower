@@ -38,8 +38,8 @@ namespace Server.Logic
             var dir = target.Position - actor.Position;
             if (IsAdjacent(target.Position, actor.Position))
             {
-                if (actor.Position + actor.Facing != target.Position)
-                    return new Actions.Face(dir.x, dir.y);
+                if (actor.Position + actor.Facing.ToVec() != target.Position)
+                    return new Actions.Face(dir.ToClosestDirection());
                 
                 return new Actions.TryAttack();
             }

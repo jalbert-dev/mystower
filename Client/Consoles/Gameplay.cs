@@ -182,7 +182,7 @@ namespace Client
                 if (dx != 0 || dy != 0)
                 {
                     if (ManualFacing(info))
-                        return new Actions.Face(dx, dy);
+                        return new Actions.Face((dx, dy).ToClosestDirection());
                     else
                         return new Actions.Move(dx, dy);
                 }

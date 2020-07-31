@@ -221,6 +221,7 @@ namespace CodeGen
             // TODO!: This is an incorrect implementation! Must check for implementation of IEquatable<T>,
             //        rather than any IEquatable`1!
             return sym.Type.AllInterfaces.Any(x => x.FullName() == typeof(IEquatable<>).FullName) ||
+                sym.Type.IsValueType ||
                 (await HasAutogenerationAttribute(sym.Type, compilation));
         }
 
