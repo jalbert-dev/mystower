@@ -107,7 +107,7 @@ namespace Client
                                 Color.Lerp(new Color(0, 40, 0), new Color(0, 34, 0), (float)r.NextDouble()));
                         else
                         {
-                            if (map.SurroundingTiles(i,j).Any(x => x.type == 0))
+                            if (map.SurroundingTiles(i,j).Any(x => x.type == TileType.Floor))
                                 Map.SetGlyph(i, j,
                                     Tree[r.Next(4)],
                                     Color.DarkGreen,
