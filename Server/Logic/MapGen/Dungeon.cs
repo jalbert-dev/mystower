@@ -58,15 +58,17 @@ namespace Server.Logic
             {
                 for (int _ = 0; _ < 100; _++)
                 {
-                    int sizeX = rng.Next(gen.RoomMinWidth, gen.RoomMaxWidth);
-                    int sizeY = rng.Next(gen.RoomMinHeight, gen.RoomMaxHeight);
-                    
-                    int posX = rng.Next(gen.RoomMarginX, map.Width - gen.RoomMarginX - sizeX);
-                    int posY = rng.Next(gen.RoomMarginY, map.Height - gen.RoomMarginY - sizeY);
+                    int left = rng.Next(gen.RoomMarginX, map.Width - gen.RoomMarginX - gen.RoomMinWidth);
+                    int top = rng.Next(gen.RoomMarginY, map.Height - gen.RoomMarginY - gen.RoomMinHeight);
+                    int right = rng.Next(left + gen.RoomMinWidth, Math.Min(map.Width - gen.RoomMarginX, left + gen.RoomMaxWidth));
+                    int bottom = rng.Next(top + gen.RoomMinHeight, Math.Min(map.Height - gen.RoomMarginY, top + gen.RoomMaxHeight));
 
-                    if (IsRegionVacant(rooms, (posX, posY), (sizeX, sizeY)))
+                    Vec2i pos = (left, top);
+                    Vec2i size = (right - left, bottom - top);
+
+                    if (IsRegionVacant(rooms, pos, size))
                     {
-                        rooms.Add(map.DefineRoom((posX, posY), (sizeX, sizeY), new Util.ValueList<Vec2i>()));
+                        rooms.Add(map.DefineRoom(pos, size, new Util.ValueList<Vec2i>()));
                         break;
                     }
                 }
