@@ -72,7 +72,8 @@ namespace Server.Logic
                 var targets = gs.Actors.Where(a =>
                     a != actor &&
                     a.Position.x == actor.Position.x + facingVector.x &&
-                    a.Position.y == actor.Position.y + facingVector.y);
+                    a.Position.y == actor.Position.y + facingVector.y &&
+                    !Logic.Map.IsMoveBlockedByDiagonalWall(gs.Map, actor.Position, a.Position));
 
                 // Calculate + deal damage to each actor and store result in AttackResults
                 var attackerStats = actor.Archetype.StatusAtLevel(actor.Level);
