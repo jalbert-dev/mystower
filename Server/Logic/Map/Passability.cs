@@ -4,7 +4,7 @@ using Server.Data;
 
 namespace Server.Logic
 {
-    public static class Map
+    public static partial class Map
     {
         public static bool IsTileWall(TileType tileType)
             => tileType switch

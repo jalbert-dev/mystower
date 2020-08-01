@@ -114,139 +114,6 @@ namespace Server
             proxyClient = new ServerContext(Database);
         }
 
-        private static TileMap TestMap(int w, int h, IRandomSource rng)
-        {
-            var map = new TileMap(w, h, TileType.None);
-
-            var rooms = new List<(Vec2i pos, Vec2i size)>();
-            bool vacant(int px, int py, int sx, int sy)
-            {
-                px = px < 0 ? 0 : px;
-                py = py < 0 ? 0 : py;
-
-                return !rooms.Any(room => {
-                    return (px <= room.pos.x + room.size.x && px + sx >= room.pos.x &&
-                            py <= room.pos.y + room.size.y && py + sy >= room.pos.y);
-                });
-            }
-            static Vec2i randomPointOnPerimeter(IRandomSource rng, (Vec2i pos, Vec2i size) room)
-                => room.pos + rng.Next(0, 3) switch
-                {
-                    0 => (0, rng.Next(1, room.size.y-2)),
-                    1 => (room.size.x-1, rng.Next(1, room.size.y-2)),
-                    2 => (rng.Next(1, room.size.x-2), 0),
-                    3 => (rng.Next(1, room.size.x-2), room.size.y-1),
-                    _ => (0, 0),
-                };
-
-            for (int i = 0; i < 7; i++)
-            {
-                for (int _ = 0; _ < 100; _++)
-                {
-                    int sizeX = rng.Next(6, w / 4);
-                    int sizeY = rng.Next(6, h / 4);
-                    
-                    int posX = rng.Next(1, w-1 - sizeX);
-                    int posY = rng.Next(1, h-1 - sizeY);
-
-                    if (vacant(posX-1, posY-1, sizeX+2, sizeY+2))
-                    {
-                        rooms.Add(((posX, posY), (sizeX, sizeY)));
-                        break;
-                    }
-                }
-            }
-
-            // carve out allocated rooms
-            foreach (var (pos, size) in rooms)
-            {
-                // first fill with wall
-                for (int i = 0; i < size.x; i++)
-                    for (int j = 0; j < size.y; j++)
-                        map[pos.x+i, pos.y+j] = TileType.Wall;
-
-                // then dig the floor out of the center
-                for (int i = 1; i < size.x-1; i++)
-                    for (int j = 1; j < size.y-1; j++)
-                        map[i+pos.x, j+pos.y] = TileType.Floor;
-            }
-
-            var nodes = rng.Shuffle(Enumerable.Range(0, rooms.Count)).ToList();
-            List<(int from, int to)> edges = nodes.Zip(nodes.Skip(1), ValueTuple.Create).ToList();
-
-            static IEnumerable<Vec2i>? bfs(TileMap map, Vec2i src, Vec2i dst)
-            {
-                var toVisit = new Queue<Vec2i>();
-                var parents = new Dictionary<Vec2i, Vec2i>();
-
-                toVisit.Enqueue(src);
-
-                while (toVisit.Count > 0)
-                {
-                    var current = toVisit.Dequeue();
-
-                    foreach (var child in map
-                            .SurroundingTiles(current.x, current.y, false)
-                            .Where(x => !parents.ContainsKey(x.pos))
-                            .Where(x => map[x.pos] == TileType.None || map[x.pos] == TileType.Road))
-                    {
-                        toVisit.Enqueue(child.pos);
-                        parents.Add(child.pos, current);
-
-                        if (child.pos == dst)
-                        {
-                            IList<Vec2i> path = new List<Vec2i>();
-                            Vec2i ptr = dst;
-                            while (ptr != src)
-                            {
-                                path.Add(ptr);
-                                ptr = parents[ptr];
-                            }
-                            path.Add(src);
-                            return path.Reverse();
-                        }
-                    }
-                }
-
-                return null;
-            }
-
-            foreach (var (srcRoom, dstRoom) in edges.Select(x => (rooms[x.from], rooms[x.to])))
-            {
-                for (int _ = 0; _ < 100; _++)
-                {
-                    // get random tiles on perimeters of src and dst
-                    var srcTile = randomPointOnPerimeter(rng, srcRoom);
-                    var dstTile = randomPointOnPerimeter(rng, dstRoom);
-
-                    map[srcTile] = map[dstTile] = TileType.Road;
-
-                    // use BFS to find path from srcEntrance to dstEntrance
-                    var path = bfs(map, srcTile, dstTile);
-
-                    if (path == null)
-                        continue;
-                    
-                    // set all tiles on path to road
-                    foreach (var p in path)
-                        if (map[p] != TileType.Floor)
-                            map[p] = TileType.Road;
-                    break;
-                }
-            }
-
-            // finally replace all placeholder tiles with wall
-            for (int i = 0; i < map.Width; i++)
-                for (int j = 0; j < map.Height; j++)
-                    if (map[i,j] == TileType.None)
-                        map[i,j] = TileType.Wall;
-
-            foreach (var (roomPos, roomSize) in rooms)
-                map.DefineRoom(roomPos, roomSize);
-
-            return map;
-        }
-
         private static Result<ValueList<Actor>> PopulateMap(Func<string, Result<ActorArchetype>> lookupArchetype, TileMap map, IRandomSource rng)
         {
             if (map.Rooms.Count() == 0)
@@ -288,7 +155,18 @@ namespace Server
 
         public static Result<GameServer> NewGame(Util.Database gamedb)
              => from rng in Result.Ok(new LCG64RandomSource())
-                let map = TestMap(100, 50, rng)
+                let genParams = new MapGen.DungeonGenerationParams(
+                    dungeonWidth: 100,
+                    dungeonHeight: 60,
+                    roomMinWidth: 8,
+                    roomMaxWidth: 36,
+                    roomMinHeight: 8,
+                    roomMaxHeight: 40,
+                    roomCountMin: 6,
+                    roomCountMax: 11,
+                    roomMarginX: 1,
+                    roomMarginY: 1)
+                let map = MapGen.Dungeon(genParams, rng)
                 from actorList in PopulateMap(gamedb.Lookup<ActorArchetype>, map, rng)
                 select 
                     new GameServer(new GameState(actorList, map, rng),

@@ -8,7 +8,7 @@ namespace Tests.Server.Generators
     public static partial class ActorGen
     {
         public static Gen<Vec2i> RandomFloorTilePos(TileMap m)
-            => Gen.Elements(m.Where(x => x.type == 0).Select(x => new Vec2i(x.x, x.y)));
+            => Gen.Elements(m.Where(x => x.type == 0).Select(x => new Vec2i(x.pos.x, x.pos.y)));
 
         public static Gen<Direction> RandomFacing()
              => Gen.Elements(System.Enum.GetValues(typeof(Direction)).Cast<Direction>());

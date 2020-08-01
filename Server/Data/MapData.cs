@@ -13,6 +13,8 @@ namespace Server.Data
     {
         Vec2i pos;
         Vec2i size;
+
+        ValueList<Vec2i> ports;
     }
 
     public enum TileType
@@ -23,8 +25,23 @@ namespace Server.Data
         Road,
     }
 
+    public struct TileDesc
+    {
+        public Vec2i pos;
+        public TileType type;
+
+        public TileDesc(Vec2i pos, TileType type)
+        {
+            this.pos = pos;
+            this.type = type;
+        }
+
+        public void Deconstruct(out Vec2i p, out TileType t) => (p, t) = (pos, type);
+        public void Deconstruct(out int x, out int y, out TileType t) => (x, y, t) = (pos.x, pos.y, type);
+    }
+
     [JsonObject(MemberSerialization.Fields)]
-    public class TileMap : IEquatable<TileMap>, IEnumerable<(int x, int y, TileType type)>, IDeepCloneable<TileMap>
+    public class TileMap : IEquatable<TileMap>, IEnumerable<TileDesc>, IDeepCloneable<TileMap>
     {
 
         /// <summary>
@@ -43,9 +60,9 @@ namespace Server.Data
                     tiles[i,j] = initialValue;
         }
 
-        public MapRoom DefineRoom(Vec2i pos, Vec2i size)
+        public MapRoom DefineRoom(Vec2i pos, Vec2i size, IEnumerable<Vec2i> ports)
         {
-            var room = new MapRoom(pos, size);
+            var room = new MapRoom(pos, size, ports.ToValueList());
             rooms.Add(room);
             return room;
         }
@@ -75,11 +92,11 @@ namespace Server.Data
             return Tiles().SequenceEqual(other.Tiles());
         }
 
-        private bool TryGetTile(int x, int y, out (Vec2i pos, TileType type) v)
+        private bool TryGetTile(int x, int y, out TileDesc v)
         {
             if (x >= 0 && y >= 0 && x < Width && y < Height)
             {
-                v = ((x, y), this[x,y]);
+                v = new TileDesc((x, y), this[x,y]);
                 return true;
             }
             v = default;
@@ -93,9 +110,9 @@ namespace Server.Data
                     yield return tiles[i, j];
         }
 
-        public IEnumerable<(Vec2i pos, TileType type)> SurroundingTiles(int x, int y, bool includeDiagonal = true)
+        public IEnumerable<TileDesc> SurroundingTiles(int x, int y, bool includeDiagonal = true)
         {
-            (Vec2i pos, TileType type) v;
+            TileDesc v;
 
             if (TryGetTile(x-1, y+0, out v)) yield return v;
             if (TryGetTile(x+1, y+0, out v)) yield return v;
@@ -111,11 +128,11 @@ namespace Server.Data
             if (TryGetTile(x+1, y+1, out v)) yield return v;
         }
 
-        public IEnumerator<(int x, int y, TileType type)> GetEnumerator()
+        public IEnumerator<TileDesc> GetEnumerator()
         {
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
-                    yield return (i, j, tiles[i, j]);
+                    yield return new TileDesc((i, j), tiles[i, j]);
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
