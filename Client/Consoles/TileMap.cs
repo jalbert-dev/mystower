@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SadConsole;
 using SadRogue.Primitives;
-
+using Server.Data;
 using static SadConsole.Font;
 
 namespace Client
@@ -100,7 +100,7 @@ namespace Client
                 {
                     for (int j = 0; j < h; j++)
                     {
-                        if (map[i,j] != 1)
+                        if (map[i,j] != TileType.Wall)
                             Map.SetGlyph(i, j,
                                 Grass[r.Next(4)],
                                 Color.Lerp(Color.DarkGreen, Color.DarkOliveGreen, (float)r.NextDouble()),

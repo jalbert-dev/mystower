@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using SadConsole;
 using SadRogue.Primitives;
 using Microsoft.Xna.Framework.Graphics;
+using Server.Data;
 
 namespace Client
 {
@@ -97,7 +98,7 @@ namespace Client
                 int hasBorder(int x, int y) =>
                     (x >= 0 && x < data.Width &&
                     y >= 0 && y < data.Height &&
-                    data[x,y] != 1) ? (byte)0xFF : (byte)0x00;
+                    data[x,y] != TileType.Wall) ? (byte)0xFF : (byte)0x00;
 
                 // fill tile 1 with white as required by Font
                 for (int j = 0; j < tileHeight; j++)
@@ -109,7 +110,7 @@ namespace Client
                     for (int x = 0; x < data.Width; x++)
                     {
                         // compute bitmask of each Wall for surrounding non-Wall
-                        if (data[x, y] != 1)
+                        if (data[x, y] != TileType.Wall)
                             continue;
 
                         int mask = 0;
@@ -187,14 +188,10 @@ namespace Client
                 {
                     for (int i = 0; i < terrainData.Width; i++)
                     {
-                        if (terrainData[i, j] == 0)
-                        {
+                        if (terrainData[i, j] == TileType.Floor)
                             terrainLayer.SetCellAppearance(i, j, FLOOR);
-                        }
-                        else if (terrainData[i, j] == 2)
-                        {
+                        else if (terrainData[i, j] == TileType.Road)
                             terrainLayer.SetCellAppearance(i, j, ROAD);
-                        }
                         
                         wallLayer.SetGlyph(i, j, atlasIndexes[j * terrainData.Width + i]);
                     }

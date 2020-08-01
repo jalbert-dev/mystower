@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Util.Functional;
 
 namespace Server.Random
 {
@@ -11,8 +12,15 @@ namespace Server.Random
 
     public static class RandomExtensions
     {
-        public static T PickFrom<T>(this IRandomSource rng, IEnumerable<T> x) 
-            => x.ElementAt(rng.Next(0, x.Count() - 1));
+        public static Option<T> PickFrom<T>(this IRandomSource rng, IEnumerable<T> x)
+        {
+            var max = x.Count() - 1;
+            
+            if (max < 0)
+                return Option.None;
+            
+            return Option.Some(x.ElementAt(rng.Next(0, x.Count() - 1)));
+        }
         public static IEnumerable<T> Shuffle<T>(this IRandomSource rng, IEnumerable<T> x)
             => x.OrderBy(_ => rng.Next());
     }

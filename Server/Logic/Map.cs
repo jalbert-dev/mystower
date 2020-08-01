@@ -6,18 +6,18 @@ namespace Server.Logic
 {
     public static class Map
     {
-        public static bool IsTileWall(byte tileType)
+        public static bool IsTileWall(TileType tileType)
             => tileType switch
             {
-                1 => true,
+                TileType.Wall => true,
                 _ => false,
             };
 
-        public static bool IsTileWalkable(byte tileType)
+        public static bool IsTileWalkable(TileType tileType)
             => !IsTileWall(tileType) && tileType switch
             {
-                0 => true,
-                2 => true,
+                TileType.Floor => true,
+                TileType.Road => true,
                 _ => false,
             };
         public static bool IsTileWalkable(TileMap map, int x, int y) => IsTileWalkable(map[x,y]);

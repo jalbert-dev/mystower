@@ -19,6 +19,16 @@ namespace Server
             public InvalidAI(string type) => this.type = type;
             public string Message => $"Invalid AI type '{type}'.";
         }
+
+        public class MapHasNoRooms : IError
+        {
+            public string Message => $"Generated map has no rooms!";
+        }
+
+        public class RoomHasNoOpenTiles : IError
+        {
+            public string Message => $"No unoccupied tile in room; cannot place actor!";
+        }
     }
 
     /// <summary>
@@ -106,7 +116,7 @@ namespace Server
 
         private static TileMap TestMap(int w, int h, IRandomSource rng)
         {
-            var map = new TileMap(w, h, 255);
+            var map = new TileMap(w, h, TileType.None);
 
             var rooms = new List<(Vec2i pos, Vec2i size)>();
             bool vacant(int px, int py, int sx, int sy)
@@ -153,12 +163,12 @@ namespace Server
                 // first fill with wall
                 for (int i = 0; i < size.x; i++)
                     for (int j = 0; j < size.y; j++)
-                        map[pos.x+i, pos.y+j] = 1;
+                        map[pos.x+i, pos.y+j] = TileType.Wall;
 
                 // then dig the floor out of the center
                 for (int i = 1; i < size.x-1; i++)
                     for (int j = 1; j < size.y-1; j++)
-                        map[i+pos.x, j+pos.y] = 0;
+                        map[i+pos.x, j+pos.y] = TileType.Floor;
             }
 
             var nodes = rng.Shuffle(Enumerable.Range(0, rooms.Count)).ToList();
@@ -178,7 +188,7 @@ namespace Server
                     foreach (var child in map
                             .SurroundingTiles(current.x, current.y, false)
                             .Where(x => !parents.ContainsKey(x.pos))
-                            .Where(x => map[x.pos] > 1))
+                            .Where(x => map[x.pos] == TileType.None || map[x.pos] == TileType.Road))
                     {
                         toVisit.Enqueue(child.pos);
                         parents.Add(child.pos, current);
@@ -209,8 +219,7 @@ namespace Server
                     var srcTile = randomPointOnPerimeter(rng, srcRoom);
                     var dstTile = randomPointOnPerimeter(rng, dstRoom);
 
-                    map[srcTile] = 2;
-                    map[dstTile] = 2;
+                    map[srcTile] = map[dstTile] = TileType.Road;
 
                     // use BFS to find path from srcEntrance to dstEntrance
                     var path = bfs(map, srcTile, dstTile);
@@ -220,8 +229,8 @@ namespace Server
                     
                     // set all tiles on path to road
                     foreach (var p in path)
-                        if (map[p] != 0)
-                            map[p] = 2;
+                        if (map[p] != TileType.Floor)
+                            map[p] = TileType.Road;
                     break;
                 }
             }
@@ -229,8 +238,8 @@ namespace Server
             // finally replace all placeholder tiles with wall
             for (int i = 0; i < map.Width; i++)
                 for (int j = 0; j < map.Height; j++)
-                    if (map[i,j] == 255)
-                        map[i,j] = 1;
+                    if (map[i,j] == TileType.None)
+                        map[i,j] = TileType.Wall;
 
             foreach (var (roomPos, roomSize) in rooms)
                 map.DefineRoom(roomPos, roomSize);
@@ -240,29 +249,37 @@ namespace Server
 
         private static Result<ValueList<Actor>> PopulateMap(Func<string, Result<ActorArchetype>> lookupArchetype, TileMap map, IRandomSource rng)
         {
+            if (map.Rooms.Count() == 0)
+                return Result.Error(new Errors.MapHasNoRooms());
+
             var actors = new ValueList<Actor>();
 
             var playerRoom = rng.PickFrom(map.Rooms);
+            var playerAddOp = 
+                rng.PickFrom(
+                    Map.GetUnoccupiedTilesInRoom(playerRoom.Value, map, actors))
+                .ErrorIfNone(() => new Errors.RoomHasNoOpenTiles())
+                .Bind(pos => Actor.FromArchetype(pos.x, pos.y, 0, 1, "player", lookupArchetype))
+                .Finally(player => actors.Add(player));
 
-            var playerStart = rng.PickFrom(Map.GetUnoccupiedTilesInRoom(playerRoom, map, actors));
-            var player = Actor.FromArchetype(playerStart.x, playerStart.y, 0, 1, "player", lookupArchetype);
-            if (!player.IsSuccess)
-                return Result.Error(player.Err);
+            if (!playerAddOp.IsSuccess)
+                return Result.Error(playerAddOp.Err);
 
-            actors.Add(player.Value);
-
-            foreach (var r in map.Rooms.Where(x => !x.Equals(playerRoom)))
+            foreach (var r in map.Rooms.Where(x => !x.Equals(playerRoom.Value)))
             {
                 var enemyCount = rng.Next(1, 2);
                 for (int i = 0; i < enemyCount; i++)
                 {
-                    var tile = rng.PickFrom(Map.GetUnoccupiedTilesInRoom(r, map, actors));
-                    var actor = Actor.FromArchetype(tile.x, tile.y, 0, 1, "squablin", lookupArchetype);
+                    var actorAddOp = 
+                        rng.PickFrom(
+                            Map.GetUnoccupiedTilesInRoom(r, map, actors))
+                        .ErrorIfNone(() => new Errors.RoomHasNoOpenTiles())
+                        .Bind(pos => Actor.FromArchetype(pos.x, pos.y, 0, 1, "squablin", lookupArchetype))
+                        .Finally(actor => actors.Add(actor));
                     
-                    if (!actor.IsSuccess)
-                        return Result.Error(actor.Err);
-
-                    actors.Add(actor.Value);
+                    // TODO: This should probably be a warning rather than an error
+                    if (!actorAddOp.IsSuccess)
+                        return Result.Error(actorAddOp.Err);
                 }
             }
 

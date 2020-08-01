@@ -15,21 +15,29 @@ namespace Server.Data
         Vec2i size;
     }
 
+    public enum TileType
+    {
+        None,
+        Floor,
+        Wall,
+        Road,
+    }
+
     [JsonObject(MemberSerialization.Fields)]
-    public class TileMap : IEquatable<TileMap>, IEnumerable<(int x, int y, byte type)>, IDeepCloneable<TileMap>
+    public class TileMap : IEquatable<TileMap>, IEnumerable<(int x, int y, TileType type)>, IDeepCloneable<TileMap>
     {
 
         /// <summary>
         /// A 2D array representing the tiles of the map. Each entry of the array
         /// is a value representing a tile type ID.
         /// </summary>
-        byte[,] tiles;
+        TileType[,] tiles;
 
         List<MapRoom> rooms = new List<MapRoom>();
 
-        public TileMap(int w, int h, byte initialValue = 0)
+        public TileMap(int w, int h, TileType initialValue = 0)
         {
-            tiles = new byte[w,h];
+            tiles = new TileType[w,h];
             for (int i = 0; i < w; i++)
                 for (int j = 0; j < h; j++)
                     tiles[i,j] = initialValue;
@@ -46,13 +54,13 @@ namespace Server.Data
         public int Height => tiles.GetLength(1);
         public IEnumerable<MapRoom> Rooms => rooms;
 
-        public byte this[int x, int y]
+        public TileType this[int x, int y]
         {
             get => tiles[x, y];
             set => tiles[x, y] = value;
         }
 
-        public byte this[Vec2i xy]
+        public TileType this[Vec2i xy]
         {
             get => tiles[xy.x, xy.y];
             set => tiles[xy.x, xy.y] = value;
@@ -67,7 +75,7 @@ namespace Server.Data
             return Tiles().SequenceEqual(other.Tiles());
         }
 
-        private bool TryGetTile(int x, int y, out (Vec2i pos, byte type) v)
+        private bool TryGetTile(int x, int y, out (Vec2i pos, TileType type) v)
         {
             if (x >= 0 && y >= 0 && x < Width && y < Height)
             {
@@ -78,16 +86,17 @@ namespace Server.Data
             return false;
         }
 
-        public IEnumerable<byte> Tiles()
+        public IEnumerable<TileType> Tiles()
         {
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
                     yield return tiles[i, j];
         }
 
-        public IEnumerable<(Vec2i pos, byte type)> SurroundingTiles(int x, int y, bool includeDiagonal = true)
+        public IEnumerable<(Vec2i pos, TileType type)> SurroundingTiles(int x, int y, bool includeDiagonal = true)
         {
-            (Vec2i pos, byte type) v;
+            (Vec2i pos, TileType type) v;
+
             if (TryGetTile(x-1, y+0, out v)) yield return v;
             if (TryGetTile(x+1, y+0, out v)) yield return v;
             if (TryGetTile(x+0, y-1, out v)) yield return v;
@@ -102,7 +111,7 @@ namespace Server.Data
             if (TryGetTile(x+1, y+1, out v)) yield return v;
         }
 
-        public IEnumerator<(int x, int y, byte type)> GetEnumerator()
+        public IEnumerator<(int x, int y, TileType type)> GetEnumerator()
         {
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)

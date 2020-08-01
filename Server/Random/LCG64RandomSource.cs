@@ -21,6 +21,10 @@ namespace Server.Random
         public int Next(int min, int max)
         {
             var range = (UInt64)(max + 1 - min);
+
+            if (range == 0)
+                return min;
+                
             return (int)((_next() % (range * 4)) / 4 + (UInt64)min);
         }
 
