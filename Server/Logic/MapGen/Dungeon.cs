@@ -4,12 +4,12 @@ using System.Linq;
 using Server.Data;
 using Server.Random;
 
-namespace Server.Logic
+namespace Server.Logic.MapGen
 {
-    public static partial class MapGen
+    public static partial class Dungeon
     {
         [CodeGen.DatabaseType]
-        public partial class DungeonGenerationParams
+        public partial class Parameters
         {
             int dungeonWidth;
             int dungeonHeight;
@@ -24,6 +24,11 @@ namespace Server.Logic
 
             int roomMarginX;
             int roomMarginY;
+
+            public const int MIN_MAP_SIZE = 8;
+            public const int MIN_ROOM_SIZE = 3;
+            public const int MIN_ROOMS = 1;
+            public const int MIN_ROOM_MARGIN = 2;
         }
 
         private static bool IsRegionVacant(List<MapRoom> rooms, Vec2i pos, Vec2i size)
@@ -46,7 +51,7 @@ namespace Server.Logic
                 _ => (0, 0),
             });
 
-        public static TileMap Dungeon(DungeonGenerationParams gen, IRandomSource rng)
+        public static TileMap Generate(Parameters gen, IRandomSource rng)
         {
             // TODO: Validate generation params (function should return Result<TileMap>)
 
@@ -103,13 +108,13 @@ namespace Server.Logic
                     var srcTile = srcRoom.GetRandomPointOnPerimeter(rng);
                     var dstTile = dstRoom.GetRandomPointOnPerimeter(rng);
 
-                    map[srcTile] = map[dstTile] = TileType.Road;
+                    map[srcTile] = map[dstTile] = TileType.Corridor;
 
                     // use BFS to find path from srcEntrance to dstEntrance
                     var path = Map.FindPathBFS(map,
                                                srcTile,
                                                dstTile,
-                                               x => map[x.pos] == TileType.None || map[x.pos] == TileType.Road);
+                                               x => map[x.pos] == TileType.None || map[x.pos] == TileType.Corridor);
 
                     // if we can't find a valid path from one room to the next, try again
                     if (path == null)
@@ -118,10 +123,10 @@ namespace Server.Logic
                         continue;
                     }
                     
-                    // set all tiles on path to road
+                    // set all tiles on path to corridor
                     foreach (var p in path)
                         if (map[p] != TileType.Floor)
-                            map[p] = TileType.Road;
+                            map[p] = TileType.Corridor;
 
                     srcRoom.Ports.Add(srcTile);
                     dstRoom.Ports.Add(dstTile);

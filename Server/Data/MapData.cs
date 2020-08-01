@@ -22,7 +22,7 @@ namespace Server.Data
         None,
         Floor,
         Wall,
-        Road,
+        Corridor,
     }
 
     public struct TileDesc
@@ -103,11 +103,11 @@ namespace Server.Data
             return false;
         }
 
-        public IEnumerable<TileType> Tiles()
+        public IEnumerable<TileDesc> Tiles()
         {
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
-                    yield return tiles[i, j];
+                    yield return new TileDesc((i, j), tiles[i, j]);
         }
 
         public IEnumerable<TileDesc> SurroundingTiles(int x, int y, bool includeDiagonal = true)

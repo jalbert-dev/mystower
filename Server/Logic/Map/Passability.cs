@@ -17,7 +17,7 @@ namespace Server.Logic
             => !IsTileWall(tileType) && tileType switch
             {
                 TileType.Floor => true,
-                TileType.Road => true,
+                TileType.Corridor => true,
                 _ => false,
             };
         public static bool IsTileWalkable(TileMap map, int x, int y) => IsTileWalkable(map[x,y]);

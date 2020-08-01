@@ -21,6 +21,8 @@ namespace Server.Data
         public static Vec2i operator+(Vec2i a, Vec2i b) => (a.x + b.x, a.y + b.y);
         public static Vec2i operator-(Vec2i a, Vec2i b) => a + -b;
 
+        public static Vec2i operator/(Vec2i a, int b) => (a.x / b, a.y / b);
+
         public static Vec2i Zero = new Vec2i { x = 0, y = 0 };
 
         public override string ToString() => this.ToPrettyJson();
