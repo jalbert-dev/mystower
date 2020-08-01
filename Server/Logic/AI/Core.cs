@@ -2,6 +2,7 @@ using Util;
 using System.Linq;
 using Server.Data;
 using System;
+using Server.Random;
 
 namespace Server.Logic
 {
@@ -14,12 +15,14 @@ namespace Server.Logic
         public static ActionSelector Idle
             => (_, __) => new Actions.Idle();
 
-        public static ActionSelector MoveRandomly => (gs, actor) => {
-            if (Map.CanMoveFromAToB(gs.Map, gs.Actors, actor.Position, actor.Position + (1, 1)))
-                return new Actions.Move(1, 1);
-            else
-                return new Actions.Idle();
-        };
+        public static ActionSelector MoveRandomly => (gs, actor) =>
+            gs.Rng.PickFrom(
+                gs.Map.SurroundingTiles(actor.Position.x, actor.Position.y)
+                .Where(desc => Map.CanMoveFromAToB(gs.Map, gs.Actors, actor.Position, desc.pos)))
+            .Match<IAction>(
+                some: desc => new Actions.Move((desc.pos - actor.Position).ToClosestDirection()),
+                none: () => new Actions.Idle()
+            );
 
         private static bool IsAdjacent(Vec2i v1, Vec2i v2)
              => v1 != v2 &&

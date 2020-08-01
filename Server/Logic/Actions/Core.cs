@@ -17,11 +17,8 @@ namespace Server.Logic
 
         public class Move : IAction
         {
-            public Move(int dx, int dy)
-            {
-                this.dx = dx;
-                this.dy = dy;
-            }
+            public Move(int dx, int dy) => (this.dx, this.dy) = (dx, dy);
+            public Move(Direction direction) => (dx, dy) = direction.ToVec();
 
             public readonly int dx;
             public readonly int dy;

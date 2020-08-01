@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using Server.Random;
 
 namespace Server.Data
 {
@@ -14,8 +16,11 @@ namespace Server.Data
         SW,
     }
 
-    public static class DirectionExtensions
+    public static class DirectionUtils
     {
+        public static Direction RandomDirection(this IRandomSource self)
+            => self.PickFrom(Enum.GetValues(typeof(Direction)).Cast<Direction>()).Value;
+
         public static Vec2i ToVec(this Direction self) => self switch
         {
             Direction.N => (0, -1),
