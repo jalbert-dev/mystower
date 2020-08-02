@@ -15,10 +15,17 @@ namespace Tests.Server.MapGenTests
             => Prop.ForAll(
                 DungeonMapGen.Default(),
                 map => {
+                    AssertGeneratedMapHasNoMissingTiles(map);
                     AssertGeneratedRoomsHaveNoAdjacentPorts(map);
                     AssertBoundsOfMapMustBeWalls(map);
                     AssertGeneratedRoomsAreAllReachable(map);
                 });
+
+        private static void AssertGeneratedMapHasNoMissingTiles(global::Server.Data.TileMap map)
+        {
+            foreach (var (_, _, type) in map.Tiles())
+                type.Should().NotBe(TileType.None);
+        }
 
         private static void AssertGeneratedRoomsHaveNoAdjacentPorts(global::Server.Data.TileMap map)
         {
