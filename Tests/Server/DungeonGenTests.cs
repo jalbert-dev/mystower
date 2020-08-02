@@ -5,7 +5,10 @@ using FsCheck;
 using FsCheck.Xunit;
 using Server.Data;
 using Server.Logic;
+using Server.Random;
 using Tests.Server.Generators;
+
+using MapGen = Server.Logic.MapGen;
 
 namespace Tests.Server.MapGenTests
 {
@@ -75,29 +78,13 @@ namespace Tests.Server.MapGenTests
             }
         }
 
-        // [Fact] public static void RoomCountMustBeGreaterThanZero()
-        // {
-        //     return null;
-        // }
-
-        // [Fact] public static void RoomWidthHeightMinMustBeBetween3AndMapWidthHeight()
-        // {
-        //     return null;
-        // }
-
-        // [Fact] public static void RoomWidthHeightMaxMustNotBeSmallerThanRoomMinSize()
-        // {
-        //     return null;
-        // }
-
-        // [Fact] public static void RoomMarginMustBeGreaterThanOne()
-        // {
-        //     return null;
-        // }
-
-        // [Fact] public static void MapWidthHeightMustBeAtLeast8()
-        // {
-        //     return null;
-        // }
+        [Property] public static Property RoomCountMustBeGreaterThanZero()
+            => Prop.ForAll(
+                DungeonMapGen.DefaultGenParams(12).WithRoomCountMin(0),
+                gen => {
+                    var result = MapGen.Dungeon.Generate(gen, new LCG64RandomSource(0));
+                    result.IsSuccess.Should().BeFalse();
+                    result.Err.Should().BeOfType(typeof(MapGen.Dungeon.Error.RoomCountMinimumMustBeGTZero));
+                });
     }
 }

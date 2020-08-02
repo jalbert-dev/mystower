@@ -9,11 +9,43 @@ namespace Server.Logic.MapGen
 {
     public static partial class Dungeon
     {
-        [CodeGen.DatabaseType]
+        public static class Error
+        {
+            public class RoomCountMinimumMustBeGTZero : IError
+            {
+                public string Message => $"Room count must be greater than ${Dungeon.Parameters.MIN_ROOMS - 1}.";
+            }
+            public class MapMarginTooSmall : IError
+            {
+                public string Message => $"Map margin width/height must be greater than ${Dungeon.Parameters.MIN_ROOM_MARGIN - 1}.";
+            }
+            public class MapSizeMustBeGreaterThanMinimum : IError
+            {
+                public string Message => $"Map width/height must be greater than ${Dungeon.Parameters.MIN_MAP_SIZE - 1}.";
+            }
+            public class RoomSizeMinimumMustBeGreaterThanMinimum : IError
+            {
+                public string Message => $"Room width/height minimum must be greater than ${Dungeon.Parameters.MIN_ROOM_SIZE - 1}.";
+            }
+            public class RoomSizeMinimumMustBeLessThanMapSizeAndMargins : IError
+            {
+                public string Message => $"Room width/height minimum must be no greater than map width/height minus twice the map margin.";
+            }
+            public class RangeError : IError
+            {
+                private readonly string fieldName;
+                private readonly int min, max;
+                public RangeError(string fieldName, int min, int max) 
+                    => (this.fieldName, this.min, this.max) = (fieldName, min, max);
+                public string Message => $"Invalid range [{min}, {max}] in field '{fieldName}'.";
+            }
+        }
+
+        [CodeGen.GameDataNode]
         public partial class Parameters
         {
-            int dungeonWidth;
-            int dungeonHeight;
+            int mapWidth;
+            int mapHeight;
 
             int roomMinWidth;
             int roomMaxWidth;
@@ -23,8 +55,8 @@ namespace Server.Logic.MapGen
             int roomCountMin;
             int roomCountMax;
 
-            int roomMarginX;
-            int roomMarginY;
+            int mapMarginX;
+            int mapMarginY;
 
             public const int MIN_MAP_SIZE = 8;
             public const int MIN_ROOM_SIZE = 3;
@@ -80,11 +112,32 @@ namespace Server.Logic.MapGen
             return true;
         }
 
-        public static TileMap Generate(Parameters gen, IRandomSource rng)
+        private static IError? ValidateParams(Parameters gen)
         {
-            // TODO: Validate generation params (function should return Result<TileMap>)
+            if (gen.RoomCountMin < Parameters.MIN_ROOMS)
+                return new Error.RoomCountMinimumMustBeGTZero();
+            if (gen.MapMarginX < Parameters.MIN_ROOM_MARGIN ||
+                gen.MapMarginY < Parameters.MIN_ROOM_MARGIN)
+                return new Error.MapMarginTooSmall();
+            if (gen.MapWidth < Parameters.MIN_MAP_SIZE ||
+                gen.MapHeight < Parameters.MIN_MAP_SIZE)
+                return new Error.MapSizeMustBeGreaterThanMinimum();
+            if (gen.RoomMinWidth < Parameters.MIN_ROOM_SIZE ||
+                gen.RoomMinHeight < Parameters.MIN_ROOM_SIZE)
+                return new Error.RoomSizeMinimumMustBeGreaterThanMinimum();
+            if (gen.RoomMinWidth > gen.MapWidth - gen.MapMarginX * 2 ||
+                gen.RoomMinHeight > gen.MapHeight - gen.MapMarginY * 2)
+                return new Error.RoomSizeMinimumMustBeLessThanMapSizeAndMargins();
+            return null;
+        }
 
-            var map = new TileMap(gen.DungeonWidth, gen.DungeonHeight, TileType.None);
+        public static Result<TileMap> Generate(Parameters gen, IRandomSource rng)
+        {
+            var valid = ValidateParams(gen);
+            if (valid != null)
+                return Result.Error(valid);
+
+            var map = new TileMap(gen.MapWidth, gen.MapHeight, TileType.None);
             var rooms = new List<MapRoom>();
             var roomCount = rng.Next(gen.RoomCountMin, gen.RoomCountMax);
 
@@ -92,10 +145,10 @@ namespace Server.Logic.MapGen
             {
                 for (int _ = 0; _ < 100; _++)
                 {
-                    int left = rng.Next(gen.RoomMarginX, map.Width - gen.RoomMarginX - gen.RoomMinWidth);
-                    int top = rng.Next(gen.RoomMarginY, map.Height - gen.RoomMarginY - gen.RoomMinHeight);
-                    int right = rng.Next(left + gen.RoomMinWidth, Math.Min(map.Width - gen.RoomMarginX, left + gen.RoomMaxWidth));
-                    int bottom = rng.Next(top + gen.RoomMinHeight, Math.Min(map.Height - gen.RoomMarginY, top + gen.RoomMaxHeight));
+                    int left = rng.Next(gen.MapMarginX, map.Width - gen.MapMarginX - gen.RoomMinWidth);
+                    int top = rng.Next(gen.MapMarginY, map.Height - gen.MapMarginY - gen.RoomMinHeight);
+                    int right = rng.Next(left + gen.RoomMinWidth, Math.Min(map.Width - gen.MapMarginX, left + gen.RoomMaxWidth));
+                    int bottom = rng.Next(top + gen.RoomMinHeight, Math.Min(map.Height - gen.MapMarginY, top + gen.RoomMaxHeight));
 
                     Vec2i pos = (left, top);
                     Vec2i size = (right - left, bottom - top);
@@ -170,7 +223,7 @@ namespace Server.Logic.MapGen
                     if (map[i,j] == TileType.None)
                         map[i,j] = TileType.Wall;
 
-            return map;
+            return Result.Ok(map);
         }
     }
 }

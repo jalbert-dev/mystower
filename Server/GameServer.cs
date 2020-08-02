@@ -156,17 +156,17 @@ namespace Server
         public static Result<GameServer> NewGame(Util.Database gamedb)
              => from rng in Result.Ok(new LCG64RandomSource())
                 let genParams = new Logic.MapGen.Dungeon.Parameters(
-                    dungeonWidth: 64,
-                    dungeonHeight: 64,
+                    mapWidth: 64,
+                    mapHeight: 64,
                     roomMinWidth: 8,
                     roomMaxWidth: 24,
                     roomMinHeight: 6,
                     roomMaxHeight: 24,
                     roomCountMin: 6,
                     roomCountMax: 11,
-                    roomMarginX: 2,
-                    roomMarginY: 2)
-                let map = Logic.MapGen.Dungeon.Generate(genParams, rng)
+                    mapMarginX: 2,
+                    mapMarginY: 2)
+                from map in Logic.MapGen.Dungeon.Generate(genParams, rng)
                 from actorList in PopulateMap(gamedb.Lookup<ActorArchetype>, map, rng)
                 select 
                     new GameServer(new GameState(actorList, map, rng),

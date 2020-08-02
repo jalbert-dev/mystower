@@ -21,21 +21,24 @@ namespace Tests.Server.Generators
                  from roomCountMin in Gen.Choose(1, 4)
                  from roomCountMax in Gen.Choose(roomCountMin, 16)
                  select new Dungeon.Parameters(
-                     dungeonWidth: mapSize.Item1,
-                     dungeonHeight: mapSize.Item2,
+                     mapWidth: mapSize.Item1,
+                     mapHeight: mapSize.Item2,
                      roomMinWidth: roomMinSizeX,
                      roomMinHeight: roomMinSizeY,
                      roomMaxWidth: roomMaxSizeX,
                      roomMaxHeight: roomMaxSizeY,
                      roomCountMin: roomCountMin,
                      roomCountMax: roomCountMax,
-                     roomMarginX: roomMargin.Item1,
-                     roomMarginY: roomMargin.Item2));
+                     mapMarginX: roomMargin.Item1,
+                     mapMarginY: roomMargin.Item2));
+
+        public static Arbitrary<Dungeon.Parameters> WithRoomCountMin(this Arbitrary<Dungeon.Parameters> arb, int min)
+            => arb.Generator.Select(x => { x.RoomCountMin = min; return x; }).ToArbitrary();
         
         public static Arbitrary<TileMap> Default(int maxMapSize = DEFAULT_MAX_TEST_MAP_SIZE)
              => Arb.From(
                  from genParams in DefaultGenParams(maxMapSize).Generator
                  from rng in Arb.Default.DoNotSizeUInt64().Generator
-                 select Dungeon.Generate(genParams, new LCG64RandomSource(rng.Item)));
+                 select Dungeon.Generate(genParams, new LCG64RandomSource(rng.Item)).Value);
     }
 }
