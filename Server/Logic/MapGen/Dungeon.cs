@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Server.Data;
 using Server.Random;
+using Util.Functional;
 
 namespace Server.Logic.MapGen
 {
@@ -41,15 +42,43 @@ namespace Server.Logic.MapGen
                 pos.y <= room.Pos.y + room.Size.y && pos.y + size.y >= room.Pos.y);
         }
 
-        private static Vec2i GetRandomPointOnPerimeter(this MapRoom room, IRandomSource rng)
-            => room.Pos + (rng.Next(0, 3) switch
+        private static IEnumerable<Vec2i> GetLocalPointsOnPerimeter(this MapRoom room)
+        {
+            for (int y = 1; y < room.Size.y - 1; y++)
             {
-                0 => (0, rng.Next(1, room.Size.y-2)),
-                1 => (room.Size.x-1, rng.Next(1, room.Size.y-2)),
-                2 => (rng.Next(1, room.Size.x-2), 0),
-                3 => (rng.Next(1, room.Size.x-2), room.Size.y-1),
-                _ => (0, 0),
-            });
+                yield return (0, y);
+                yield return (room.Size.x - 1, y);
+            }
+            for (int x = 1; x < room.Size.x - 1; x++)
+            {
+                yield return (x, 0);
+                yield return (x, room.Size.y - 1);
+            }
+        }
+
+        private static IEnumerable<Vec2i> GetGlobalPointsOnPerimeter(this MapRoom room)
+            => GetLocalPointsOnPerimeter(room).Select(x => x + room.Pos);
+
+        private static Option<Vec2i> GetRandomPortPosition(this MapRoom room, TileMap map, IRandomSource rng)
+             => rng.PickFrom(
+                    room
+                    .GetGlobalPointsOnPerimeter()
+                    // ports can't be located at the bounding edges of the map
+                    .Where(x => x.x != 0 && x.y != 0 && x.x != map.Width - 1 && x.y != map.Height - 1)
+                    // ports can't be adjacent to other ports
+                    .Where(x => room.Ports.All(port => !x.Adjacent(port))));
+
+        private static bool IsValidCorridorPosition(TileMap map, TileDesc tile)
+        {
+            if (map[tile.pos] != TileType.None && map[tile.pos] != TileType.Corridor)
+                return false;
+            
+            if (tile.pos.x == 0 || tile.pos.y == 0 || 
+                tile.pos.x == map.Width - 1 || tile.pos.y == map.Height - 1)
+                return false;
+
+            return true;
+        }
 
         public static TileMap Generate(Parameters gen, IRandomSource rng)
         {
@@ -105,8 +134,8 @@ namespace Server.Logic.MapGen
                 for (int _ = 0; _ < 100; _++)
                 {
                     // get random tiles on perimeters of src and dst
-                    var srcTile = srcRoom.GetRandomPointOnPerimeter(rng);
-                    var dstTile = dstRoom.GetRandomPointOnPerimeter(rng);
+                    var srcTile = srcRoom.GetRandomPortPosition(map, rng).Value;
+                    var dstTile = dstRoom.GetRandomPortPosition(map, rng).Value;
 
                     map[srcTile] = map[dstTile] = TileType.Corridor;
 
@@ -114,7 +143,7 @@ namespace Server.Logic.MapGen
                     var path = Map.FindPathBFS(map,
                                                srcTile,
                                                dstTile,
-                                               x => map[x.pos] == TileType.None || map[x.pos] == TileType.Corridor);
+                                               x => IsValidCorridorPosition(map, x));
 
                     // if we can't find a valid path from one room to the next, try again
                     if (path == null)

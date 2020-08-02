@@ -31,8 +31,7 @@ namespace Tests.Server.MapGenTests
                 foreach (var (a, b) in pairs)
                 {
                     // if a is within 1 tile of b, the ports are adjacent and the room is invalid
-                    var dist = b - a;
-                    (Math.Abs(dist.x) <= 1 && Math.Abs(dist.y) <= 1).Should().BeFalse();
+                    a.Adjacent(b).Should().BeFalse();
                 }
             }
         }

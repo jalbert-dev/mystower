@@ -37,5 +37,11 @@ namespace Server.Data
     {
         public static double Distance(this Vec2i self, Vec2i other)
             => Math.Sqrt((other.x - self.x) * (other.x - self.x) + (other.y - self.y) * (other.y - self.y));
+
+        public static bool Adjacent(this Vec2i a, Vec2i b)
+        {
+            var dist = b - a;
+            return Math.Abs(dist.x) <= 1 && Math.Abs(dist.y) <= 1;
+        }
     }
 }
