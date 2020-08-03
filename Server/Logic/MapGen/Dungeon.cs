@@ -196,7 +196,8 @@ namespace Server.Logic.MapGen
                     var path = Map.FindPathBFS(map,
                                                srcTile,
                                                dstTile,
-                                               x => IsValidCorridorPosition(map, x));
+                                               x => IsValidCorridorPosition(map, x),
+                                               false);
 
                     // if we can't find a valid path from one room to the next, try again
                     if (path == null)

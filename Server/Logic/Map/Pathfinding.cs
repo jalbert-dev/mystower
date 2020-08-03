@@ -7,7 +7,11 @@ namespace Server.Logic
 {
     public static partial class Map
     {
-        public static IEnumerable<Vec2i>? FindPathBFS(this TileMap map, Vec2i src, Vec2i dst, Func<TileDesc, bool> passabilityPredicate)
+        public static IEnumerable<Vec2i>? FindPathBFS(this TileMap map,
+                                                      Vec2i src,
+                                                      Vec2i dst,
+                                                      Func<TileDesc, bool> passabilityPredicate,
+                                                      bool allowDiagonalMove = true)
         {
             var toVisit = new Queue<Vec2i>();
             var parents = new Dictionary<Vec2i, Vec2i>();
@@ -19,7 +23,7 @@ namespace Server.Logic
                 var current = toVisit.Dequeue();
 
                 foreach (var child in map
-                        .SurroundingTiles(current.x, current.y, false)
+                        .SurroundingTiles(current.x, current.y, allowDiagonalMove)
                         .Where(x => !parents.ContainsKey(x.pos))
                         .Where(passabilityPredicate))
                 {
@@ -35,7 +39,6 @@ namespace Server.Logic
                             path.Add(ptr);
                             ptr = parents[ptr];
                         }
-                        path.Add(src);
                         return path.Reverse();
                     }
                 }

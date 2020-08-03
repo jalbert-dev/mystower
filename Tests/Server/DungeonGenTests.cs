@@ -14,7 +14,7 @@ namespace Tests.Server.MapGenTests
 {
     public static class Dungeon
     {
-        [Property(MaxTest=1000)] public static Property ValidateGeneratedMap()
+        [Property(MaxTest=10)] public static Property ValidateGeneratedMap()
             => Prop.ForAll(
                 DungeonMapGen.Default(),
                 map => {
