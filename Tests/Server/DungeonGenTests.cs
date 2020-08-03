@@ -72,7 +72,8 @@ namespace Tests.Server.MapGenTests
                 var cA = a.Pos + a.Size / 2;
                 var cB = b.Pos + b.Size / 2;
 
-                Map.FindPathBFS(map, cA, cB, desc => Map.IsTileWalkable(desc.type))
+                Map.FindPathBFS(map, cA, cB, 
+                        (map, src, dst) => Map.CanMoveFromAToB(map, new Actor[]{}, src.pos, dst.pos))
                    .Should()
                    .NotBeNullOrEmpty();
             }

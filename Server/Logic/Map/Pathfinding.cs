@@ -10,7 +10,7 @@ namespace Server.Logic
         public static IEnumerable<Vec2i>? FindPathBFS(this TileMap map,
                                                       Vec2i src,
                                                       Vec2i dst,
-                                                      Func<TileDesc, bool> passabilityPredicate,
+                                                      Func<TileMap, TileDesc, TileDesc, bool> passabilityPredicate,
                                                       bool allowDiagonalMove = true)
         {
             var toVisit = new Queue<Vec2i>();
@@ -22,10 +22,13 @@ namespace Server.Logic
             {
                 var current = toVisit.Dequeue();
 
+                Func<TileDesc, bool> getIsLegalMove = 
+                    destination => passabilityPredicate(map, new TileDesc(current, map[current]), destination);
+
                 foreach (var child in map
                         .SurroundingTiles(current.x, current.y, allowDiagonalMove)
                         .Where(x => !parents.ContainsKey(x.pos))
-                        .Where(passabilityPredicate))
+                        .Where(getIsLegalMove))
                 {
                     toVisit.Enqueue(child.pos);
                     parents.Add(child.pos, current);

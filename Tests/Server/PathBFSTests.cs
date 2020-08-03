@@ -8,8 +8,6 @@ namespace Tests.Server.PathingTests
 {
     public class BFS
     {
-        private static bool Passability(TileDesc tile) => tile.type == TileType.Floor;
-
         private static TileMap BuildMap(byte[,] tiles)
         {
             var map = new TileMap(tiles.GetLength(0), tiles.GetLength(1), TileType.Wall);
@@ -24,7 +22,7 @@ namespace Tests.Server.PathingTests
                     BuildMap(map),
                     start,
                     destination,
-                    Passability,
+                    (_, __, dst) => dst.type == TileType.Floor,
                     true);
 
         private static IEnumerable<Vec2i>? Pathfind(byte[,] map)
@@ -105,11 +103,17 @@ namespace Tests.Server.PathingTests
 
         [Fact] public void PassabilityFunctionCanPreventMovingThroughCorners()
         {
-            Pathfind(new byte[,] {
-                { 0, 0, 3 },
-                { 0, 1, 1 },
-                { 2, 1, 0 },
-            }).Should().BeEquivalentTo(
+            global::Server.Logic.Map.FindPathBFS(
+                    BuildMap(new byte[,] {
+                        { 0, 0, 0 },
+                        { 0, 1, 1 },
+                        { 0, 1, 0 },
+                    }),
+                    (0, 2),
+                    (2, 0),
+                    (map, src, dst) => global::Server.Logic.Map.CanMoveFromAToB(map, new Actor[] {}, src.pos, dst.pos),
+                    true)
+            .Should().BeEquivalentTo(
                 new Vec2i(0,1),
                 new Vec2i(0,0),
                 new Vec2i(1,0),
