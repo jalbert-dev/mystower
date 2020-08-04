@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Util;
 using Util.Functional;
 
 namespace Server.Random
@@ -23,5 +24,8 @@ namespace Server.Random
         }
         public static IEnumerable<T> Shuffle<T>(this IRandomSource rng, IEnumerable<T> x)
             => x.OrderBy(_ => rng.Next());
+        
+        public static int Next(this IRandomSource rng, IntRange range)
+            => rng.Next(range.min, range.max);
     }
 }

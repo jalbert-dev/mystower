@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Server.Data;
 using Server.Random;
+using Util;
 using Util.Functional;
 
 namespace Server.Logic.MapGen
@@ -44,19 +45,12 @@ namespace Server.Logic.MapGen
         [CodeGen.DatabaseType]
         public partial class Parameters
         {
-            int mapWidth;
-            int mapHeight;
+            Vec2i mapSize;
+            Vec2i mapMargin;
 
-            int roomMinWidth;
-            int roomMaxWidth;
-            int roomMinHeight;
-            int roomMaxHeight;
-            
-            int roomCountMin;
-            int roomCountMax;
-
-            int mapMarginX;
-            int mapMarginY;
+            IntRange roomWidth;
+            IntRange roomHeight;
+            IntRange roomCount;
 
             public const int MIN_MAP_SIZE = 8;
             public const int MIN_ROOM_SIZE = 3;
@@ -114,19 +108,19 @@ namespace Server.Logic.MapGen
 
         private static IError? ValidateParams(Parameters gen)
         {
-            if (gen.RoomCountMin < Parameters.MIN_ROOMS)
+            if (gen.RoomCount.min < Parameters.MIN_ROOMS)
                 return new Error.RoomCountMinimumMustBeGTZero();
-            if (gen.MapMarginX < Parameters.MIN_ROOM_MARGIN ||
-                gen.MapMarginY < Parameters.MIN_ROOM_MARGIN)
+            if (gen.MapMargin.x < Parameters.MIN_ROOM_MARGIN ||
+                gen.MapMargin.y < Parameters.MIN_ROOM_MARGIN)
                 return new Error.MapMarginTooSmall();
-            if (gen.MapWidth < Parameters.MIN_MAP_SIZE ||
-                gen.MapHeight < Parameters.MIN_MAP_SIZE)
+            if (gen.MapSize.x < Parameters.MIN_MAP_SIZE ||
+                gen.MapSize.y < Parameters.MIN_MAP_SIZE)
                 return new Error.MapSizeMustBeGreaterThanMinimum();
-            if (gen.RoomMinWidth < Parameters.MIN_ROOM_SIZE ||
-                gen.RoomMinHeight < Parameters.MIN_ROOM_SIZE)
+            if (gen.RoomWidth.min < Parameters.MIN_ROOM_SIZE ||
+                gen.RoomHeight.min < Parameters.MIN_ROOM_SIZE)
                 return new Error.RoomSizeMinimumMustBeGreaterThanMinimum();
-            if (gen.RoomMinWidth > gen.MapWidth - gen.MapMarginX * 2 ||
-                gen.RoomMinHeight > gen.MapHeight - gen.MapMarginY * 2)
+            if (gen.RoomWidth.min > gen.MapSize.x - gen.MapMargin.x * 2 ||
+                gen.RoomHeight.min > gen.MapSize.y - gen.MapMargin.y * 2)
                 return new Error.RoomSizeMinimumMustBeLessThanMapSizeAndMargins();
             return null;
         }
@@ -137,18 +131,18 @@ namespace Server.Logic.MapGen
             if (valid != null)
                 return Result.Error(valid);
 
-            var map = new TileMap(gen.MapWidth, gen.MapHeight, TileType.None);
+            var map = new TileMap(gen.MapSize.x, gen.MapSize.y, TileType.None);
             var rooms = new List<MapRoom>();
-            var roomCount = rng.Next(gen.RoomCountMin, gen.RoomCountMax);
+            var roomCount = rng.Next(gen.RoomCount);
 
             for (int i = 0; i < roomCount; i++)
             {
                 for (int _ = 0; _ < 100; _++)
                 {
-                    int left = rng.Next(gen.MapMarginX, map.Width - gen.MapMarginX - gen.RoomMinWidth);
-                    int top = rng.Next(gen.MapMarginY, map.Height - gen.MapMarginY - gen.RoomMinHeight);
-                    int right = rng.Next(left + gen.RoomMinWidth, Math.Min(map.Width - gen.MapMarginX, left + gen.RoomMaxWidth));
-                    int bottom = rng.Next(top + gen.RoomMinHeight, Math.Min(map.Height - gen.MapMarginY, top + gen.RoomMaxHeight));
+                    int left = rng.Next(gen.MapMargin.x, map.Width - gen.MapMargin.x - gen.RoomWidth.min);
+                    int top = rng.Next(gen.MapMargin.y, map.Height - gen.MapMargin.y - gen.RoomHeight.min);
+                    int right = rng.Next(left + gen.RoomWidth.min, Math.Min(map.Width - gen.MapMargin.x, left + gen.RoomWidth.max));
+                    int bottom = rng.Next(top + gen.RoomHeight.min, Math.Min(map.Height - gen.MapMargin.y, top + gen.RoomHeight.max));
 
                     Vec2i pos = (left, top);
                     Vec2i size = (right - left, bottom - top);
