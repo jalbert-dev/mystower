@@ -25,7 +25,7 @@ namespace Server.Data
 
         public static Vec2i Zero = new Vec2i { x = 0, y = 0 };
 
-        public override string ToString() => this.ToPrettyJson();
+        public override string ToString() => $"({x}, {y})";
 
         public void Deconstruct(out int ox, out int oy) 
             => (ox, oy) = (x, y);

@@ -3,6 +3,7 @@ using FsCheck;
 using Server.Data;
 using Server.Random;
 using Server.Logic.MapGen;
+using System.Reflection;
 
 namespace Tests.Server.Generators
 {
@@ -33,7 +34,12 @@ namespace Tests.Server.Generators
                      mapMarginY: roomMargin.Item2));
 
         public static Arbitrary<Dungeon.Parameters> WithRoomCountMin(this Arbitrary<Dungeon.Parameters> arb, int min)
-            => arb.Generator.Select(x => { x.RoomCountMin = min; return x; }).ToArbitrary();
+            => arb.Generator.Select(x => {
+                    typeof(Dungeon.Parameters)
+                        .GetField("roomCountMin", BindingFlags.NonPublic | BindingFlags.Instance)!
+                        .SetValue(x, min);
+                    return x; })
+                .ToArbitrary();
         
         public static Arbitrary<TileMap> Default(int maxMapSize = DEFAULT_MAX_TEST_MAP_SIZE)
              => Arb.From(

@@ -41,7 +41,7 @@ namespace Server.Logic.MapGen
             }
         }
 
-        [CodeGen.GameDataNode]
+        [CodeGen.DatabaseType]
         public partial class Parameters
         {
             int mapWidth;
