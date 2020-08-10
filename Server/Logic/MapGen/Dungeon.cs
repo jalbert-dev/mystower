@@ -58,32 +58,25 @@ namespace Server.Logic.MapGen
             public const int MIN_ROOM_MARGIN = 2;
         }
 
-        private static bool IsRegionVacant(List<MapRoom> rooms, Vec2i pos, Vec2i size)
+        private static bool IsRegionVacant(List<MapRoom> rooms, Rect region)
         {
-            pos = (pos.x < 0 ? 0 : pos.x, pos.y < 0 ? 0 : pos.y);
-
-            // TODO: replace with rect and .Intersects
-            return !rooms.Any(room =>
-                pos.x <= room.Pos.x + room.Size.x && pos.x + size.x >= room.Pos.x &&
-                pos.y <= room.Pos.y + room.Size.y && pos.y + size.y >= room.Pos.y);
-        }
-
-        private static IEnumerable<Vec2i> GetLocalPointsOnPerimeter(this MapRoom room)
-        {
-            for (int y = 1; y < room.Size.y - 1; y++)
-            {
-                yield return (0, y);
-                yield return (room.Size.x - 1, y);
-            }
-            for (int x = 1; x < room.Size.x - 1; x++)
-            {
-                yield return (x, 0);
-                yield return (x, room.Size.y - 1);
-            }
+            var r = Rect.ClampBounds(region, 0, 0, region.Right, region.Bottom);
+            return !rooms.Any(room => Rect.Intersects(room.Region, r));
         }
 
         private static IEnumerable<Vec2i> GetGlobalPointsOnPerimeter(this MapRoom room)
-            => GetLocalPointsOnPerimeter(room).Select(x => x + room.Pos);
+        {
+            for (int y = room.Region.Top + 1; y < room.Region.Bottom - 1; y++)
+            {
+                yield return (room.Region.Left, y);
+                yield return (room.Region.Right - 1, y);
+            }
+            for (int x = room.Region.Left + 1; x < room.Region.Right - 1; x++)
+            {
+                yield return (x, room.Region.Top);
+                yield return (x, room.Region.Bottom - 1);
+            }
+        }
 
         private static Option<Vec2i> GetRandomPortPosition(this MapRoom room, TileMap map, IRandomSource rng)
              => rng.PickFrom(
@@ -144,12 +137,11 @@ namespace Server.Logic.MapGen
                     int right = rng.Next(left + gen.RoomWidth.min, Math.Min(map.Width - gen.MapMargin.x, left + gen.RoomWidth.max));
                     int bottom = rng.Next(top + gen.RoomHeight.min, Math.Min(map.Height - gen.MapMargin.y, top + gen.RoomHeight.max));
 
-                    Vec2i pos = (left, top);
-                    Vec2i size = (right - left, bottom - top);
+                    var region = Rect.FromBounds(left, top, right, bottom);
 
-                    if (IsRegionVacant(rooms, pos, size))
+                    if (IsRegionVacant(rooms, region))
                     {
-                        rooms.Add(map.DefineRoom(pos, size, new Util.ValueList<Vec2i>()));
+                        rooms.Add(map.DefineRoom(region, new Util.ValueList<Vec2i>()));
                         break;
                     }
                 }
@@ -159,14 +151,14 @@ namespace Server.Logic.MapGen
             foreach (var room in rooms)
             {
                 // first fill with wall
-                for (int i = 0; i < room.Size.x; i++)
-                    for (int j = 0; j < room.Size.y; j++)
-                        map[room.Pos.x+i, room.Pos.y+j] = TileType.Wall;
+                for (int j = room.Region.Top; j < room.Region.Bottom; j++)
+                    for (int i = room.Region.Left; i < room.Region.Right; i++)
+                        map[i, j] = TileType.Wall;
 
                 // then dig the floor out of the center
-                for (int i = 1; i < room.Size.x-1; i++)
-                    for (int j = 1; j < room.Size.y-1; j++)
-                        map[i+room.Pos.x, j+room.Pos.y] = TileType.Floor;
+                for (int j = room.Region.Top + 1; j < room.Region.Bottom - 1; j++)
+                    for (int i = room.Region.Left + 1; i < room.Region.Right - 1; i++)
+                        map[i, j] = TileType.Floor;
             }
 
             // form corridors through pairwise dungeon rooms

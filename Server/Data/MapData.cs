@@ -11,9 +11,7 @@ namespace Server.Data
     [CodeGen.GameDataNode]
     public partial class MapRoom
     {
-        Vec2i pos;
-        Vec2i size;
-
+        Rect region;
         ValueList<Vec2i> ports;
     }
 
@@ -60,9 +58,9 @@ namespace Server.Data
                     tiles[i,j] = initialValue;
         }
 
-        public MapRoom DefineRoom(Vec2i pos, Vec2i size, IEnumerable<Vec2i> ports)
+        public MapRoom DefineRoom(Rect region, IEnumerable<Vec2i> ports)
         {
-            var room = new MapRoom(pos, size, ports.ToValueList());
+            var room = new MapRoom(region, ports.ToValueList());
             rooms.Add(room);
             return room;
         }

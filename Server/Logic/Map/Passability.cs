@@ -24,9 +24,9 @@ namespace Server.Logic
 
         public static IEnumerable<Vec2i> GetTilesInRoom(MapRoom room)
         {
-            for (int j = 0; j < room.Size.y; j++)
-                for (int i = 0; i < room.Size.x; i++)
-                    yield return (room.Pos.x + i, room.Pos.y + j);
+            for (int j = room.Region.Top; j < room.Region.Bottom; j++)
+                for (int i = room.Region.Left; i < room.Region.Right; i++)
+                    yield return (i, j);
         }
 
         public static IEnumerable<Vec2i> GetWalkableTilesInRoom(MapRoom room, TileMap map)

@@ -69,8 +69,8 @@ namespace Tests.Server.MapGenTests
             foreach (var (a, b) in pairs)
             {
                 // must exist some BFS path from center of A to center of B
-                var cA = a.Pos + a.Size / 2;
-                var cB = b.Pos + b.Size / 2;
+                Vec2i cA = (a.Region.Left + a.Region.Width / 2, a.Region.Top + a.Region.Height / 2);
+                Vec2i cB = (b.Region.Left + b.Region.Width / 2, b.Region.Top + b.Region.Height / 2);
 
                 Map.FindPathBFS(map, cA, cB, 
                         (map, src, dst) => Map.CanMoveFromAToB(map, new Actor[]{}, src.pos, dst.pos))
